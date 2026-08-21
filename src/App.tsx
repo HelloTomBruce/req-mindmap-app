@@ -10,10 +10,11 @@ import { CreateProjectModal } from './components/CreateProjectModal';
 import { ImportMdModal } from './components/ImportMdModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { MCPManagerModal } from './components/MCPManagerModal';
+import { UpdateModal } from './components/UpdateModal';
 import { mcpServerManager, MCPLogItem } from './mcpServerManager';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Download, Layout, Plus, CheckCircle2, Home, Server } from 'lucide-react';
+import { Download, Layout, Plus, CheckCircle2, Home, Server, RefreshCw } from 'lucide-react';
 import './App.css';
 
 const RECENT_PROJECTS_KEY = 'req_mindmap_recent_projects';
@@ -32,6 +33,7 @@ export const App: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
   const [isMCPModalOpen, setIsMCPModalOpen] = useState<boolean>(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [targetDeleteProject, setTargetDeleteProject] = useState<ProjectMeta | null>(null);
 
   const [mcpStatus, setMcpStatus] = useState(mcpServerManager.getStatus());
@@ -651,6 +653,15 @@ export const App: React.FC = () => {
 
         <div className="header-actions">
           <button
+            className="btn outline"
+            title="检查远程软件版本升级"
+            onClick={() => setIsUpdateModalOpen(true)}
+          >
+            <RefreshCw size={14} />
+            检查更新
+          </button>
+
+          <button
             className={`btn outline ${mcpStatus.isRunning ? 'mcp-active' : ''}`}
             title="查看 MCP 服务配置与 AI 接入连接"
             onClick={() => setIsMCPModalOpen(true)}
@@ -726,6 +737,12 @@ export const App: React.FC = () => {
           onToggleServer={handleToggleMCPServer}
         />
       )}
+
+      {/* 远程版本自动检查更新弹窗 */}
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+      />
 
       {/* 底部状态栏 */}
       <footer className="app-statusbar">

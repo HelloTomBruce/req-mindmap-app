@@ -200,6 +200,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
+  position: relative;
+  z-index: 1000000;
 }
 
 .header-left {
@@ -579,6 +581,14 @@ body {
   box-shadow: none;
 }
 
+/* 当 Markdown 编辑器点击全屏时，精准留出顶部 Header (48px) 与 底部 Statusbar (24px) */
+.w-md-editor-fullscreen {
+  top: 48px !important;
+  bottom: 24px !important;
+  height: calc(100vh - 72px) !important;
+  z-index: 90 !important;
+}
+
 .status-actions {
   display: flex;
   align-items: center;
@@ -634,7 +644,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 100000;
 }
 
 .modal-content {

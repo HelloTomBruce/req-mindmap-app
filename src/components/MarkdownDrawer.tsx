@@ -14,6 +14,9 @@ interface MarkdownDrawerProps {
   onUpdateMeta: (nodeId: string, updates: Partial<MindNode>) => void;
 }
 
+// 本地图片 DataURL 全局内存缓存，避免输入文本导致组件重新渲染时的频繁 IPC 重新读取与图片闪烁
+const imageCache = new Map<string, string>();
+
 export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
   node,
   content,
@@ -160,32 +163,45 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
           previewOptions={{
             components: {
               img: ({ src, alt, ...rest }: any) => {
-                const [srcUrl, setSrcUrl] = React.useState<string>(src || '');
+                const cacheKey = `${projectPath}:${src}`;
+                const cachedSrc = imageCache.get(cacheKey);
+
+                const [srcUrl, setSrcUrl] = React.useState<string>(cachedSrc || src || '');
 
                 React.useEffect(() => {
-                  const loadRealSrc = async () => {
-                    if (src && src.startsWith('assets/') && projectPath) {
-                      try {
-                        const dataUrl = await invoke<string>('read_image_data_url', {
-                          projectPath,
-                          relativePath: src
-                        });
+                  if (!src) return;
+
+                  if (imageCache.has(cacheKey)) {
+                    setSrcUrl(imageCache.get(cacheKey)!);
+                    return;
+                  }
+
+                  if (src.startsWith('assets/') && projectPath) {
+                    let isMounted = true;
+                    invoke<string>('read_image_data_url', {
+                      projectPath,
+                      relativePath: src
+                    }).then((dataUrl) => {
+                      imageCache.set(cacheKey, dataUrl);
+                      if (isMounted) {
                         setSrcUrl(dataUrl);
-                      } catch (e) {
-                        console.warn('Failed to load image preview:', src, e);
                       }
-                    } else {
-                      setSrcUrl(src || '');
-                    }
-                  };
-                  loadRealSrc();
-                }, [src]);
+                    }).catch((e) => {
+                      console.warn('Failed to load image preview:', src, e);
+                    });
+                    return () => {
+                      isMounted = false;
+                    };
+                  } else {
+                    setSrcUrl(src);
+                  }
+                }, [src, projectPath, cacheKey]);
 
                 return (
                   <img
                     {...rest}
                     src={srcUrl}
-                    style={{ maxWidth: '100%', borderRadius: 6, margin: '8px 0' }}
+                    style={{ maxWidth: '100%', borderRadius: 6, margin: '8px 0', display: 'block' }}
                     alt={alt || '图片'}
                   />
                 );
