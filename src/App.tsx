@@ -1,0 +1,746 @@
+import React, { useState, useEffect } from 'react';
+import { ProjectData, MindNode } from './types';
+import { INITIAL_PROJECT_DATA, INITIAL_DOC_CONTENTS } from './mockData';
+import { MindmapCanvas } from './components/MindmapCanvas';
+import { MarkdownDrawer } from './components/MarkdownDrawer';
+import { Sidebar } from './components/Sidebar';
+import { ProjectManager, ProjectMeta } from './components/ProjectManager';
+import { ExportPRDModal } from './components/ExportPRDModal';
+import { CreateProjectModal } from './components/CreateProjectModal';
+import { ImportMdModal } from './components/ImportMdModal';
+import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { MCPManagerModal } from './components/MCPManagerModal';
+import { mcpServerManager, MCPLogItem } from './mcpServerManager';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
+import { Download, Layout, Plus, CheckCircle2, Home, Server } from 'lucide-react';
+import './App.css';
+
+const RECENT_PROJECTS_KEY = 'req_mindmap_recent_projects';
+
+export const App: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'manager' | 'editor'>('manager');
+  const [recentProjects, setRecentProjects] = useState<ProjectMeta[]>([]);
+  
+  const [currentProjectPath, setCurrentProjectPath] = useState<string>('');
+  const [projectData, setProjectData] = useState<ProjectData>(INITIAL_PROJECT_DATA);
+  const [docsMap, setDocsMap] = useState<Record<string, string>>(INITIAL_DOC_CONTENTS);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('root-node');
+  
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(true);
+  const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
+  const [isMCPModalOpen, setIsMCPModalOpen] = useState<boolean>(false);
+  const [targetDeleteProject, setTargetDeleteProject] = useState<ProjectMeta | null>(null);
+
+  const [mcpStatus, setMcpStatus] = useState(mcpServerManager.getStatus());
+  const [mcpLogs, setMcpLogs] = useState<MCPLogItem[]>([]);
+
+  // 轮询同步 Rust 原生 MCP SSE 服务的状态与 AI 调用日志
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const updated = await mcpServerManager.fetchStatusFromRust();
+      setMcpStatus(updated);
+      setMcpLogs([...mcpServerManager.getLogs()]);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 选择 md 文件
+  const handleSelectMdFile = async (): Promise<string | null> => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: 'Markdown File', extensions: ['md', 'markdown'] }]
+      });
+      if (selected && typeof selected === 'string') {
+        return selected;
+      }
+    } catch (e) {
+      console.warn('Select md file error:', e);
+    }
+    return null;
+  };
+
+  // 解析源 Markdown 文件，按 #, ##, ### 标题精准拆分为模块结构树
+  const handleImportMd = async (mdPath: string, targetPath: string, name: string) => {
+    try {
+      const fullMarkdown = await invoke<string>('read_text_file_custom', { path: mdPath });
+      const lines = fullMarkdown.split('\n');
+
+      const rootNode: MindNode = {
+        id: 'root-node',
+        title: name,
+        docPath: 'index.md',
+        status: 'in_progress',
+        priority: 'P0',
+        tags: ['MD导入'],
+        children: []
+      };
+
+      const docsMapResult: Record<string, string> = {
+        'index.md': `# ${name}\n\n从 Markdown 文件 ${mdPath.split('/').pop()} 拆分导入。\n\n`
+      };
+
+      // 栈结构维护树多维深度 [node, level]
+      const stack: { node: MindNode; level: number }[] = [{ node: rootNode, level: 0 }];
+      let nodeIdx = 1;
+      let activeContentKey = 'index.md';
+
+      // 提取 Markdown 源文件所在目录
+      const sourceDir = mdPath.substring(0, mdPath.lastIndexOf('/'));
+      let imgIdx = 1;
+
+      // 正则匹配 Markdown 图片语法: ![alt](url)
+      const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+
+      // 异步辅助函数：处理并替换一行中的图片引用
+      const processLineImages = async (textLine: string): Promise<string> => {
+        let newLine = textLine;
+        const matches = Array.from(textLine.matchAll(imgRegex));
+
+        for (const match of matches) {
+          const fullMatch = match[0];
+          const altText = match[1];
+          const originalSrc = match[2].trim();
+
+          // 如果是网络图片（http/https）或 data: 格式，保持原样
+          if (/^(https?:\/\/|data:)/i.test(originalSrc)) {
+            continue;
+          }
+
+          // 计算本地图片的绝对路径
+          const absoluteSrcPath = originalSrc.startsWith('/')
+            ? originalSrc
+            : `${sourceDir}/${originalSrc.replace(/^\.\//, '')}`;
+
+          const fileExt = originalSrc.split('.').pop()?.split('?')[0] || 'png';
+          const newFileName = `md_img_${Date.now()}_${imgIdx++}.${fileExt}`;
+          const destPath = `${targetPath}/assets/${newFileName}`;
+          const newRelativeSrc = `assets/${newFileName}`;
+
+          try {
+            // 调用 Rust 命令将原本地图片深拷贝到新项目的 assets/ 目录中
+            await invoke('copy_local_file_custom', {
+              srcPath: absoluteSrcPath,
+              destPath
+            });
+            // 替换 Markdown 中的链接路径为新项目的 assets/xxx
+            newLine = newLine.replace(fullMatch, `![${altText}](${newRelativeSrc})`);
+          } catch (err) {
+            console.warn(`Failed to copy image ${absoluteSrcPath}:`, err);
+          }
+        }
+        return newLine;
+      };
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        if (line.includes('![')) {
+          line = await processLineImages(line);
+        }
+
+        const match = line.match(/^(\#{1,6})\s+(.+)$/);
+
+        if (match) {
+          const level = match[1].length;
+          const rawTitleText = match[2].trim();
+          const docRelPath = `modules/sec_${nodeIdx++}.md`;
+
+          const newNode: MindNode = {
+            id: `md-node-${nodeIdx}`,
+            title: rawTitleText || `章节 ${nodeIdx}`,
+            docPath: docRelPath,
+            status: 'todo',
+            priority: 'P1',
+            tags: ['模块']
+          };
+
+          docsMapResult[docRelPath] = `${match[1]} ${rawTitleText}\n\n`;
+
+          // 寻找合适的父级出栈
+          while (stack.length > 1 && stack[stack.length - 1].level >= level) {
+            stack.pop();
+          }
+
+          const parentNode = stack[stack.length - 1].node;
+          if (!parentNode.children) {
+            parentNode.children = [];
+          }
+          parentNode.children.push(newNode);
+
+          stack.push({ node: newNode, level });
+          activeContentKey = docRelPath;
+        } else {
+          // 普通段落追加到当前活跃节点的 md 中
+          docsMapResult[activeContentKey] += `${line}\n`;
+        }
+      }
+
+      // 保底处理：如果 Markdown 中无任何 # 标题，按空行切分节点
+      if (!rootNode.children || rootNode.children.length === 0) {
+        const rawBlocks = fullMarkdown.split(/\n\s*\n/);
+        let fallbackIdx = 1;
+        for (const block of rawBlocks) {
+          const trimmed = block.trim();
+          if (!trimmed) continue;
+          const firstLine = trimmed.split('\n')[0].substring(0, 30);
+          const docRelPath = `modules/sec_${fallbackIdx}.md`;
+          
+          const child: MindNode = {
+            id: `fallback-node-${fallbackIdx}`,
+            title: firstLine || `段落 ${fallbackIdx}`,
+            docPath: docRelPath,
+            status: 'todo',
+            priority: 'P2',
+            tags: ['段落']
+          };
+          rootNode.children = rootNode.children || [];
+          rootNode.children.push(child);
+          docsMapResult[docRelPath] = `# ${firstLine}\n\n${trimmed}\n`;
+          fallbackIdx++;
+        }
+      }
+
+      const importedProject: ProjectData = {
+        version: '1.0.0',
+        projectName: name,
+        root: rootNode
+      };
+
+      setCurrentProjectPath(targetPath);
+      setProjectData(importedProject);
+      setDocsMap(docsMapResult);
+      setSelectedNodeId('root-node');
+
+      await syncToDisk(targetPath, importedProject, docsMapResult);
+
+      const meta: ProjectMeta = {
+        id: `proj-${Date.now()}`,
+        name,
+        path: targetPath,
+        lastOpened: new Date().toLocaleDateString(),
+        nodeCount: countNodes(rootNode)
+      };
+
+      const updated = [meta, ...recentProjects.filter((p) => p.path !== targetPath)];
+      saveRecentProjects(updated);
+
+      setIsImportModalOpen(false);
+      setViewMode('editor');
+      setIsDrawerOpen(true);
+    } catch (err) {
+      console.error('Failed to parse md file:', err);
+      alert('解析 Markdown 文件失败');
+    }
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem(RECENT_PROJECTS_KEY);
+    if (saved) {
+      try {
+        const list: ProjectMeta[] = JSON.parse(saved);
+        setRecentProjects(list);
+        if (list.length > 0) {
+          invoke('start_mcp_server_rust', { port: 6001, projectPath: list[0].path }).catch(console.error);
+        }
+      } catch (e) {
+        console.error('Failed to parse recent projects', e);
+      }
+    }
+  }, []);
+
+  const saveRecentProjects = (list: ProjectMeta[]) => {
+    setRecentProjects(list);
+    localStorage.setItem(RECENT_PROJECTS_KEY, JSON.stringify(list));
+  };
+
+  const countNodes = (node: MindNode): number => {
+    let count = 1;
+    if (node.children) {
+      for (const child of node.children) {
+        count += countNodes(child);
+      }
+    }
+    return count;
+  };
+
+  // 通过自定义 Rust 原生命令写文件，彻底告别权限 scope 限制
+  const syncToDisk = async (pPath: string, pData: ProjectData, dMap: Record<string, string>) => {
+    if (!pPath) return;
+    try {
+      // 1. 写入 .requirements.json
+      const configPath = `${pPath}/.requirements.json`;
+      await invoke('write_text_file_custom', {
+        path: configPath,
+        content: JSON.stringify(pData, null, 2)
+      });
+
+      // 2. 写入关联的各 Markdown 文件
+      for (const [relPath, content] of Object.entries(dMap)) {
+        const fullFilePath = `${pPath}/${relPath}`;
+        await invoke('write_text_file_custom', {
+          path: fullFilePath,
+          content
+        });
+      }
+    } catch (err) {
+      console.warn('Physical disk sync error:', err);
+    }
+  };
+
+  // 选择文件夹用于新建项目
+  const handleSelectFolderForCreate = async (): Promise<string | null> => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: '选择新需求项目存放文件夹'
+      });
+      if (selected && typeof selected === 'string') {
+        return selected;
+      }
+    } catch (e) {
+      console.warn('Native dialog error:', e);
+    }
+    return null;
+  };
+
+  // 执行创建新项目
+  const handleCreateProject = async (name: string, targetPath: string) => {
+    const newRoot: MindNode = {
+      id: 'root-node',
+      title: `${name} 根模块`,
+      docPath: 'index.md',
+      status: 'in_progress',
+      priority: 'P0',
+      tags: ['根模块']
+    };
+
+    const newProject: ProjectData = {
+      version: '1.0.0',
+      projectName: name,
+      root: newRoot
+    };
+
+    const newDocsMap = {
+      'index.md': `# ${name} 需求规格说明书\n\n欢迎使用 ReqMindmark 编写需求文档。`
+    };
+
+    setCurrentProjectPath(targetPath);
+    setProjectData(newProject);
+    setDocsMap(newDocsMap);
+    setSelectedNodeId('root-node');
+
+    // 磁盘持久化
+    await syncToDisk(targetPath, newProject, newDocsMap);
+
+    const meta: ProjectMeta = {
+      id: `proj-${Date.now()}`,
+      name,
+      path: targetPath,
+      lastOpened: new Date().toLocaleDateString(),
+      nodeCount: 1
+    };
+
+    const updated = [meta, ...recentProjects.filter((p) => p.path !== targetPath)];
+    saveRecentProjects(updated);
+
+    setIsCreateModalOpen(false);
+    setViewMode('editor');
+    setIsDrawerOpen(true);
+  };
+
+  // 递归读取该节点树下的所有 Markdown 文件
+  const loadDocsForTree = async (pPath: string, node: MindNode, docsMapAcc: Record<string, string>) => {
+    if (node.docPath) {
+      try {
+        const fullMdPath = `${pPath}/${node.docPath}`;
+        const content = await invoke<string>('read_text_file_custom', { path: fullMdPath });
+        docsMapAcc[node.docPath] = content;
+      } catch (e) {
+        console.warn(`Doc not found on disk: ${node.docPath}`, e);
+      }
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        await loadDocsForTree(pPath, child, docsMapAcc);
+      }
+    }
+  };
+
+  // 切换/更新 MCP SSE 服务端口
+  const handleToggleMCPServer = async (enable: boolean, customPort?: number) => {
+    const targetPort = customPort || mcpStatus.port || 6001;
+    if (enable) {
+      if (!currentProjectPath) {
+        alert('请先打开或创建一个需求项目');
+        return;
+      }
+      await mcpServerManager.startServer(targetPort, currentProjectPath);
+    } else {
+      await mcpServerManager.stopServer();
+    }
+    setMcpStatus(mcpServerManager.getStatus());
+  };
+
+  // 从真实磁盘加载项目
+  const loadFromDisk = async (meta: ProjectMeta) => {
+    try {
+      const configPath = `${meta.path}/.requirements.json`;
+      const jsonStr = await invoke<string>('read_text_file_custom', { path: configPath });
+      const loadedProjectData: ProjectData = JSON.parse(jsonStr);
+
+      const loadedDocsMap: Record<string, string> = {};
+      await loadDocsForTree(meta.path, loadedProjectData.root, loadedDocsMap);
+
+      setProjectData(loadedProjectData);
+      setDocsMap(loadedDocsMap);
+      setSelectedNodeId(loadedProjectData.root.id);
+
+      // 更新 MCP 当前关联项目并同步到 Rust 后端
+      mcpServerManager.setProjectPath(meta.path);
+      await mcpServerManager.startServer(6001, meta.path);
+      setMcpStatus(mcpServerManager.getStatus());
+    } catch (err) {
+      console.warn('Failed to load project from disk, using fallback/current data:', err);
+    }
+  };
+
+  // 打开某个项目
+  const handleOpenProject = async (meta: ProjectMeta) => {
+    setCurrentProjectPath(meta.path);
+    await loadFromDisk(meta);
+
+    const updated = recentProjects.map((p) =>
+      p.id === meta.id ? { ...p, lastOpened: new Date().toLocaleDateString() } : p
+    );
+    saveRecentProjects(updated);
+    setViewMode('editor');
+  };
+
+  // 按钮触发打开磁盘文件夹
+  const handleSelectFolder = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: '选择需求项目文件夹'
+      });
+      if (selected && typeof selected === 'string') {
+        const folderName = selected.split('/').pop() || '本地需求项目';
+        const meta: ProjectMeta = {
+          id: `proj-${Date.now()}`,
+          name: folderName,
+          path: selected,
+          lastOpened: new Date().toLocaleDateString(),
+          nodeCount: 1
+        };
+        handleOpenProject(meta);
+      }
+    } catch (e) {
+      console.warn('Native dialog error:', e);
+    }
+  };
+
+  // 触发删除确认弹窗
+  const handleDeleteProjectMeta = (project: ProjectMeta) => {
+    setTargetDeleteProject(project);
+  };
+
+  // 确认删除（根据选项选择是否同步彻底删除磁盘文件）
+  const handleDeleteProjectConfirm = async (deletePhysicalFiles: boolean) => {
+    if (!targetDeleteProject) return;
+
+    if (deletePhysicalFiles && targetDeleteProject.path) {
+      try {
+        await invoke('delete_dir_all_custom', { path: targetDeleteProject.path });
+      } catch (err) {
+        console.error('Failed to wipe physical project directory:', err);
+        alert(`删除磁盘目录失败: ${err}`);
+      }
+    }
+
+    const updated = recentProjects.filter((p) => p.id !== targetDeleteProject.id);
+    saveRecentProjects(updated);
+    setTargetDeleteProject(null);
+  };
+
+  const findNodeById = (node: MindNode, id: string): MindNode | null => {
+    if (node.id === id) return node;
+    if (node.children) {
+      for (const child of node.children) {
+        const found = findNodeById(child, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const currentNode = selectedNodeId ? findNodeById(projectData.root, selectedNodeId) : null;
+
+  const handleSelectNode = (node: MindNode) => {
+    setSelectedNodeId(node.id);
+    setIsDrawerOpen(true);
+  };
+
+  // 新增节点并触发落盘
+  const handleAddChildNode = (parentId: string) => {
+    const newNodeId = `node-${Date.now()}`;
+    const newDocPath = `modules/node-${Date.now()}.md`;
+    const newNode: MindNode = {
+      id: newNodeId,
+      title: '新建需求节点',
+      docPath: newDocPath,
+      status: 'todo',
+      priority: 'P2',
+      tags: ['新需求']
+    };
+
+    const updateTree = (node: MindNode): MindNode => {
+      if (node.id === parentId) {
+        return {
+          ...node,
+          children: [...(node.children || []), newNode]
+        };
+      }
+      if (node.children) {
+        return {
+          ...node,
+          children: node.children.map(updateTree)
+        };
+      }
+      return node;
+    };
+
+    const updatedRoot = updateTree(projectData.root);
+    const updatedProject = { ...projectData, root: updatedRoot };
+    const updatedDocsMap = {
+      ...docsMap,
+      [newDocPath]: `# 新建需求节点\n\n请在此处编写需求详细描述...`
+    };
+
+    setProjectData(updatedProject);
+    setDocsMap(updatedDocsMap);
+    setSelectedNodeId(newNodeId);
+    setIsDrawerOpen(true);
+
+    syncToDisk(currentProjectPath, updatedProject, updatedDocsMap);
+  };
+
+  const handleDeleteNode = (nodeId: string) => {
+    const deleteFromTree = (node: MindNode): MindNode => {
+      if (node.children) {
+        return {
+          ...node,
+          children: node.children.filter((child) => child.id !== nodeId).map(deleteFromTree)
+        };
+      }
+      return node;
+    };
+
+    const updatedProject = { ...projectData, root: deleteFromTree(projectData.root) };
+    setProjectData(updatedProject);
+
+    if (selectedNodeId === nodeId) {
+      setSelectedNodeId(null);
+      setIsDrawerOpen(false);
+    }
+
+    syncToDisk(currentProjectPath, updatedProject, docsMap);
+  };
+
+  const handleToggleCollapse = (nodeId: string) => {
+    const toggleInTree = (node: MindNode): MindNode => {
+      if (node.id === nodeId) {
+        return { ...node, collapsed: !node.collapsed };
+      }
+      if (node.children) {
+        return { ...node, children: node.children.map(toggleInTree) };
+      }
+      return node;
+    };
+
+    setProjectData({
+      ...projectData,
+      root: toggleInTree(projectData.root)
+    });
+  };
+
+  const handleUpdateMeta = (nodeId: string, updates: Partial<MindNode>) => {
+    const updateInTree = (node: MindNode): MindNode => {
+      if (node.id === nodeId) {
+        return { ...node, ...updates };
+      }
+      if (node.children) {
+        return { ...node, children: node.children.map(updateInTree) };
+      }
+      return node;
+    };
+
+    const updatedProject = { ...projectData, root: updateInTree(projectData.root) };
+    setProjectData(updatedProject);
+
+    syncToDisk(currentProjectPath, updatedProject, docsMap);
+  };
+
+  const handleContentChange = (newContent: string) => {
+    if (!currentNode) return;
+    const updatedDocsMap = {
+      ...docsMap,
+      [currentNode.docPath]: newContent
+    };
+    setDocsMap(updatedDocsMap);
+
+    syncToDisk(currentProjectPath, projectData, updatedDocsMap);
+  };
+
+  if (viewMode === 'manager') {
+    return (
+      <>
+        <ProjectManager
+          recentProjects={recentProjects}
+          onOpenProject={handleOpenProject}
+          onOpenFolder={handleSelectFolder}
+          onDeleteProjectMeta={handleDeleteProjectMeta}
+          onOpenCreateModal={() => setIsCreateModalOpen(true)}
+          onOpenImportModal={() => setIsImportModalOpen(true)}
+        />
+
+        {isCreateModalOpen && (
+          <CreateProjectModal
+            onClose={() => setIsCreateModalOpen(false)}
+            onSelectFolder={handleSelectFolderForCreate}
+            onCreate={handleCreateProject}
+          />
+        )}
+
+        {isImportModalOpen && (
+          <ImportMdModal
+            onClose={() => setIsImportModalOpen(false)}
+            onSelectMd={handleSelectMdFile}
+            onSelectFolder={handleSelectFolderForCreate}
+            onImport={handleImportMd}
+          />
+        )}
+
+        {targetDeleteProject && (
+          <DeleteConfirmModal
+            project={targetDeleteProject}
+            onClose={() => setTargetDeleteProject(null)}
+            onConfirm={handleDeleteProjectConfirm}
+          />
+        )}
+      </>
+    );
+  }
+
+  return (
+    <div className="app-container">
+      {/* 顶栏 */}
+      <header className="app-header">
+        <div className="header-left">
+          <button className="btn outline icon-only" title="返回项目管理首页" onClick={() => setViewMode('manager')}>
+            <Home size={16} />
+          </button>
+          <Layout className="app-logo" size={20} />
+          <span className="app-name">{projectData.projectName}</span>
+        </div>
+
+        <div className="header-actions">
+          <button
+            className={`btn outline ${mcpStatus.isRunning ? 'mcp-active' : ''}`}
+            title="查看 MCP 服务配置与 AI 接入连接"
+            onClick={() => setIsMCPModalOpen(true)}
+          >
+            <Server size={14} color={mcpStatus.isRunning ? '#10b981' : '#64748b'} />
+            {mcpStatus.isRunning ? `🔌 AI 接入中 (MCP: ${mcpStatus.port})` : '🔌 AI 接入 (MCP)'}
+          </button>
+
+          <button className="btn primary" onClick={() => setIsExportModalOpen(true)}>
+            <Download size={14} /> 导出 PRD 文档
+          </button>
+        </div>
+      </header>
+
+      {/* 主体布局 */}
+      <div className="app-body">
+        <Sidebar
+          rootNode={projectData.root}
+          selectedNodeId={selectedNodeId}
+          onSelectNode={handleSelectNode}
+          projectName={projectData.projectName}
+        />
+
+        <main className="app-main-canvas">
+          <div className="canvas-header-bar">
+            <span className="canvas-title">🧠 模块拓扑关系视图</span>
+            <button
+              className="btn small"
+              onClick={() => handleAddChildNode(selectedNodeId || projectData.root.id)}
+            >
+              <Plus size={14} /> 添加子需求节点
+            </button>
+          </div>
+
+          <MindmapCanvas
+            rootNode={projectData.root}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={handleSelectNode}
+            onAddChildNode={handleAddChildNode}
+            onDeleteNode={handleDeleteNode}
+            onToggleCollapse={handleToggleCollapse}
+          />
+        </main>
+
+        {isDrawerOpen && currentNode && (
+          <MarkdownDrawer
+            node={currentNode}
+            content={docsMap[currentNode.docPath] || ''}
+            projectPath={currentProjectPath}
+            onClose={() => setIsDrawerOpen(false)}
+            onContentChange={handleContentChange}
+            onUpdateMeta={handleUpdateMeta}
+          />
+        )}
+      </div>
+
+      {/* 导出 PRD 弹窗 */}
+      {isExportModalOpen && (
+        <ExportPRDModal
+          rootNode={projectData.root}
+          docsMap={docsMap}
+          projectName={projectData.projectName}
+          onClose={() => setIsExportModalOpen(false)}
+        />
+      )}
+
+      {/* MCP AI 服务管理弹窗 */}
+      {isMCPModalOpen && (
+        <MCPManagerModal
+          status={mcpStatus}
+          logs={mcpLogs}
+          onClose={() => setIsMCPModalOpen(false)}
+          onToggleServer={handleToggleMCPServer}
+        />
+      )}
+
+      {/* 底部状态栏 */}
+      <footer className="app-statusbar">
+        <div className="status-item">
+          <CheckCircle2 size={12} color="#10b981" /> 磁盘自动同步已就绪
+        </div>
+        <div className="status-item">
+          当前节点数: <strong>{countNodes(projectData.root)}</strong>
+        </div>
+        <div className="status-item">
+          当前选中: <strong>{currentNode ? currentNode.title : '未选择'}</strong>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
