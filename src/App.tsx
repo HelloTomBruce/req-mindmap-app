@@ -421,9 +421,17 @@ export const App: React.FC = () => {
     setCurrentProjectPath(meta.path);
     await loadFromDisk(meta);
 
-    const updated = recentProjects.map((p) =>
-      p.id === meta.id ? { ...p, lastOpened: new Date().toLocaleDateString() } : p
-    );
+    const exists = recentProjects.some((p) => p.path === meta.path || p.id === meta.id);
+    let updated: ProjectMeta[];
+    if (exists) {
+      updated = [
+        { ...meta, lastOpened: new Date().toLocaleDateString() },
+        ...recentProjects.filter((p) => p.path !== meta.path && p.id !== meta.id)
+      ];
+    } else {
+      updated = [meta, ...recentProjects];
+    }
+
     saveRecentProjects(updated);
     setViewMode('editor');
   };
