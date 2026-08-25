@@ -43,6 +43,34 @@ fn read_text_file_custom(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
+fn get_app_index_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    use tauri::Manager;
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("获取 AppData 目录失败: {}", e))?;
+    if !app_dir.exists() {
+        fs::create_dir_all(&app_dir).map_err(|e| format!("创建 AppData 目录失败: {}", e))?;
+    }
+    Ok(app_dir.join("projects_index.json"))
+}
+
+#[tauri::command]
+fn load_recent_projects_custom(app: tauri::AppHandle) -> Result<String, String> {
+    let index_path = get_app_index_path(&app)?;
+    if index_path.exists() {
+        fs::read_to_string(&index_path).map_err(|e| e.to_string())
+    } else {
+        Ok("[]".to_string())
+    }
+}
+
+#[tauri::command]
+fn save_recent_projects_custom(app: tauri::AppHandle, content: String) -> Result<(), String> {
+    let index_path = get_app_index_path(&app)?;
+    fs::write(index_path, content).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn read_image_data_url(project_path: String, relative_path: String) -> Result<String, String> {
     use base64::Engine;
@@ -144,6 +172,8 @@ pub fn run() {
             read_binary_file,
             read_image_data_url,
             save_image_binary,
+            load_recent_projects_custom,
+            save_recent_projects_custom,
             start_mcp_server_rust,
             stop_mcp_server_rust,
             get_mcp_status_rust

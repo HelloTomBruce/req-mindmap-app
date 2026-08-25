@@ -17,8 +17,6 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { Download, Layout, Plus, CheckCircle2, Home, Server, RefreshCw } from 'lucide-react';
 import './App.css';
 
-const RECENT_PROJECTS_KEY = 'req_mindmap_recent_projects';
-
 export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'manager' | 'editor'>('manager');
   const [recentProjects, setRecentProjects] = useState<ProjectMeta[]>([]);
@@ -240,23 +238,30 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem(RECENT_PROJECTS_KEY);
-    if (saved) {
+    const initProjects = async () => {
       try {
-        const list: ProjectMeta[] = JSON.parse(saved);
-        setRecentProjects(list);
-        if (list.length > 0) {
-          invoke('start_mcp_server_rust', { port: 6001, projectPath: list[0].path }).catch(console.error);
+        const saved = await invoke<string>('load_recent_projects_custom');
+        if (saved) {
+          const list: ProjectMeta[] = JSON.parse(saved);
+          setRecentProjects(list);
+          if (list.length > 0) {
+            invoke('start_mcp_server_rust', { port: 6001, projectPath: list[0].path }).catch(console.error);
+          }
         }
       } catch (e) {
         console.error('Failed to parse recent projects', e);
       }
-    }
+    };
+    initProjects();
   }, []);
 
-  const saveRecentProjects = (list: ProjectMeta[]) => {
+  const saveRecentProjects = async (list: ProjectMeta[]) => {
     setRecentProjects(list);
-    localStorage.setItem(RECENT_PROJECTS_KEY, JSON.stringify(list));
+    try {
+      await invoke('save_recent_projects_custom', { content: JSON.stringify(list, null, 2) });
+    } catch (e) {
+      console.error('Failed to save recent projects to AppData:', e);
+    }
   };
 
   const countNodes = (node: MindNode): number => {

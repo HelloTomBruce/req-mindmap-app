@@ -3,6 +3,8 @@ import { check, Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { RefreshCw, Download, CheckCircle, AlertTriangle, X } from 'lucide-react';
 
+import pkg from '../../package.json';
+
 interface UpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -108,7 +110,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <CheckCircle size={44} color="#52c41a" style={{ marginBottom: '12px' }} />
             <h4 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>当前已是最新版本</h4>
-            <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>ReqMindmark v1.0.0 已处于最佳运行状态</p>
+            <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>ReqMindmark v{pkg.version} 已处于最佳运行状态</p>
           </div>
         )}
 

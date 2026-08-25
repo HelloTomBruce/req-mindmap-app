@@ -143,6 +143,49 @@ pub async fn handle_mcp_rpc(
                             },
                             "required": ["node_id", "status"]
                         }
+                    },
+                    {
+                        "name": "add_node",
+                        "description": "向需求思维导图中添加一个新的子节点，并自动创建关联的 Markdown 需求文档",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "parent_id": { "type": "string", "description": "父节点的 ID" },
+                                "title": { "type": "string", "description": "节点标题" },
+                                "priority": { "type": "string", "description": "优先级 (P0, P1, P2, P3)", "enum": ["P0", "P1", "P2", "P3"] },
+                                "status": { "type": "string", "description": "初始状态 (draft, todo, in_progress, completed)", "enum": ["draft", "todo", "in_progress", "completed"] },
+                                "tags": { "type": "array", "items": { "type": "string" }, "description": "节点标签列表" },
+                                "content": { "type": "string", "description": "节点对应的初始 Markdown 文档内容" }
+                            },
+                            "required": ["parent_id", "title"]
+                        }
+                    },
+                    {
+                        "name": "update_node",
+                        "description": "更新需求思维导图中指定节点的元数据信息（标题、优先级、状态、标签、Markdown 详细文档）",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "node_id": { "type": "string", "description": "需要修改的节点 ID" },
+                                "title": { "type": "string", "description": "新的节点标题" },
+                                "priority": { "type": "string", "description": "新的优先级 (P0, P1, P2, P3)" },
+                                "status": { "type": "string", "description": "新的状态 (draft, todo, in_progress, completed)" },
+                                "tags": { "type": "array", "items": { "type": "string" }, "description": "新的标签列表" },
+                                "content": { "type": "string", "description": "新的 Markdown 文档完整内容" }
+                            },
+                            "required": ["node_id"]
+                        }
+                    },
+                    {
+                        "name": "delete_node",
+                        "description": "从需求思维导图中删除指定的节点及其所有子节点，同时清理关联的 Markdown 文件",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "node_id": { "type": "string", "description": "要删除的节点 ID" }
+                            },
+                            "required": ["node_id"]
+                        }
                     }
                 ]
             }
@@ -328,6 +371,220 @@ pub async fn handle_mcp_rpc(
                 "jsonrpc": "2.0",
                 "id": id,
                 "error": { "code": -32603, "message": "无法找到指定节点并更新状态" }
+            })).await;
+        }
+
+        if tool_name == "add_node" {
+            let parent_id = args.get("parent_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let title = args.get("title").and_then(|v| v.as_str()).unwrap_or("新节点").to_string();
+            let priority = args.get("priority").and_then(|v| v.as_str()).unwrap_or("P1").to_string();
+            let status = args.get("status").and_then(|v| v.as_str()).unwrap_or("todo").to_string();
+            let tags = args.get("tags").cloned().unwrap_or(json!([]));
+            let content = args.get("content").and_then(|v| v.as_str()).unwrap_or("").to_string();
+
+            let config_path = Path::new(&p_path).join(".requirements.json");
+            if let Ok(json_str) = fs::read_to_string(&config_path) {
+                if let Ok(mut val) = serde_json::from_str::<Value>(&json_str) {
+                    let new_node_id = format!("node-{}", chrono::Local::now().timestamp_millis());
+                    let doc_rel_path = format!("modules/{}.md", new_node_id);
+                    let doc_full_path = Path::new(&p_path).join(&doc_rel_path);
+
+                    if let Some(parent) = doc_full_path.parent() {
+                        let _ = fs::create_dir_all(parent);
+                    }
+                    let doc_content = if content.is_empty() {
+                        format!("# {}\n\n暂无详细内容。", title)
+                    } else {
+                        content
+                    };
+                    let _ = fs::write(&doc_full_path, doc_content);
+
+                    let new_node = json!({
+                        "id": new_node_id,
+                        "title": title,
+                        "docPath": doc_rel_path,
+                        "status": status,
+                        "priority": priority,
+                        "tags": tags,
+                        "children": []
+                    });
+
+                    fn insert_child(n: &mut Value, target_id: &str, child: Value) -> bool {
+                        if n.get("id").and_then(|v| v.as_str()) == Some(target_id) {
+                            if n.get("children").is_none() {
+                                n["children"] = json!([]);
+                            }
+                            if let Some(children) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                                children.push(child);
+                                return true;
+                            }
+                        }
+                        if let Some(children) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                            for c in children {
+                                if insert_child(c, target_id, child.clone()) {
+                                    return true;
+                                }
+                            }
+                        }
+                        false
+                    }
+
+                    if let Some(root) = val.get_mut("root") {
+                        if insert_child(root, &parent_id, new_node.clone()) {
+                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap());
+                            add_log(&state, tool_name.to_string(), args, "success".to_string());
+                            return send_rpc_response(&state, json!({
+                                "jsonrpc": "2.0",
+                                "id": id,
+                                "result": { "content": [{ "type": "text", "text": format!("成功添加子节点 '{}' (ID: {})", title, new_node_id) }] }
+                            })).await;
+                        }
+                    }
+                }
+            }
+            add_log(&state, tool_name.to_string(), args, "error".to_string());
+            return send_rpc_response(&state, json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": { "code": -32603, "message": "无法找到指定的父节点 parent_id" }
+            })).await;
+        }
+
+        if tool_name == "update_node" {
+            let node_id = args.get("node_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let config_path = Path::new(&p_path).join(".requirements.json");
+
+            if let Ok(json_str) = fs::read_to_string(&config_path) {
+                if let Ok(mut val) = serde_json::from_str::<Value>(&json_str) {
+                    let mut doc_path_to_update = None;
+
+                    fn update_node_data(n: &mut Value, target_id: &str, args: &Value, doc_path_out: &mut Option<String>) -> bool {
+                        if n.get("id").and_then(|v| v.as_str()) == Some(target_id) {
+                            if let Some(t) = args.get("title").and_then(|v| v.as_str()) {
+                                n["title"] = json!(t);
+                            }
+                            if let Some(p) = args.get("priority").and_then(|v| v.as_str()) {
+                                n["priority"] = json!(p);
+                            }
+                            if let Some(s) = args.get("status").and_then(|v| v.as_str()) {
+                                n["status"] = json!(s);
+                            }
+                            if let Some(tg) = args.get("tags") {
+                                n["tags"] = tg.clone();
+                            }
+                            if let Some(dp) = n.get("docPath").and_then(|v| v.as_str()) {
+                                *doc_path_out = Some(dp.to_string());
+                            }
+                            return true;
+                        }
+                        if let Some(children) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                            for c in children {
+                                if update_node_data(c, target_id, args, doc_path_out) {
+                                    return true;
+                                }
+                            }
+                        }
+                        false
+                    }
+
+                    if let Some(root) = val.get_mut("root") {
+                        if update_node_data(root, &node_id, &args, &mut doc_path_to_update) {
+                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap());
+
+                            if let Some(c) = args.get("content").and_then(|v| v.as_str()) {
+                                if let Some(dp) = doc_path_to_update {
+                                    let doc_full_path = Path::new(&p_path).join(dp);
+                                    let _ = fs::write(doc_full_path, c);
+                                }
+                            }
+
+                            add_log(&state, tool_name.to_string(), args, "success".to_string());
+                            return send_rpc_response(&state, json!({
+                                "jsonrpc": "2.0",
+                                "id": id,
+                                "result": { "content": [{ "type": "text", "text": format!("节点 {} 信息已更新", node_id) }] }
+                            })).await;
+                        }
+                    }
+                }
+            }
+            add_log(&state, tool_name.to_string(), args, "error".to_string());
+            return send_rpc_response(&state, json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": { "code": -32603, "message": "未找到指定的节点 node_id" }
+            })).await;
+        }
+
+        if tool_name == "delete_node" {
+            let node_id = args.get("node_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let config_path = Path::new(&p_path).join(".requirements.json");
+
+            if let Ok(json_str) = fs::read_to_string(&config_path) {
+                if let Ok(mut val) = serde_json::from_str::<Value>(&json_str) {
+                    fn collect_doc_paths(n: &Value, docs: &mut Vec<String>) {
+                        if let Some(dp) = n.get("docPath").and_then(|v| v.as_str()) {
+                            if dp != "index.md" {
+                                docs.push(dp.to_string());
+                            }
+                        }
+                        if let Some(children) = n.get("children").and_then(|v| v.as_array()) {
+                            for c in children {
+                                collect_doc_paths(c, docs);
+                            }
+                        }
+                    }
+
+                    fn remove_node(n: &mut Value, target_id: &str, deleted_docs: &mut Vec<String>) -> bool {
+                        if let Some(children) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                            let mut found_idx = None;
+                            for (idx, c) in children.iter().enumerate() {
+                                if c.get("id").and_then(|v| v.as_str()) == Some(target_id) {
+                                    found_idx = Some(idx);
+                                    collect_doc_paths(c, deleted_docs);
+                                    break;
+                                }
+                            }
+                            if let Some(idx) = found_idx {
+                                children.remove(idx);
+                                return true;
+                            }
+                            for c in children.iter_mut() {
+                                if remove_node(c, target_id, deleted_docs) {
+                                    return true;
+                                }
+                            }
+                        }
+                        false
+                    }
+
+                    let mut deleted_docs = Vec::new();
+                    if let Some(root) = val.get_mut("root") {
+                        if remove_node(root, &node_id, &mut deleted_docs) {
+                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap());
+
+                            for rel_doc in deleted_docs {
+                                let doc_full = Path::new(&p_path).join(rel_doc);
+                                if doc_full.exists() {
+                                    let _ = fs::remove_file(doc_full);
+                                }
+                            }
+
+                            add_log(&state, tool_name.to_string(), args, "success".to_string());
+                            return send_rpc_response(&state, json!({
+                                "jsonrpc": "2.0",
+                                "id": id,
+                                "result": { "content": [{ "type": "text", "text": format!("节点 {} 及其关联子文档已彻底删除", node_id) }] }
+                            })).await;
+                        }
+                    }
+                }
+            }
+            add_log(&state, tool_name.to_string(), args, "error".to_string());
+            return send_rpc_response(&state, json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": { "code": -32603, "message": "无法找到指定的节点或无法删除根节点" }
             })).await;
         }
     }
