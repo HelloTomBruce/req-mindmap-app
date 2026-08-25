@@ -24,9 +24,9 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkyRDRGOUYwM0M0NTEwNzgKUldSY01PdnB3TUZ2TFNkdm82SmpUUk9kNWZkdnN1WGNrRGRvYnR3ZHFadUR4TGJsc0FrcUNiNlQK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEREMTcyRkFEOERCOTI3RjMKUldUeko3bU5yUzhYM2VZMDRMZWk2VjQrRTlsQmU4UllaUzdhVnRrcnEyOU9NencrWHJra0xDNk8K",
       "endpoints": [
-        "https://github.com/reqmindmark/req-mindmark-app/releases/latest/download/latest.json"
+        "https://github.com/HelloTomBruce/req-mindmap-app/releases/latest/download/latest.json"
       ]
     }
   },

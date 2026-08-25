@@ -3,7 +3,7 @@ name: Release & Build Cross-Platform Bundles
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -14,10 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin --bundles dmg,app'
-          - platform: 'windows-latest'
-            args: '--bundles nsis'
+          - platform: "macos-latest"
+            args: "--target universal-apple-darwin --bundles dmg,app"
+          - platform: "windows-latest"
+            args: "--bundles nsis"
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -28,7 +28,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -46,9 +46,9 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
-          releaseName: 'ReqMindmark v__VERSION__'
-          releaseBody: '请参阅 Commit 提交历史了解更新详情。'
-          releaseDraft: true
+          releaseName: "ReqMindmark v__VERSION__"
+          releaseBody: "请参阅 Commit 提交历史了解更新详情。"
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
