@@ -622,6 +622,7 @@ export const App: React.FC = () => {
           onDeleteProjectMeta={handleDeleteProjectMeta}
           onOpenCreateModal={() => setIsCreateModalOpen(true)}
           onOpenImportModal={() => setIsImportModalOpen(true)}
+          onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
         />
 
         {isCreateModalOpen && (

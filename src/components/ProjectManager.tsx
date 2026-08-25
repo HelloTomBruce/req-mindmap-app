@@ -1,5 +1,5 @@
 import React from 'react';
-import { HardDrive, Plus, Folder, FileText, Trash2, ArrowRight, FileUp } from 'lucide-react';
+import { HardDrive, Plus, Folder, FileText, Trash2, ArrowRight, FileUp, RefreshCw } from 'lucide-react';
 
 export interface ProjectMeta {
   id: string;
@@ -16,6 +16,7 @@ interface ProjectManagerProps {
   onDeleteProjectMeta: (project: ProjectMeta) => void;
   onOpenCreateModal: () => void;
   onOpenImportModal: () => void;
+  onOpenUpdateModal: () => void;
 }
 
 export const ProjectManager: React.FC<ProjectManagerProps> = ({
@@ -24,12 +25,13 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
   onOpenFolder,
   onDeleteProjectMeta,
   onOpenCreateModal,
-  onOpenImportModal
+  onOpenImportModal,
+  onOpenUpdateModal
 }) => {
   return (
     <div className="project-manager-container">
       <div className="project-manager-card">
-        <header className="manager-header">
+        <header className="manager-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="brand">
             <HardDrive size={28} className="brand-icon" />
             <div>
@@ -37,6 +39,11 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               <p>以思维导图形式维护模块关系与 Markdown 需求文档</p>
             </div>
           </div>
+
+          <button className="btn outline" onClick={onOpenUpdateModal} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <RefreshCw size={14} />
+            检查更新
+          </button>
         </header>
 
         <div className="manager-actions-bar">
