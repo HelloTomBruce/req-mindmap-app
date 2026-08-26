@@ -14,7 +14,7 @@ import { UpdateModal } from './components/UpdateModal';
 import { mcpServerManager, MCPLogItem } from './mcpServerManager';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Download, Layout, Plus, CheckCircle2, Home, Server, RefreshCw } from 'lucide-react';
+import { Download, Layout, Plus, CheckCircle2, Home } from 'lucide-react';
 import './App.css';
 
 export const App: React.FC = () => {
@@ -617,12 +617,14 @@ export const App: React.FC = () => {
       <>
         <ProjectManager
           recentProjects={recentProjects}
+          mcpStatus={mcpStatus}
           onOpenProject={handleOpenProject}
           onOpenFolder={handleSelectFolder}
           onDeleteProjectMeta={handleDeleteProjectMeta}
           onOpenCreateModal={() => setIsCreateModalOpen(true)}
           onOpenImportModal={() => setIsImportModalOpen(true)}
           onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
+          onOpenMCPModal={() => setIsMCPModalOpen(true)}
         />
 
         {isCreateModalOpen && (
@@ -649,6 +651,11 @@ export const App: React.FC = () => {
             onConfirm={handleDeleteProjectConfirm}
           />
         )}
+        {/* 远程版本自动检查更新弹窗 */}
+        <UpdateModal
+          isOpen={isUpdateModalOpen}
+          onClose={() => setIsUpdateModalOpen(false)}
+        />
       </>
     );
   }
@@ -666,24 +673,6 @@ export const App: React.FC = () => {
         </div>
 
         <div className="header-actions">
-          <button
-            className="btn outline"
-            title="检查远程软件版本升级"
-            onClick={() => setIsUpdateModalOpen(true)}
-          >
-            <RefreshCw size={14} />
-            检查更新
-          </button>
-
-          <button
-            className={`btn outline ${mcpStatus.isRunning ? 'mcp-active' : ''}`}
-            title="查看 MCP 服务配置与 AI 接入连接"
-            onClick={() => setIsMCPModalOpen(true)}
-          >
-            <Server size={14} color={mcpStatus.isRunning ? '#10b981' : '#64748b'} />
-            {mcpStatus.isRunning ? `🔌 AI 接入中 (MCP: ${mcpStatus.port})` : '🔌 AI 接入 (MCP)'}
-          </button>
-
           <button className="btn primary" onClick={() => setIsExportModalOpen(true)}>
             <Download size={14} /> 导出 PRD 文档
           </button>
