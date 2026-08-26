@@ -50,7 +50,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="sidebar-content">
-        <div className="section-label">模块文件树</div>
         {renderTreeItem(rootNode)}
       </div>
     </aside>

@@ -498,6 +498,10 @@ export const App: React.FC = () => {
 
   const handleSelectNode = (node: MindNode) => {
     setSelectedNodeId(node.id);
+  };
+
+  const handleOpenNodeDrawer = (node: MindNode) => {
+    setSelectedNodeId(node.id);
     setIsDrawerOpen(true);
   };
 
@@ -684,7 +688,7 @@ export const App: React.FC = () => {
         <Sidebar
           rootNode={projectData.root}
           selectedNodeId={selectedNodeId}
-          onSelectNode={handleSelectNode}
+          onSelectNode={handleOpenNodeDrawer}
           projectName={projectData.projectName}
         />
 
@@ -703,6 +707,8 @@ export const App: React.FC = () => {
             rootNode={projectData.root}
             selectedNodeId={selectedNodeId}
             onSelectNode={handleSelectNode}
+            onOpenDrawer={() => setIsDrawerOpen(true)}
+            onRenameNode={(nodeId, newTitle) => handleUpdateMeta(nodeId, { title: newTitle })}
             onAddChildNode={handleAddChildNode}
             onDeleteNode={handleDeleteNode}
             onToggleCollapse={handleToggleCollapse}
