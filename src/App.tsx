@@ -15,7 +15,7 @@ import { UpdateModal } from './components/UpdateModal';
 import { mcpServerManager, MCPLogItem } from './mcpServerManager';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch, Server, RefreshCw } from 'lucide-react';
+import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch } from 'lucide-react';
 import './App.css';
 
 export const App: React.FC = () => {

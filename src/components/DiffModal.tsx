@@ -11,19 +11,16 @@ interface DiffModalProps {
 
 export const DiffModal: React.FC<DiffModalProps> = ({ projectPath, filePath, commitHash, onClose }) => {
   const [diffText, setDiffText] = useState('');
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     const fetchDiff = async () => {
-      setLoading(true);
+      setDiffText('加载中...');
       try {
         const text = await gitDiff(projectPath, filePath, commitHash);
         if (active) setDiffText(text || '无差异，或者这是二进制文件。');
       } catch (e) {
         if (active) setDiffText(`加载差异失败: ${e}`);
-      } finally {
-        if (active) setLoading(false);
       }
     };
     fetchDiff();
