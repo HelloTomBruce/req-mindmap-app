@@ -358,7 +358,8 @@ button, input, select, textarea {
   gap: 16px;
   max-height: 340px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 6px 6px 6px 6px;
+  margin: -6px -6px -6px -6px; /* offset padding so it aligns nicely with other elements */
 }
 
 .project-item-card {
@@ -889,6 +890,12 @@ button, input, select, textarea {
   background-color: var(--bg-app);
 }
 
+.drawer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .drawer-meta-bar {
   padding: 10px 16px;
   background-color: var(--bg-app);
@@ -1013,10 +1020,43 @@ button, input, select, textarea {
   gap: 10px;
 }
 
+.close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  transition: all var(--transition-fast);
+}
+
+.close-btn:hover {
+  background: var(--bg-subtle-hover);
+  color: var(--text-primary);
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.folder-picker-group {
+  display: flex;
+  gap: 8px;
+}
+
+.folder-picker-group .form-input {
+  flex: 1;
+}
+
+.modal-content.create-project-modal,
+.modal-content.import-md-modal {
+  width: 500px;
+  max-width: 90vw;
 }
 
 .form-group label {
@@ -1465,4 +1505,239 @@ button, input, select, textarea {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* ==================== 12. Activity Bar & Git Sidebar ==================== */
+.activity-bar {
+  width: 48px;
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 16px;
+  z-index: 10;
+}
+
+.activity-icon {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-icon:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-subtle);
+}
+
+.activity-icon.active {
+  color: var(--primary-600);
+  background-color: var(--primary-50);
+}
+
+.git-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.git-commit-box {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.git-commit-box textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  resize: vertical;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.git-commit-box textarea:focus {
+  outline: none;
+  border-color: var(--primary-500);
+}
+
+.commit-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.git-changes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.git-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.git-empty-state {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.git-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.git-file-item:hover {
+  background-color: var(--bg-subtle);
+}
+
+.git-badge {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: bold;
+  width: 18px;
+  text-align: center;
+}
+
+.git-badge.M { color: #d97706; }
+.git-badge.A { color: #16a34a; }
+.git-badge.D { color: #dc2626; }
+
+.git-file-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-file-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.git-file-item:hover .git-file-actions {
+  opacity: 1;
+}
+
+.icon-action {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.icon-action:hover {
+  background-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* ==================== 13. Diff Modal ==================== */
+.diff-modal {
+  width: 90vw;
+  max-width: 1000px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-viewer {
+  flex: 1;
+  overflow: auto;
+  background-color: #1e1e1e; /* 经典深色代码背景 */
+  color: #d4d4d4;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.diff-empty {
+  padding: 24px;
+  text-align: center;
+  color: #888;
+}
+
+.diff-line {
+  display: flex;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-line-number {
+  width: 50px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 12px;
+  color: #6e7681;
+  user-select: none;
+  background-color: #1e1e1e;
+  border-right: 1px solid #333;
+  margin-right: 12px;
+}
+
+.diff-line-content {
+  flex: 1;
+}
+
+.diff-add {
+  background-color: rgba(46, 160, 67, 0.15);
+}
+
+.diff-add .diff-line-content {
+  color: #7ee787;
+}
+
+.diff-remove {
+  background-color: rgba(248, 81, 73, 0.15);
+}
+
+.diff-remove .diff-line-content {
+  color: #ffa198;
+}
+
+.diff-header {
+  color: #79c0ff;
+  background-color: rgba(56, 139, 253, 0.1);
+  font-weight: bold;
+}
+
+.git-commit-item:hover {
+  background-color: var(--bg-subtle);
+  cursor: pointer;
 }

@@ -4,6 +4,7 @@ import { INITIAL_PROJECT_DATA, INITIAL_DOC_CONTENTS } from './mockData';
 import { MindmapCanvas } from './components/MindmapCanvas';
 import { MarkdownDrawer } from './components/MarkdownDrawer';
 import { Sidebar } from './components/Sidebar';
+import { GitSidebar } from './components/GitSidebar';
 import { ProjectManager, ProjectMeta } from './components/ProjectManager';
 import { ExportPRDModal } from './components/ExportPRDModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
@@ -14,7 +15,7 @@ import { UpdateModal } from './components/UpdateModal';
 import { mcpServerManager, MCPLogItem } from './mcpServerManager';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Download, Layout, Plus, CheckCircle2, Home } from 'lucide-react';
+import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch, Server, RefreshCw } from 'lucide-react';
 import './App.css';
 
 export const App: React.FC = () => {
@@ -344,6 +345,15 @@ export const App: React.FC = () => {
     // 磁盘持久化
     await syncToDisk(targetPath, newProject, newDocsMap);
 
+    // Git 初始化与首次提交
+    try {
+      await invoke('run_git_command', { cwd: targetPath, args: ['init'] });
+      await invoke('run_git_command', { cwd: targetPath, args: ['add', '.'] });
+      await invoke('run_git_command', { cwd: targetPath, args: ['commit', '-m', 'Initial commit'] });
+    } catch (e) {
+      console.warn('Git init failed:', e);
+    }
+
     const meta: ProjectMeta = {
       id: `proj-${Date.now()}`,
       name,
@@ -549,7 +559,41 @@ export const App: React.FC = () => {
     syncToDisk(currentProjectPath, updatedProject, updatedDocsMap);
   };
 
-  const handleDeleteNode = (nodeId: string) => {
+  const handleDeleteNode = async (nodeId: string) => {
+    if (nodeId === projectData.root.id) {
+      alert('根节点无法删除');
+      return;
+    }
+
+    let targetTitle = '该节点';
+    const findTitle = (node: MindNode) => {
+      if (node.id === nodeId) targetTitle = node.title;
+      if (node.children) node.children.forEach(findTitle);
+    };
+    findTitle(projectData.root);
+
+    const { ask } = await import('@tauri-apps/plugin-dialog');
+    const confirmed = await ask(`确定要删除 "${targetTitle}" 及其所有子节点吗？\n删除后将无法恢复，对应的 markdown 内容也会被移除。`, {
+      title: '二次确认',
+      kind: 'warning'
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    // 收集要删除的文档路径，并清理 docsMap
+    const deletedDocPaths: string[] = [];
+    const collectDeletedDocs = (node: MindNode) => {
+      deletedDocPaths.push(node.docPath);
+      if (node.children) node.children.forEach(collectDeletedDocs);
+    };
+    
+    const nodeToDelete = findNodeById(projectData.root, nodeId);
+    if (nodeToDelete) {
+      collectDeletedDocs(nodeToDelete);
+    }
+
     const deleteFromTree = (node: MindNode): MindNode => {
       if (node.children) {
         return {
@@ -561,14 +605,32 @@ export const App: React.FC = () => {
     };
 
     const updatedProject = { ...projectData, root: deleteFromTree(projectData.root) };
+    
+    // 从内存中移除这些文档内容
+    const updatedDocsMap = { ...docsMap };
+    for (const p of deletedDocPaths) {
+      delete updatedDocsMap[p];
+    }
+    
     setProjectData(updatedProject);
+    setDocsMap(updatedDocsMap);
 
     if (selectedNodeId === nodeId) {
       setSelectedNodeId(null);
       setIsDrawerOpen(false);
     }
 
-    syncToDisk(currentProjectPath, updatedProject, docsMap);
+    // 更新到磁盘
+    syncToDisk(currentProjectPath, updatedProject, updatedDocsMap);
+    
+    // 在物理磁盘上删除对应的 Markdown 文件
+    for (const relPath of deletedDocPaths) {
+      try {
+        await invoke('remove_file_custom', { path: `${currentProjectPath}/${relPath}` });
+      } catch (err) {
+        console.warn('Failed to delete file on disk:', relPath, err);
+      }
+    }
   };
 
   const handleToggleCollapse = (nodeId: string) => {
@@ -616,6 +678,8 @@ export const App: React.FC = () => {
     syncToDisk(currentProjectPath, projectData, updatedDocsMap);
   };
 
+  const [activeSidebarView, setActiveSidebarView] = useState<'explorer' | 'git'>('explorer');
+
   if (viewMode === 'manager') {
     return (
       <>
@@ -660,6 +724,16 @@ export const App: React.FC = () => {
           isOpen={isUpdateModalOpen}
           onClose={() => setIsUpdateModalOpen(false)}
         />
+
+        {/* MCP AI 服务管理弹窗 (首页侧) */}
+        {isMCPModalOpen && (
+          <MCPManagerModal
+            status={mcpStatus}
+            logs={mcpLogs}
+            onClose={() => setIsMCPModalOpen(false)}
+            onToggleServer={handleToggleMCPServer}
+          />
+        )}
       </>
     );
   }
@@ -685,12 +759,34 @@ export const App: React.FC = () => {
 
       {/* 主体布局 */}
       <div className="app-body">
-        <Sidebar
-          rootNode={projectData.root}
-          selectedNodeId={selectedNodeId}
-          onSelectNode={handleOpenNodeDrawer}
-          projectName={projectData.projectName}
-        />
+        {/* Activity Bar (最左侧活动栏) */}
+        <div className="activity-bar">
+          <button 
+            className={`activity-icon ${activeSidebarView === 'explorer' ? 'active' : ''}`}
+            onClick={() => setActiveSidebarView('explorer')}
+            title="资源管理器 (Explorer)"
+          >
+            <Folder size={20} />
+          </button>
+          <button 
+            className={`activity-icon ${activeSidebarView === 'git' ? 'active' : ''}`}
+            onClick={() => setActiveSidebarView('git')}
+            title="源代码管理 (Git)"
+          >
+            <GitBranch size={20} />
+          </button>
+        </div>
+
+        {activeSidebarView === 'explorer' ? (
+          <Sidebar
+            rootNode={projectData.root}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={handleOpenNodeDrawer}
+            projectName={projectData.projectName}
+          />
+        ) : (
+          <GitSidebar projectPath={currentProjectPath} />
+        )}
 
         <main className="app-main-canvas">
           <div className="canvas-header-bar">

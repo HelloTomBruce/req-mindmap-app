@@ -183,7 +183,7 @@ const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
           <button
             title="删除节点"
             className="action-btn delete"
-            onClick={() => onDeleteNode(node.id)}
+            onClick={(e) => { e.stopPropagation(); onDeleteNode(node.id); }}
           >
             <Trash2 size={13} />
           </button>
@@ -319,6 +319,21 @@ export const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
     [onSelectNode, onOpenDrawer]
   );
 
+  // 监听全局删除快捷键
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 避免在输入框里按退格键时误删节点
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if ((e.key === 'Backspace' || e.key === 'Delete') && selectedNodeId) {
+        onDeleteNode(selectedNodeId);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [selectedNodeId, onDeleteNode]);
+
   return (
     <div className="react-flow-mindmap-container">
       <ReactFlow
@@ -329,6 +344,7 @@ export const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
         onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
         onNodeDoubleClick={handleNodeDoubleClick}
+        deleteKeyCode={null} // 禁用自带的删除，改用上面自定义的拦截，以支持二次确认
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}

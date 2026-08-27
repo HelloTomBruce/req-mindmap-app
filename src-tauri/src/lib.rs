@@ -39,8 +39,32 @@ fn read_binary_file(path: String) -> Result<Vec<u8>, String> {
 }
 
 #[tauri::command]
+fn run_git_command(cwd: String, args: Vec<String>) -> Result<String, String> {
+    let output = std::process::Command::new("git")
+        .current_dir(&cwd)
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute git: {}", e))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
+#[tauri::command]
 fn read_text_file_custom(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn remove_file_custom(path: String) -> Result<(), String> {
+    if Path::new(&path).exists() {
+        fs::remove_file(&path).map_err(|e| e.to_string())
+    } else {
+        Ok(())
+    }
 }
 
 fn get_app_index_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
@@ -167,6 +191,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             write_text_file_custom,
             read_text_file_custom,
+            remove_file_custom,
             delete_dir_all_custom,
             copy_local_file_custom,
             read_binary_file,
@@ -176,7 +201,8 @@ pub fn run() {
             save_recent_projects_custom,
             start_mcp_server_rust,
             stop_mcp_server_rust,
-            get_mcp_status_rust
+            get_mcp_status_rust,
+            run_git_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
