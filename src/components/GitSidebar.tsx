@@ -62,25 +62,27 @@ export const GitSidebar: React.FC<GitSidebarProps> = ({ projectPath }) => {
   const handleAdd = async (path: string, e: React.MouseEvent) => {
     e.stopPropagation();
     await gitAdd(projectPath, path);
-    fetchStatus();
+    await fetchStatus();
   };
 
   const handleUnstage = async (path: string, e: React.MouseEvent) => {
     e.stopPropagation();
     await gitUnstage(projectPath, path);
-    fetchStatus();
+    await fetchStatus();
   };
 
   const handleAddAll = async () => {
     await gitAdd(projectPath, '.');
-    fetchStatus();
+    await fetchStatus();
   };
 
   const handleDiscard = async (path: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm(`确定要撤销对 ${path} 的所有修改吗？`)) {
+    const { ask } = await import('@tauri-apps/plugin-dialog');
+    const confirmed = await ask(`确定要撤销对 ${path} 的所有修改吗？`, { title: '确认撤销', kind: 'warning' });
+    if (confirmed) {
       await gitCheckout(projectPath, path);
-      fetchStatus();
+      await fetchStatus();
     }
   };
 
@@ -89,13 +91,18 @@ export const GitSidebar: React.FC<GitSidebarProps> = ({ projectPath }) => {
     try {
       await gitCommit(projectPath, commitMessage);
       setCommitMessage('');
-      fetchStatus();
+      await fetchStatus();
     } catch (e) {
-      alert('提交失败: ' + String(e));
+      const { message } = await import('@tauri-apps/plugin-dialog');
+      await message('提交失败: ' + String(e), { title: '错误', kind: 'error' });
     }
   };
 
+  // git status --porcelain 输出格式: XY path
+  // X = 暂存区状态, Y = 工作区状态。' ' 表示无变更, '?' 表示未追踪。
+  // 暂存区有变更的文件: X 不是空格且不是 '?' (未追踪文件不在暂存区)
   const stagedFiles = statusList.filter(item => item.status[0] !== ' ' && item.status[0] !== '?');
+  // 工作区有变更的文件: Y 不是空格 (含 'M', 'D', '?' 等)
   const unstagedFiles = statusList.filter(item => item.status[1] !== ' ' && item.status[1] !== undefined);
 
   return (

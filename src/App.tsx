@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ProjectData, MindNode } from './types';
 import { INITIAL_PROJECT_DATA, INITIAL_DOC_CONTENTS } from './mockData';
 import { MindmapCanvas } from './components/MindmapCanvas';
@@ -12,13 +12,15 @@ import { ImportMdModal } from './components/ImportMdModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { MCPManagerModal } from './components/MCPManagerModal';
 import { UpdateModal } from './components/UpdateModal';
-import { mcpServerManager, MCPLogItem } from './mcpServerManager';
+import { clearImageCache } from './components/MarkdownDrawer';
+import { mcpServerManager } from './mcpServerManager';
+import { useMcpPolling, loadDocsForTree } from './hooks/useMcpPolling';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch } from 'lucide-react';
 import './App.css';
 
-export const App: React.FC = () => {
+const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'manager' | 'editor'>('manager');
   const [recentProjects, setRecentProjects] = useState<ProjectMeta[]>([]);
   
@@ -35,18 +37,23 @@ export const App: React.FC = () => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [targetDeleteProject, setTargetDeleteProject] = useState<ProjectMeta | null>(null);
 
-  const [mcpStatus, setMcpStatus] = useState(mcpServerManager.getStatus());
-  const [mcpLogs, setMcpLogs] = useState<MCPLogItem[]>([]);
+  const { mcpStatus, mcpLogs } = useMcpPolling({
+    currentProjectPath,
+    onMcpWriteReload: (loadedProjectData, loadedDocsMap) => {
+      setProjectData(loadedProjectData);
+      setDocsMap(loadedDocsMap);
+    }
+  });
 
-  // 轮询同步 Rust 原生 MCP SSE 服务的状态与 AI 调用日志
+  const syncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 组件卸载时清理防抖定时器
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const updated = await mcpServerManager.fetchStatusFromRust();
-      setMcpStatus(updated);
-      setMcpLogs([...mcpServerManager.getLogs()]);
-    }, 1000);
-
-    return () => clearInterval(interval);
+    return () => {
+      if (syncDebounceRef.current) {
+        clearTimeout(syncDebounceRef.current);
+      }
+    };
   }, []);
 
   // 选择 md 文件
@@ -227,14 +234,15 @@ export const App: React.FC = () => {
       };
 
       const updated = [meta, ...recentProjects.filter((p) => p.path !== targetPath)];
-      saveRecentProjects(updated);
+      await saveRecentProjects(updated);
 
       setIsImportModalOpen(false);
       setViewMode('editor');
       setIsDrawerOpen(true);
     } catch (err) {
       console.error('Failed to parse md file:', err);
-      alert('解析 Markdown 文件失败');
+      const { message } = await import('@tauri-apps/plugin-dialog');
+      await message('解析 Markdown 文件失败', { title: '错误', kind: 'error' });
     }
   };
 
@@ -275,9 +283,26 @@ export const App: React.FC = () => {
     return count;
   };
 
+  // 防抖同步：用于高频编辑场景，避免每次按键都触发全量磁盘写入
+  const debouncedSyncToDisk = (pPath: string, pData: ProjectData, dMap: Record<string, string>, delay = 800) => {
+    if (!pPath) return;
+    if (syncDebounceRef.current) {
+      clearTimeout(syncDebounceRef.current);
+    }
+    syncDebounceRef.current = setTimeout(() => {
+      syncToDisk(pPath, pData, dMap);
+      syncDebounceRef.current = null;
+    }, delay);
+  };
+
   // 通过自定义 Rust 原生命令写文件，彻底告别权限 scope 限制
   const syncToDisk = async (pPath: string, pData: ProjectData, dMap: Record<string, string>) => {
     if (!pPath) return;
+    // 即时写入前取消任何待执行的防抖同步，避免延迟写入覆盖本次即时写入
+    if (syncDebounceRef.current) {
+      clearTimeout(syncDebounceRef.current);
+      syncDebounceRef.current = null;
+    }
     try {
       // 1. 写入 .requirements.json
       const configPath = `${pPath}/.requirements.json`;
@@ -363,29 +388,11 @@ export const App: React.FC = () => {
     };
 
     const updated = [meta, ...recentProjects.filter((p) => p.path !== targetPath)];
-    saveRecentProjects(updated);
+    await saveRecentProjects(updated);
 
     setIsCreateModalOpen(false);
     setViewMode('editor');
     setIsDrawerOpen(true);
-  };
-
-  // 递归读取该节点树下的所有 Markdown 文件
-  const loadDocsForTree = async (pPath: string, node: MindNode, docsMapAcc: Record<string, string>) => {
-    if (node.docPath) {
-      try {
-        const fullMdPath = `${pPath}/${node.docPath}`;
-        const content = await invoke<string>('read_text_file_custom', { path: fullMdPath });
-        docsMapAcc[node.docPath] = content;
-      } catch (e) {
-        console.warn(`Doc not found on disk: ${node.docPath}`, e);
-      }
-    }
-    if (node.children) {
-      for (const child of node.children) {
-        await loadDocsForTree(pPath, child, docsMapAcc);
-      }
-    }
   };
 
   // 切换/更新 MCP SSE 服务端口
@@ -393,14 +400,14 @@ export const App: React.FC = () => {
     const targetPort = customPort || mcpStatus.port || 6001;
     if (enable) {
       if (!currentProjectPath) {
-        alert('请先打开或创建一个需求项目');
+        const { message } = await import('@tauri-apps/plugin-dialog');
+        await message('请先打开或创建一个需求项目', { title: '提示', kind: 'warning' });
         return;
       }
       await mcpServerManager.startServer(targetPort, currentProjectPath);
     } else {
       await mcpServerManager.stopServer();
     }
-    setMcpStatus(mcpServerManager.getStatus());
   };
 
   // 从真实磁盘加载项目
@@ -420,7 +427,6 @@ export const App: React.FC = () => {
       // 更新 MCP 当前关联项目并同步到 Rust 后端
       mcpServerManager.setProjectPath(meta.path);
       await mcpServerManager.startServer(6001, meta.path);
-      setMcpStatus(mcpServerManager.getStatus());
     } catch (err) {
       console.warn('Failed to load project from disk, using fallback/current data:', err);
     }
@@ -428,6 +434,7 @@ export const App: React.FC = () => {
 
   // 打开某个项目
   const handleOpenProject = async (meta: ProjectMeta) => {
+    clearImageCache();
     setCurrentProjectPath(meta.path);
     await loadFromDisk(meta);
 
@@ -442,7 +449,7 @@ export const App: React.FC = () => {
       updated = [meta, ...recentProjects];
     }
 
-    saveRecentProjects(updated);
+    await saveRecentProjects(updated);
     setViewMode('editor');
   };
 
@@ -463,7 +470,7 @@ export const App: React.FC = () => {
           lastOpened: new Date().toLocaleDateString(),
           nodeCount: 1
         };
-        handleOpenProject(meta);
+        await handleOpenProject(meta);
       }
     } catch (e) {
       console.warn('Native dialog error:', e);
@@ -484,12 +491,13 @@ export const App: React.FC = () => {
         await invoke('delete_dir_all_custom', { path: targetDeleteProject.path });
       } catch (err) {
         console.error('Failed to wipe physical project directory:', err);
-        alert(`删除磁盘目录失败: ${err}`);
+        const { message } = await import('@tauri-apps/plugin-dialog');
+        await message(`删除磁盘目录失败: ${err}`, { title: '错误', kind: 'error' });
       }
     }
 
     const updated = recentProjects.filter((p) => p.id !== targetDeleteProject.id);
-    saveRecentProjects(updated);
+    await saveRecentProjects(updated);
     setTargetDeleteProject(null);
   };
 
@@ -516,9 +524,10 @@ export const App: React.FC = () => {
   };
 
   // 新增节点并触发落盘
-  const handleAddChildNode = (parentId: string) => {
-    const newNodeId = `node-${Date.now()}`;
-    const newDocPath = `modules/node-${Date.now()}.md`;
+  const handleAddChildNode = async (parentId: string) => {
+    const nodeIdSuffix = Math.random().toString(36).slice(2, 8);
+    const newNodeId = `node-${Date.now()}-${nodeIdSuffix}`;
+    const newDocPath = `modules/node-${Date.now()}-${nodeIdSuffix}.md`;
     const newNode: MindNode = {
       id: newNodeId,
       title: '新建需求节点',
@@ -556,12 +565,13 @@ export const App: React.FC = () => {
     setSelectedNodeId(newNodeId);
     setIsDrawerOpen(true);
 
-    syncToDisk(currentProjectPath, updatedProject, updatedDocsMap);
+    await syncToDisk(currentProjectPath, updatedProject, updatedDocsMap);
   };
 
   const handleDeleteNode = async (nodeId: string) => {
     if (nodeId === projectData.root.id) {
-      alert('根节点无法删除');
+      const { message } = await import('@tauri-apps/plugin-dialog');
+      await message('根节点无法删除', { title: '提示', kind: 'warning' });
       return;
     }
 
@@ -621,7 +631,7 @@ export const App: React.FC = () => {
     }
 
     // 更新到磁盘
-    syncToDisk(currentProjectPath, updatedProject, updatedDocsMap);
+    await syncToDisk(currentProjectPath, updatedProject, updatedDocsMap);
     
     // 在物理磁盘上删除对应的 Markdown 文件
     for (const relPath of deletedDocPaths) {
@@ -664,7 +674,7 @@ export const App: React.FC = () => {
     const updatedProject = { ...projectData, root: updateInTree(projectData.root) };
     setProjectData(updatedProject);
 
-    syncToDisk(currentProjectPath, updatedProject, docsMap);
+    debouncedSyncToDisk(currentProjectPath, updatedProject, docsMap);
   };
 
   const handleContentChange = (newContent: string) => {
@@ -675,7 +685,7 @@ export const App: React.FC = () => {
     };
     setDocsMap(updatedDocsMap);
 
-    syncToDisk(currentProjectPath, projectData, updatedDocsMap);
+    debouncedSyncToDisk(currentProjectPath, projectData, updatedDocsMap);
   };
 
   const [activeSidebarView, setActiveSidebarView] = useState<'explorer' | 'git'>('explorer');

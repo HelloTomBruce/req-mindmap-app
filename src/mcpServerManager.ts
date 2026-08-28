@@ -13,6 +13,7 @@ export class MCPServerManager {
   private isRunning: boolean = false;
   private projectPath: string = '';
   private logs: MCPLogItem[] = [];
+  private lastMcpWrite: number = 0;
 
   constructor() {}
 
@@ -25,7 +26,8 @@ export class MCPServerManager {
       isRunning: this.isRunning,
       port: this.port,
       projectPath: this.projectPath,
-      sseUrl: `http://127.0.0.1:${this.port}/sse`
+      sseUrl: `http://127.0.0.1:${this.port}/sse`,
+      lastMcpWrite: this.lastMcpWrite
     };
   }
 
@@ -40,6 +42,7 @@ export class MCPServerManager {
       if (res.port) this.port = res.port;
       this.projectPath = res.projectPath || this.projectPath;
       this.logs = res.logs || [];
+      this.lastMcpWrite = res.lastMcpWrite || 0;
       return this.getStatus();
     } catch (e) {
       console.warn('Fetch MCP status error:', e);

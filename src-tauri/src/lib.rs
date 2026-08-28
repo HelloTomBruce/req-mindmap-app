@@ -40,6 +40,19 @@ fn read_binary_file(path: String) -> Result<Vec<u8>, String> {
 
 #[tauri::command]
 fn run_git_command(cwd: String, args: Vec<String>) -> Result<String, String> {
+    // 子命令白名单，防止前端传入危险 git 操作 (如 push, config --global, rm 等)
+    const ALLOWED_SUBCOMMANDS: &[&str] = &[
+        "init", "add", "commit", "status", "log", "diff", "checkout",
+        "reset", "rm", "diff-tree", "show", "stash", "branch", "merge",
+    ];
+    if let Some(first) = args.first() {
+        if !ALLOWED_SUBCOMMANDS.contains(&first.as_str()) {
+            return Err(format!("不允许的 git 子命令: {}", first));
+        }
+    } else {
+        return Err("git 命令参数不能为空".to_string());
+    }
+
     let output = std::process::Command::new("git")
         .current_dir(&cwd)
         .args(&args)
@@ -114,6 +127,14 @@ fn read_image_data_url(project_path: String, relative_path: String) -> Result<St
 }
 
 #[tauri::command]
+fn read_image_as_base64(path: String) -> Result<String, String> {
+    use base64::Engine;
+    let bytes = fs::read(&path).map_err(|e| e.to_string())?;
+    let base64_str = base64::engine::general_purpose::STANDARD.encode(bytes);
+    Ok(base64_str)
+}
+
+#[tauri::command]
 fn save_image_binary(project_path: String, file_name: String, base64_data: String) -> Result<String, String> {
     use base64::Engine;
 
@@ -148,39 +169,10 @@ pub fn run() {
         port: std::sync::Arc::new(std::sync::Mutex::new(6001)),
         is_running: std::sync::Arc::new(std::sync::Mutex::new(false)),
         cancel_tx: std::sync::Arc::new(std::sync::Mutex::new(None)),
-        sse_tx: std::sync::Arc::new(std::sync::Mutex::new(None)),
+        sse_clients: std::sync::Arc::new(std::sync::Mutex::new(Vec::new())),
         logs: std::sync::Arc::new(std::sync::Mutex::new(Vec::new())),
+        last_mcp_write: std::sync::Arc::new(std::sync::Mutex::new(0)),
     };
-
-    let state_to_start = app_state.clone();
-    let (tx, rx) = tokio::sync::oneshot::channel::<()>();
-    {
-        let mut tx_opt = app_state.cancel_tx.lock().unwrap();
-        *tx_opt = Some(tx);
-        let mut running = app_state.is_running.lock().unwrap();
-        *running = true;
-    }
-    tauri::async_runtime::spawn(async move {
-        let addr = "0.0.0.0:6001";
-        let app = axum::Router::new()
-            .route("/sse", axum::routing::get(mcp_server::sse_handler))
-            .route("/messages", axum::routing::post(mcp_server::handle_mcp_rpc))
-            .route("/rpc", axum::routing::post(mcp_server::handle_mcp_rpc))
-            .layer(tower_http::cors::CorsLayer::permissive())
-            .with_state(state_to_start.clone());
-
-        if let Ok(listener) = tokio::net::TcpListener::bind(&addr).await {
-            let _ = axum::serve(listener, app)
-                .with_graceful_shutdown(async move {
-                    let _ = rx.await;
-                })
-                .await;
-        }
-
-        if let Ok(mut running) = state_to_start.is_running.lock() {
-            *running = false;
-        }
-    });
 
     tauri::Builder::default()
         .manage(app_state)
@@ -196,6 +188,7 @@ pub fn run() {
             copy_local_file_custom,
             read_binary_file,
             read_image_data_url,
+            read_image_as_base64,
             save_image_binary,
             load_recent_projects_custom,
             save_recent_projects_custom,

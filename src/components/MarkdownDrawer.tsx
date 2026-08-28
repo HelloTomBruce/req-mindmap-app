@@ -17,6 +17,50 @@ interface MarkdownDrawerProps {
 // 本地图片 DataURL 全局内存缓存，避免输入文本导致组件重新渲染时的频繁 IPC 重新读取与图片闪烁
 const imageCache = new Map<string, string>();
 
+// 切换项目时调用，清理上一个项目的图片缓存防止内存膨胀
+export function clearImageCache() {
+  imageCache.clear();
+}
+
+// 独立组件：从 assets/ 加载本地图片并缓存为 DataURL
+const CachedImage: React.FC<{ src?: string; alt?: string; projectPath: string }> = ({ src, alt, projectPath }) => {
+  const cacheKey = `${projectPath}:${src}`;
+  const cachedSrc = imageCache.get(cacheKey);
+  const [srcUrl, setSrcUrl] = React.useState<string>(cachedSrc || src || '');
+
+  React.useEffect(() => {
+    if (!src) return;
+
+    if (imageCache.has(cacheKey)) {
+      setSrcUrl(imageCache.get(cacheKey)!);
+      return;
+    }
+
+    if (src.startsWith('assets/') && projectPath) {
+      let isMounted = true;
+      invoke<string>('read_image_data_url', { projectPath, relativePath: src })
+        .then((dataUrl) => {
+          imageCache.set(cacheKey, dataUrl);
+          if (isMounted) setSrcUrl(dataUrl);
+        })
+        .catch((e) => {
+          console.warn('Failed to load image preview:', src, e);
+        });
+      return () => { isMounted = false; };
+    } else {
+      setSrcUrl(src);
+    }
+  }, [src, projectPath, cacheKey]);
+
+  return (
+    <img
+      src={srcUrl}
+      style={{ maxWidth: '100%', borderRadius: 6, margin: '8px 0', display: 'block' }}
+      alt={alt || '图片'}
+    />
+  );
+};
+
 export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
   node,
   content,
@@ -30,7 +74,8 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
   // 上传/粘贴图片处理
   const handleImageSave = async (file: File) => {
     if (!projectPath) {
-      alert('请先选择或创建项目保存目录后再上传图片');
+      const { message } = await import('@tauri-apps/plugin-dialog');
+      await message('请先选择或创建项目保存目录后再上传图片', { title: '提示', kind: 'warning' });
       return;
     }
 
@@ -162,50 +207,9 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
           preview="live"
           previewOptions={{
             components: {
-              img: ({ src, alt, ...rest }: any) => {
-                const cacheKey = `${projectPath}:${src}`;
-                const cachedSrc = imageCache.get(cacheKey);
-
-                const [srcUrl, setSrcUrl] = React.useState<string>(cachedSrc || src || '');
-
-                React.useEffect(() => {
-                  if (!src) return;
-
-                  if (imageCache.has(cacheKey)) {
-                    setSrcUrl(imageCache.get(cacheKey)!);
-                    return;
-                  }
-
-                  if (src.startsWith('assets/') && projectPath) {
-                    let isMounted = true;
-                    invoke<string>('read_image_data_url', {
-                      projectPath,
-                      relativePath: src
-                    }).then((dataUrl) => {
-                      imageCache.set(cacheKey, dataUrl);
-                      if (isMounted) {
-                        setSrcUrl(dataUrl);
-                      }
-                    }).catch((e) => {
-                      console.warn('Failed to load image preview:', src, e);
-                    });
-                    return () => {
-                      isMounted = false;
-                    };
-                  } else {
-                    setSrcUrl(src);
-                  }
-                }, [src, projectPath, cacheKey]);
-
-                return (
-                  <img
-                    {...rest}
-                    src={srcUrl}
-                    style={{ maxWidth: '100%', borderRadius: 6, margin: '8px 0', display: 'block' }}
-                    alt={alt || '图片'}
-                  />
-                );
-              }
+              img: ({ src, alt }: any) => (
+                <CachedImage src={src} alt={alt} projectPath={projectPath} />
+              )
             }
           }}
         />

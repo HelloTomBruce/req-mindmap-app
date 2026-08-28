@@ -11,6 +11,23 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use tower_http::cors::CorsLayer;
 
+// 从 poisoned Mutex 中恢复，避免一次 panic 导致整个 MCP 服务链路永久瘫痪
+macro_rules! safe_lock {
+    ($mutex:expr) => {
+        $mutex.lock().unwrap_or_else(|e| e.into_inner())
+    };
+}
+
+static IMG_RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+
+fn mark_mcp_write(state: &AppState) {
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+    *safe_lock!(state.last_mcp_write) = ts;
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct MCPLogItem {
     pub id: String,
@@ -26,8 +43,9 @@ pub struct AppState {
     pub port: Arc<Mutex<u16>>,
     pub is_running: Arc<Mutex<bool>>,
     pub cancel_tx: Arc<Mutex<Option<tokio::sync::oneshot::Sender<()>>>>,
-    pub sse_tx: Arc<Mutex<Option<tokio::sync::mpsc::Sender<Result<axum::response::sse::Event, std::convert::Infallible>>>>>,
+    pub sse_clients: Arc<Mutex<Vec<tokio::sync::mpsc::Sender<Result<axum::response::sse::Event, std::convert::Infallible>>>>>,
     pub logs: Arc<Mutex<Vec<MCPLogItem>>>,
+    pub last_mcp_write: Arc<Mutex<u64>>,
 }
 
 fn add_log(state: &AppState, tool: String, params: Value, status: String) {
@@ -52,8 +70,8 @@ fn add_log(state: &AppState, tool: String, params: Value, status: String) {
 async fn send_rpc_response(state: &AppState, res_val: Value) -> impl IntoResponse {
     use axum::response::sse::Event;
 
-    if let Ok(guard) = state.sse_tx.lock() {
-        if let Some(tx) = guard.as_ref() {
+    if let Ok(guard) = state.sse_clients.lock() {
+        for tx in guard.iter() {
             let json_str = serde_json::to_string(&res_val).unwrap_or_default();
             let _ = tx.try_send(Ok(Event::default().event("message").data(json_str)));
         }
@@ -69,7 +87,7 @@ pub async fn handle_mcp_rpc(
     let method = payload.get("method").and_then(|v| v.as_str()).unwrap_or("");
     let id = payload.get("id").cloned().unwrap_or(json!(1));
 
-    let p_path = state.project_path.lock().unwrap().clone();
+    let p_path = safe_lock!(state.project_path).clone();
 
     if method == "initialize" {
         return send_rpc_response(&state, json!({
@@ -258,7 +276,7 @@ pub async fn handle_mcp_rpc(
                     let mut content_list = Vec::new();
                     let proj_path_buf = Path::new(&p_path);
 
-                    let img_re = regex::Regex::new(r"!\[(.*?)\]\((.*?)\)").unwrap();
+                    let img_re = IMG_RE.get_or_init(|| regex::Regex::new(r"!\[(.*?)\]\((.*?)\)").expect("static regex"));
                     let processed_md = img_re.replace_all(&md, |caps: &regex::Captures| {
                         let alt = &caps[1];
                         let src = &caps[2];
@@ -353,7 +371,8 @@ pub async fn handle_mcp_rpc(
 
                     if let Some(root) = val.get_mut("root") {
                         if update_node(root, &node_id, &status) {
-                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap());
+                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap_or_default());
+                            mark_mcp_write(&state);
                             let nid = node_id.clone();
                             let st = status.clone();
                             add_log(&state, tool_name.to_string(), args, "success".to_string());
@@ -385,7 +404,11 @@ pub async fn handle_mcp_rpc(
             let config_path = Path::new(&p_path).join(".requirements.json");
             if let Ok(json_str) = fs::read_to_string(&config_path) {
                 if let Ok(mut val) = serde_json::from_str::<Value>(&json_str) {
-                    let new_node_id = format!("node-{}", chrono::Local::now().timestamp_millis());
+                    let nanos = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.subsec_nanos())
+                        .unwrap_or(0);
+                    let new_node_id = format!("node-{}-{}", chrono::Local::now().timestamp_millis(), nanos);
                     let doc_rel_path = format!("modules/{}.md", new_node_id);
                     let doc_full_path = Path::new(&p_path).join(&doc_rel_path);
 
@@ -431,7 +454,8 @@ pub async fn handle_mcp_rpc(
 
                     if let Some(root) = val.get_mut("root") {
                         if insert_child(root, &parent_id, new_node.clone()) {
-                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap());
+                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap_or_default());
+                            mark_mcp_write(&state);
                             add_log(&state, tool_name.to_string(), args, "success".to_string());
                             return send_rpc_response(&state, json!({
                                 "jsonrpc": "2.0",
@@ -489,7 +513,8 @@ pub async fn handle_mcp_rpc(
 
                     if let Some(root) = val.get_mut("root") {
                         if update_node_data(root, &node_id, &args, &mut doc_path_to_update) {
-                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap());
+                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap_or_default());
+                            mark_mcp_write(&state);
 
                             if let Some(c) = args.get("content").and_then(|v| v.as_str()) {
                                 if let Some(dp) = doc_path_to_update {
@@ -561,7 +586,8 @@ pub async fn handle_mcp_rpc(
                     let mut deleted_docs = Vec::new();
                     if let Some(root) = val.get_mut("root") {
                         if remove_node(root, &node_id, &mut deleted_docs) {
-                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap());
+                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap_or_default());
+                            mark_mcp_write(&state);
 
                             for rel_doc in deleted_docs {
                                 let doc_full = Path::new(&p_path).join(rel_doc);
@@ -600,15 +626,18 @@ pub async fn handle_mcp_rpc(
 pub async fn sse_handler(State(state): State<AppState>) -> impl IntoResponse {
     use axum::response::sse::Event;
 
-    let port = *state.port.lock().unwrap();
+    let port = *safe_lock!(state.port);
     let endpoint_url = format!("http://127.0.0.1:{}/messages", port);
 
     let (tx, rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
 
     {
-        let mut guard = state.sse_tx.lock().unwrap();
-        *guard = Some(tx.clone());
+        let mut guard = safe_lock!(state.sse_clients);
+        guard.push(tx.clone());
     }
+
+    // 克隆 state 以在 keepalive 任务中清理断开连接的客户端
+    let state_for_cleanup = state.clone();
 
     tauri::async_runtime::spawn(async move {
         // 1. 立即推送 endpoint 事件
@@ -621,6 +650,11 @@ pub async fn sse_handler(State(state): State<AppState>) -> impl IntoResponse {
             if tx.send(Ok(Event::default().comment("keepalive"))).await.is_err() {
                 break;
             }
+        }
+
+        // 3. 客户端断开后从列表中移除
+        if let Ok(mut guard) = state_for_cleanup.sse_clients.lock() {
+            guard.retain(|c| !c.is_closed());
         }
     });
 
@@ -636,7 +670,7 @@ pub fn start_mcp_server_rust(
 ) -> Result<String, String> {
     // 1. 如果已在运行，先触发关闭上一次的服务器
     {
-        let mut tx_opt = state.cancel_tx.lock().unwrap();
+        let mut tx_opt = safe_lock!(state.cancel_tx);
         if let Some(tx) = tx_opt.take() {
             let _ = tx.send(());
             // 等待 100ms 确保上一个监听 Socket 被操作系统完全释放
@@ -645,21 +679,21 @@ pub fn start_mcp_server_rust(
     }
 
     {
-        let mut p = state.project_path.lock().unwrap();
+        let mut p = safe_lock!(state.project_path);
         *p = project_path.clone();
     }
     {
-        let mut pt = state.port.lock().unwrap();
+        let mut pt = safe_lock!(state.port);
         *pt = port;
     }
 
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
     {
-        let mut tx_opt = state.cancel_tx.lock().unwrap();
+        let mut tx_opt = safe_lock!(state.cancel_tx);
         *tx_opt = Some(tx);
     }
     {
-        let mut running = state.is_running.lock().unwrap();
+        let mut running = safe_lock!(state.is_running);
         *running = true;
     }
 
@@ -693,13 +727,13 @@ pub fn start_mcp_server_rust(
 #[tauri::command]
 pub fn stop_mcp_server_rust(state: tauri::State<'_, AppState>) -> Result<bool, String> {
     {
-        let mut tx_opt = state.cancel_tx.lock().unwrap();
+        let mut tx_opt = safe_lock!(state.cancel_tx);
         if let Some(tx) = tx_opt.take() {
             let _ = tx.send(());
         }
     }
     {
-        let mut running = state.is_running.lock().unwrap();
+        let mut running = safe_lock!(state.is_running);
         *running = false;
     }
     Ok(true)
@@ -707,16 +741,192 @@ pub fn stop_mcp_server_rust(state: tauri::State<'_, AppState>) -> Result<bool, S
 
 #[tauri::command]
 pub fn get_mcp_status_rust(state: tauri::State<'_, AppState>) -> Result<Value, String> {
-    let p = state.project_path.lock().unwrap().clone();
-    let pt = *state.port.lock().unwrap();
-    let is_r = *state.is_running.lock().unwrap();
-    let logs = state.logs.lock().unwrap().clone();
+    let p = safe_lock!(state.project_path).clone();
+    let pt = *safe_lock!(state.port);
+    let is_r = *safe_lock!(state.is_running);
+    let logs = safe_lock!(state.logs).clone();
+    let last_write = *safe_lock!(state.last_mcp_write);
 
     Ok(json!({
         "isRunning": is_r,
         "port": pt,
         "projectPath": p,
         "sseUrl": format!("http://127.0.0.1:{}/sse", pt),
-        "logs": logs
+        "logs": logs,
+        "lastMcpWrite": last_write
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_state() -> AppState {
+        AppState {
+            project_path: Arc::new(Mutex::new(String::new())),
+            port: Arc::new(Mutex::new(6001)),
+            is_running: Arc::new(Mutex::new(false)),
+            cancel_tx: Arc::new(Mutex::new(None)),
+            sse_clients: Arc::new(Mutex::new(Vec::new())),
+            logs: Arc::new(Mutex::new(Vec::new())),
+            last_mcp_write: Arc::new(Mutex::new(0)),
+        }
+    }
+
+    #[test]
+    fn test_add_log_inserts_at_front() {
+        let state = make_state();
+        add_log(&state, "test_tool".into(), json!({"key": "val"}), "success".into());
+        add_log(&state, "other_tool".into(), json!({}), "error".into());
+
+        let logs = safe_lock!(state.logs);
+        assert_eq!(logs.len(), 2);
+        assert_eq!(logs[0].tool, "other_tool");
+        assert_eq!(logs[1].tool, "test_tool");
+    }
+
+    #[test]
+    fn test_add_log_caps_at_50() {
+        let state = make_state();
+        for i in 0..60 {
+            add_log(&state, format!("tool_{}", i), json!({}), "success".into());
+        }
+        let logs = safe_lock!(state.logs);
+        assert_eq!(logs.len(), 50);
+        // 最新的应该在前面
+        assert_eq!(logs[0].tool, "tool_59");
+    }
+
+    #[test]
+    fn test_mark_mcp_write_updates_timestamp() {
+        let state = make_state();
+        assert_eq!(*safe_lock!(state.last_mcp_write), 0);
+        mark_mcp_write(&state);
+        assert!(*safe_lock!(state.last_mcp_write) > 0);
+    }
+
+    #[test]
+    fn test_update_node_status_recursive() {
+        let mut tree = json!({
+            "id": "root",
+            "status": "todo",
+            "children": [
+                { "id": "child-1", "status": "todo", "children": [] },
+                { "id": "child-2", "status": "completed", "children": [
+                    { "id": "grandchild", "status": "draft", "children": [] }
+                ]}
+            ]
+        });
+
+        fn update_node(n: &mut Value, target_id: &str, new_st: &str) -> bool {
+            if n.get("id").and_then(|v| v.as_str()) == Some(target_id) {
+                n["status"] = json!(new_st);
+                return true;
+            }
+            if let Some(children) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                for child in children {
+                    if update_node(child, target_id, new_st) {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+
+        assert!(update_node(&mut tree, "grandchild", "in_progress"));
+        let grandchild = &tree["children"][1]["children"][0];
+        assert_eq!(grandchild["status"], "in_progress");
+    }
+
+    #[test]
+    fn test_insert_child_recursive() {
+        let mut tree = json!({
+            "id": "root",
+            "children": [
+                { "id": "child-1", "children": [] }
+            ]
+        });
+
+        let new_node = json!({ "id": "new-node", "title": "Test", "children": [] });
+
+        fn insert_child(n: &mut Value, target_id: &str, child: Value) -> bool {
+            if n.get("id").and_then(|v| v.as_str()) == Some(target_id) {
+                if n.get("children").is_none() {
+                    n["children"] = json!([]);
+                }
+                if let Some(children) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                    children.push(child);
+                    return true;
+                }
+            }
+            if let Some(children) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                for c in children {
+                    if insert_child(c, target_id, child.clone()) {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+
+        assert!(insert_child(&mut tree, "child-1", new_node.clone()));
+        let child1 = &tree["children"][0];
+        assert_eq!(child1["children"].as_array().unwrap().len(), 1);
+        assert_eq!(child1["children"][0]["id"], "new-node");
+    }
+
+    #[test]
+    fn test_remove_node_recursive() {
+        let mut tree = json!({
+            "id": "root",
+            "children": [
+                { "id": "child-1", "docPath": "modules/child-1.md", "children": [] },
+                { "id": "child-2", "docPath": "modules/child-2.md", "children": [
+                    { "id": "grandchild", "docPath": "modules/grandchild.md", "children": [] }
+                ]}
+            ]
+        });
+
+        fn collect_doc_paths(n: &Value, docs: &mut Vec<String>) {
+            if let Some(dp) = n.get("docPath").and_then(|v| v.as_str()) {
+                if dp != "index.md" {
+                    docs.push(dp.to_string());
+                }
+            }
+            if let Some(children) = n.get("children").and_then(|v| v.as_array()) {
+                for c in children {
+                    collect_doc_paths(c, docs);
+                }
+            }
+        }
+
+        fn remove_node(n: &mut Value, target_id: &str, deleted_docs: &mut Vec<String>) -> bool {
+            if let Some(children) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                let mut found_idx = None;
+                for (idx, c) in children.iter().enumerate() {
+                    if c.get("id").and_then(|v| v.as_str()) == Some(target_id) {
+                        found_idx = Some(idx);
+                        collect_doc_paths(c, deleted_docs);
+                        break;
+                    }
+                }
+                if let Some(idx) = found_idx {
+                    children.remove(idx);
+                    return true;
+                }
+                for c in children.iter_mut() {
+                    if remove_node(c, target_id, deleted_docs) {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+
+        let mut deleted_docs = Vec::new();
+        assert!(remove_node(&mut tree, "child-2", &mut deleted_docs));
+        assert_eq!(deleted_docs, vec!["modules/child-2.md", "modules/grandchild.md"]);
+        assert_eq!(tree["children"].as_array().unwrap().len(), 1);
+        assert_eq!(tree["children"][0]["id"], "child-1");
+    }
 }
