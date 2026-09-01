@@ -72,6 +72,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
       ctx.clearRect(0, 0, width, height);
 
       // 1. 渐变背景光晕
+      const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       const gradient = ctx.createRadialGradient(
         width / 2,
         height / 2,
@@ -80,11 +81,20 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
         height / 2,
         Math.max(width, height)
       );
-      gradient.addColorStop(0, '#f8fafc');
-      gradient.addColorStop(0.6, '#e2e8f0');
-      gradient.addColorStop(1, '#cbd5e1');
+
+      if (isDarkMode) {
+        gradient.addColorStop(0, '#1a1f26');
+        gradient.addColorStop(0.6, '#14171a');
+        gradient.addColorStop(1, '#0e1013');
+      } else {
+        gradient.addColorStop(0, '#faf8f5');
+        gradient.addColorStop(0.6, '#f3f0e8');
+        gradient.addColorStop(1, '#e5e1d4');
+      }
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
+
+      const dotColor = isDarkMode ? '60, 125, 111' : '44, 94, 83'; // 竹青墨韵
 
       // 2. 更新与绘制粒子节点
       for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -99,10 +109,10 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
         // 绘制点
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(37, 99, 235, ${p.alpha * 0.6})`;
+        ctx.fillStyle = `rgba(${dotColor}, ${p.alpha * 0.7})`;
         ctx.fill();
 
-        // 3. 粒子之间连线 (思维导图网格连线效果)
+        // 3. 粒子之间连线 (水墨经纬网格连线效果)
         for (let j = i + 1; j < PARTICLE_COUNT; j++) {
           const p2 = particles[j];
           const dx = p.x - p2.x;
@@ -110,11 +120,11 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < 140) {
-            const lineAlpha = (1 - dist / 140) * 0.25;
+            const lineAlpha = (1 - dist / 140) * 0.28;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(37, 99, 235, ${lineAlpha})`;
+            ctx.strokeStyle = `rgba(${dotColor}, ${lineAlpha})`;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
@@ -143,8 +153,8 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           <div className="brand">
             <HardDrive size={32} className="brand-icon" />
             <div>
-              <h1>ReqMindmark 需求架构师</h1>
-              <p>可视化模块拓扑思维导图 & Markdown 级规格说明书工具集</p>
+              <h1>DocMind 结构化文档工作台</h1>
+              <p>以拓扑脑图把握宏观全局，以 Markdown 沉浸细节创作</p>
             </div>
           </div>
 
@@ -171,7 +181,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
         {/* 快速功能入口 */}
         <div className="manager-actions-bar">
           <button className="btn primary large" onClick={onOpenCreateModal}>
-            <Plus size={16} /> 新建
+            <Plus size={16} /> 新建项目
           </button>
 
           <button className="btn outline large" onClick={onOpenImportModal}>
@@ -191,7 +201,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
             </div>
             <div className="feature-info">
               <h3>MCP (Model Context Protocol) 协同</h3>
-              <p>提供 8 个原生 SSE Tools，支持 Antigravity / Cursor 等 AI 助手直接读取与更新需求拓扑树。</p>
+              <p>提供原生 SSE Tools，支持 Antigravity / Cursor 等 AI 助手直接理解、检索与更新文档拓扑树。</p>
             </div>
           </div>
 
@@ -201,7 +211,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
             </div>
             <div className="feature-info">
               <h3>Markdown 文件夹双向同步</h3>
-              <p>需求思维导图与磁盘 `.md` 规范说明书 1:1 实时双向映射，无需担心脱离本地磁盘格式。</p>
+              <p>思维导图节点与本地 `.md` 文档 1:1 实时双向映射，纯本地存储，离线安全且易于版本管理。</p>
             </div>
           </div>
 
@@ -210,8 +220,8 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               <ShieldCheck size={20} />
             </div>
             <div className="feature-info">
-              <h3>全量 PRD 一键导出</h3>
-              <p>智能聚合导出完整规范 PRD 产品需求说明书，自动拆分图片与模块引用资源。</p>
+              <h3>结构化文档一键聚合导出</h3>
+              <p>智能聚合导出完整的 PRD 需求书、架构设计文档或技术手册，支持图片与模块资源一键打包。</p>
             </div>
           </div>
         </div>
@@ -219,7 +229,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
         {/* 最近项目列表 */}
         <div className="recent-projects-section">
           <div className="recent-section-header">
-            <h2>最近打开的需求项目 ({recentProjects.length})</h2>
+            <h2>最近打开的文档项目 ({recentProjects.length})</h2>
           </div>
 
           {recentProjects.length === 0 ? (

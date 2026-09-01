@@ -9,7 +9,7 @@ import { TemplateSidebar } from './components/TemplateSidebar';
 import { TemplateMarkdownDrawer } from './components/TemplateMarkdownDrawer';
 import { upsertCustomTemplate } from './templateStore';
 import { ProjectManager, ProjectMeta } from './components/ProjectManager';
-import { ExportPRDModal } from './components/ExportPRDModal';
+import { ExportDocModal } from './components/ExportDocModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
 import { ImportMdModal } from './components/ImportMdModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
@@ -17,6 +17,7 @@ import { MCPManagerModal } from './components/MCPManagerModal';
 import { UpdateModal } from './components/UpdateModal';
 import { TemplatePickerModal } from './components/TemplatePickerModal';
 import { NodeTemplate, renderTemplateMarkdown } from './templates';
+import { PROJECT_PRESETS } from './projectPresets';
 import { clearImageCache } from './components/MarkdownDrawer';
 import { mcpServerManager } from './mcpServerManager';
 import { useMcpPolling, loadDocsForTree } from './hooks/useMcpPolling';
@@ -353,24 +354,14 @@ const App: React.FC = () => {
   };
 
   // 执行创建新项目
-  const handleCreateProject = async (name: string, targetPath: string) => {
-    const newRoot: MindNode = {
-      id: 'root-node',
-      title: `${name} 根模块`,
-      docPath: 'index.md',
-      status: 'in_progress',
-      priority: 'P0',
-      tags: ['根模块']
-    };
+  const handleCreateProject = async (name: string, targetPath: string, presetId: string = 'prd') => {
+    const preset = PROJECT_PRESETS.find((p) => p.id === presetId) || PROJECT_PRESETS[0];
+    const { root: newRoot, docsMap: newDocsMap } = preset.generateInitialData(name);
 
     const newProject: ProjectData = {
       version: '1.0.0',
       projectName: name,
       root: newRoot
-    };
-
-    const newDocsMap = {
-      'index.md': `# ${name} 需求规格说明书\n\n欢迎使用 ReqMindmark 编写需求文档。`
     };
 
     setCurrentProjectPath(targetPath);
@@ -395,7 +386,7 @@ const App: React.FC = () => {
       name,
       path: targetPath,
       lastOpened: new Date().toLocaleDateString(),
-      nodeCount: 1
+      nodeCount: countNodes(newRoot)
     };
 
     const updated = [meta, ...recentProjects.filter((p) => p.path !== targetPath)];
@@ -831,7 +822,7 @@ const App: React.FC = () => {
 
         <div className="header-actions">
           <button className="btn primary" onClick={() => setIsExportModalOpen(true)}>
-            <Download size={14} /> 导出 PRD 文档
+            <Download size={14} /> 聚合导出文档
           </button>
         </div>
       </header>
@@ -935,9 +926,9 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* 导出 PRD 弹窗 */}
+      {/* 聚合导出完整文档弹窗 */}
       {isExportModalOpen && (
-        <ExportPRDModal
+        <ExportDocModal
           rootNode={projectData.root}
           docsMap={docsMap}
           projectName={projectData.projectName}

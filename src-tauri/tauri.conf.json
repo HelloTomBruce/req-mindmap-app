@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ReqMindmark",
-  "version": "1.1.1",
-  "identifier": "com.reqmindmark.app",
+  "productName": "DocMind",
+  "version": "1.2.0",
+  "identifier": "com.docmind.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "ReqMindmark - 需求规格说明书工作台",
+        "title": "DocMind - 结构化文档与知识工作台",
         "width": 1280,
         "height": 800
       }

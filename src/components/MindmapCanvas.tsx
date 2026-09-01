@@ -13,7 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
-import { MindNode, Priority, Status } from '../types';
+import { MindNode, Status } from '../types';
 import { ChevronRight, ChevronDown, Plus, Trash2, FileText, Edit2 } from 'lucide-react';
 
 interface MindmapCanvasProps {
@@ -26,13 +26,6 @@ interface MindmapCanvasProps {
   onDeleteNode: (nodeId: string) => void;
   onToggleCollapse: (nodeId: string) => void;
 }
-
-const PRIORITY_COLORS: Record<Priority, { bg: string; text: string }> = {
-  P0: { bg: '#fee2e2', text: '#991b1b' },
-  P1: { bg: '#fef3c7', text: '#92400e' },
-  P2: { bg: '#e0e7ff', text: '#3730a3' },
-  P3: { bg: '#f3f4f6', text: '#374151' }
-};
 
 const STATUS_LABELS: Record<Status, { label: string; color: string }> = {
   draft: { label: '草稿', color: '#9ca3af' },
@@ -146,13 +139,7 @@ const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
       </div>
 
       <div className="node-footer-meta">
-        <span
-          className="priority-badge"
-          style={{
-            backgroundColor: PRIORITY_COLORS[node.priority].bg,
-            color: PRIORITY_COLORS[node.priority].text
-          }}
-        >
+        <span className={`priority-badge ${node.priority.toLowerCase()}`}>
           {node.priority}
         </span>
 
@@ -350,7 +337,7 @@ export const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background gap={20} size={1} color="#cbd5e1" />
+        <Background gap={20} size={1} className="react-flow-background" />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>

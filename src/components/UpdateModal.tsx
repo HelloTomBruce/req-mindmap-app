@@ -109,7 +109,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             <div className="update-state-box">
               <CheckCircle size={44} color="#10b981" />
               <h4 className="update-state-title">当前已是最新版本</h4>
-              <p className="update-state-sub">ReqMindmark v{pkg.version} 已处于最佳运行状态</p>
+              <p className="update-state-sub">DocMind v{pkg.version} 已处于最佳运行状态</p>
             </div>
           )}
 
