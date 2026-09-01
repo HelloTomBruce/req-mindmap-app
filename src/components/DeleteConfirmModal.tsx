@@ -18,7 +18,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title text-danger">
-            <AlertTriangle size={18} color="#ef4444" /> 删除项目交互
+            <AlertTriangle size={18} color="#ef4444" /> 删除项目
           </div>
           <button className="close-btn" onClick={onClose}><X size={18} /></button>
         </div>

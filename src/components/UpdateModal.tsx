@@ -87,88 +87,79 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ width: '520px', maxWidth: '90vw', padding: '24px', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', border: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px' }}>
-            <RefreshCw className={checking ? 'spin' : ''} size={20} color="#007acc" />
-            软件远程自动更新
-          </h3>
-          <button className="icon-btn" onClick={onClose}>
-            <X size={18} />
-          </button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content update-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="modal-title">
+            <RefreshCw className={checking ? 'spin' : ''} size={18} color="#2563eb" />
+            软件在线更新
+          </div>
+          <button className="close-btn" onClick={onClose}><X size={18} /></button>
         </div>
 
-        {checking && (
-          <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <RefreshCw className="spin" size={32} color="#007acc" style={{ marginBottom: '12px' }} />
-            <p style={{ color: '#666', margin: 0 }}>正在检查远程服务器最新版本...</p>
-          </div>
-        )}
-
-        {!checking && upToDate && (
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <CheckCircle size={44} color="#52c41a" style={{ marginBottom: '12px' }} />
-            <h4 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>当前已是最新版本</h4>
-            <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>ReqMindmark v{pkg.version} 已处于最佳运行状态</p>
-          </div>
-        )}
-
-        {!checking && errorMsg && (
-          <div style={{ backgroundColor: '#fff2f0', border: '1px solid #ffccc7', borderRadius: '6px', padding: '16px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ff4d4f', fontWeight: 600, marginBottom: '6px' }}>
-              <AlertTriangle size={18} />
-              检查更新提示
+        <div className="modal-body">
+          {checking && (
+            <div className="update-state-box">
+              <RefreshCw className="spin" size={32} color="#2563eb" />
+              <p className="update-state-tip">正在检查远程服务器最新版本...</p>
             </div>
-            <div style={{ color: '#666', fontSize: '13px', wordBreak: 'break-all' }}>{errorMsg}</div>
-          </div>
-        )}
+          )}
 
-        {!checking && updateAvailable && (
-          <div>
-            <div style={{ backgroundColor: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: '6px', padding: '12px 16px', marginBottom: '16px' }}>
-              <div style={{ fontSize: '15px', fontWeight: 600, color: '#0050b3' }}>
-                发现新版本 v{updateAvailable.version}
-              </div>
-              <div style={{ fontSize: '12px', color: '#595959', marginTop: '4px' }}>
-                发布时间: {updateAvailable.date || '最新'}
-              </div>
+          {!checking && upToDate && (
+            <div className="update-state-box">
+              <CheckCircle size={44} color="#10b981" />
+              <h4 className="update-state-title">当前已是最新版本</h4>
+              <p className="update-state-sub">ReqMindmark v{pkg.version} 已处于最佳运行状态</p>
             </div>
+          )}
 
-            {updateAvailable.body && (
-              <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: '#444' }}>更新说明：</div>
-                <div style={{
-                  maxHeight: '140px',
-                  overflowY: 'auto',
-                  backgroundColor: '#f5f5f5',
-                  padding: '10px 12px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  color: '#333',
-                  whiteSpace: 'pre-wrap'
-                }}>
-                  {updateAvailable.body}
+          {!checking && errorMsg && (
+            <div className="update-error-box">
+              <div className="update-error-title">
+                <AlertTriangle size={18} />
+                检查更新提示
+              </div>
+              <div className="update-error-msg">{errorMsg}</div>
+            </div>
+          )}
+
+          {!checking && updateAvailable && (
+            <div className="update-available-section">
+              <div className="update-banner">
+                <div className="update-version">
+                  发现新版本 v{updateAvailable.version}
+                </div>
+                <div className="update-date">
+                  发布时间: {updateAvailable.date || '最新'}
                 </div>
               </div>
-            )}
 
-            {downloading && (
-              <div style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                  <span>正在下载包文件并自动替换更新...</span>
-                  <span>{progress}%</span>
+              {updateAvailable.body && (
+                <div className="update-notes-container">
+                  <div className="update-notes-label">更新说明：</div>
+                  <div className="update-notes-content">
+                    {updateAvailable.body}
+                  </div>
                 </div>
-                <div style={{ width: '100%', height: '8px', backgroundColor: '#e8e8e8', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${progress}%`, height: '100%', backgroundColor: '#1890ff', transition: 'width 0.3s ease' }} />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
-          <button className="btn secondary" onClick={onClose} disabled={downloading}>
+              {downloading && (
+                <div className="update-progress-container">
+                  <div className="update-progress-info">
+                    <span>正在下载安装包并自动替换更新...</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="update-progress-track">
+                    <div className="update-progress-bar" style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn outline" onClick={onClose} disabled={downloading}>
             关闭
           </button>
 
@@ -180,7 +171,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
 
           {!checking && updateAvailable && (
             <button className="btn primary" onClick={handleStartUpdate} disabled={downloading}>
-              <Download size={16} style={{ marginRight: '6px' }} />
+              <Download size={14} />
               {downloading ? '升级中...' : '立即下载并重启更新'}
             </button>
           )}

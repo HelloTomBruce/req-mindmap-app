@@ -35,7 +35,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       <div className="modal-content create-project-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title">
-            <Plus size={18} /> 新建
+            <Plus size={18} /> 新建需求项目
           </div>
           <button className="close-btn" onClick={onClose}><X size={18} /></button>
         </div>

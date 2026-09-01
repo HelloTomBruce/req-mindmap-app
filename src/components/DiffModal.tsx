@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { gitDiff } from '../gitHelper';
-import { X } from 'lucide-react';
+import { X, GitCompare } from 'lucide-react';
 
 interface DiffModalProps {
   projectPath: string;
@@ -52,9 +52,11 @@ export const DiffModal: React.FC<DiffModalProps> = ({ projectPath, filePath, com
     <div className="modal-overlay">
       <div className="modal-content diff-modal">
         <div className="modal-header">
-          <h2 className="modal-title">Diff: {filePath}</h2>
-          <button className="btn outline icon-only" onClick={onClose} title="关闭">
-            <X size={16} />
+          <div className="modal-title">
+            <GitCompare size={18} /> 版本差异对比 ({filePath})
+          </div>
+          <button className="close-btn" onClick={onClose} title="关闭">
+            <X size={18} />
           </button>
         </div>
         

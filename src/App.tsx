@@ -5,6 +5,9 @@ import { MindmapCanvas } from './components/MindmapCanvas';
 import { MarkdownDrawer } from './components/MarkdownDrawer';
 import { Sidebar } from './components/Sidebar';
 import { GitSidebar } from './components/GitSidebar';
+import { TemplateSidebar } from './components/TemplateSidebar';
+import { TemplateMarkdownDrawer } from './components/TemplateMarkdownDrawer';
+import { upsertCustomTemplate } from './templateStore';
 import { ProjectManager, ProjectMeta } from './components/ProjectManager';
 import { ExportPRDModal } from './components/ExportPRDModal';
 import { CreateProjectModal } from './components/CreateProjectModal';
@@ -12,12 +15,14 @@ import { ImportMdModal } from './components/ImportMdModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { MCPManagerModal } from './components/MCPManagerModal';
 import { UpdateModal } from './components/UpdateModal';
+import { TemplatePickerModal } from './components/TemplatePickerModal';
+import { NodeTemplate, renderTemplateMarkdown } from './templates';
 import { clearImageCache } from './components/MarkdownDrawer';
 import { mcpServerManager } from './mcpServerManager';
 import { useMcpPolling, loadDocsForTree } from './hooks/useMcpPolling';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch } from 'lucide-react';
+import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch, Bookmark } from 'lucide-react';
 import './App.css';
 
 const App: React.FC = () => {
@@ -36,6 +41,12 @@ const App: React.FC = () => {
   const [isMCPModalOpen, setIsMCPModalOpen] = useState<boolean>(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [targetDeleteProject, setTargetDeleteProject] = useState<ProjectMeta | null>(null);
+  const [templateParentNode, setTemplateParentNode] = useState<{ id: string; title: string } | null>(null);
+  const [selectedEditingTemplate, setSelectedEditingTemplate] = useState<{
+    template: NodeTemplate;
+    content: string;
+    isCustom: boolean;
+  } | null>(null);
 
   const { mcpStatus, mcpLogs } = useMcpPolling({
     currentProjectPath,
@@ -523,18 +534,33 @@ const App: React.FC = () => {
     setIsDrawerOpen(true);
   };
 
-  // 新增节点并触发落盘
-  const handleAddChildNode = async (parentId: string) => {
+  // 触发打开模板选择弹窗
+  const handleAddChildNode = (parentId: string) => {
+    let parentTitle = '当前节点';
+    const findTitle = (node: MindNode) => {
+      if (node.id === parentId) parentTitle = node.title;
+      if (node.children) node.children.forEach(findTitle);
+    };
+    findTitle(projectData.root);
+    setTemplateParentNode({ id: parentId, title: parentTitle });
+  };
+
+  // 根据选中的模板实际创建节点并触发落盘
+  const handleConfirmCreateWithTemplate = async (template: NodeTemplate) => {
+    if (!templateParentNode) return;
+    const parentId = templateParentNode.id;
+    setTemplateParentNode(null);
+
     const nodeIdSuffix = Math.random().toString(36).slice(2, 8);
     const newNodeId = `node-${Date.now()}-${nodeIdSuffix}`;
     const newDocPath = `modules/node-${Date.now()}-${nodeIdSuffix}.md`;
     const newNode: MindNode = {
       id: newNodeId,
-      title: '新建需求节点',
+      title: template.defaultTitle,
       docPath: newDocPath,
-      status: 'todo',
-      priority: 'P2',
-      tags: ['新需求']
+      status: template.defaultStatus,
+      priority: template.defaultPriority,
+      tags: [...template.defaultTags]
     };
 
     const updateTree = (node: MindNode): MindNode => {
@@ -557,7 +583,7 @@ const App: React.FC = () => {
     const updatedProject = { ...projectData, root: updatedRoot };
     const updatedDocsMap = {
       ...docsMap,
-      [newDocPath]: `# 新建需求节点\n\n请在此处编写需求详细描述...`
+      [newDocPath]: renderTemplateMarkdown(template, template.defaultTitle)
     };
 
     setProjectData(updatedProject);
@@ -688,7 +714,50 @@ const App: React.FC = () => {
     debouncedSyncToDisk(currentProjectPath, projectData, updatedDocsMap);
   };
 
-  const [activeSidebarView, setActiveSidebarView] = useState<'explorer' | 'git'>('explorer');
+  // 选择模板进行文档骨架查看或编辑
+  const handleSelectTemplateForEdit = (tmpl: NodeTemplate, isCustom: boolean) => {
+    const rawContent = tmpl.markdownSkeleton || renderTemplateMarkdown(tmpl, tmpl.defaultTitle);
+    setSelectedEditingTemplate({
+      template: tmpl,
+      content: rawContent,
+      isCustom
+    });
+    setIsDrawerOpen(true);
+  };
+
+  // 模板文档骨架修改
+  const handleTemplateContentChange = (newContent: string) => {
+    if (!selectedEditingTemplate || !selectedEditingTemplate.isCustom) return;
+
+    const updatedTemplate: NodeTemplate = {
+      ...selectedEditingTemplate.template,
+      markdownSkeleton: newContent
+    };
+
+    upsertCustomTemplate(updatedTemplate);
+    setSelectedEditingTemplate({
+      template: updatedTemplate,
+      content: newContent,
+      isCustom: true
+    });
+  };
+
+  // 模板元信息修改
+  const handleTemplateMetaChange = (_templateId: string, updates: Partial<NodeTemplate>) => {
+    if (!selectedEditingTemplate || !selectedEditingTemplate.isCustom) return;
+    const updatedTemplate: NodeTemplate = {
+      ...selectedEditingTemplate.template,
+      ...updates
+    };
+
+    upsertCustomTemplate(updatedTemplate);
+    setSelectedEditingTemplate({
+      ...selectedEditingTemplate,
+      template: updatedTemplate
+    });
+  };
+
+  const [activeSidebarView, setActiveSidebarView] = useState<'explorer' | 'git' | 'templates'>('explorer');
 
   if (viewMode === 'manager') {
     return (
@@ -774,7 +843,7 @@ const App: React.FC = () => {
           <button 
             className={`activity-icon ${activeSidebarView === 'explorer' ? 'active' : ''}`}
             onClick={() => setActiveSidebarView('explorer')}
-            title="资源管理器 (Explorer)"
+            title="需求结构树 (Explorer)"
           >
             <Folder size={20} />
           </button>
@@ -785,17 +854,39 @@ const App: React.FC = () => {
           >
             <GitBranch size={20} />
           </button>
+          <button 
+            className={`activity-icon ${activeSidebarView === 'templates' ? 'active' : ''}`}
+            onClick={() => setActiveSidebarView('templates')}
+            title="需求模板库 (Templates)"
+          >
+            <Bookmark size={20} />
+          </button>
         </div>
 
-        {activeSidebarView === 'explorer' ? (
+        {activeSidebarView === 'explorer' && (
           <Sidebar
             rootNode={projectData.root}
             selectedNodeId={selectedNodeId}
             onSelectNode={handleOpenNodeDrawer}
             projectName={projectData.projectName}
           />
-        ) : (
+        )}
+
+        {activeSidebarView === 'git' && (
           <GitSidebar projectPath={currentProjectPath} />
+        )}
+
+        {activeSidebarView === 'templates' && (
+          <TemplateSidebar
+            selectedTemplateId={selectedEditingTemplate?.template.id}
+            onSelectTemplate={handleSelectTemplateForEdit}
+            onDeleteTemplate={(deletedId) => {
+              if (selectedEditingTemplate?.template.id === deletedId) {
+                setSelectedEditingTemplate(null);
+                setIsDrawerOpen(false);
+              }
+            }}
+          />
         )}
 
         <main className="app-main-canvas">
@@ -821,7 +912,18 @@ const App: React.FC = () => {
           />
         </main>
 
-        {isDrawerOpen && currentNode && (
+        {isDrawerOpen && activeSidebarView === 'templates' && selectedEditingTemplate && (
+          <TemplateMarkdownDrawer
+            template={selectedEditingTemplate.template}
+            content={selectedEditingTemplate.content}
+            isCustom={selectedEditingTemplate.isCustom}
+            onClose={() => setIsDrawerOpen(false)}
+            onContentChange={handleTemplateContentChange}
+            onUpdateMeta={handleTemplateMetaChange}
+          />
+        )}
+
+        {isDrawerOpen && activeSidebarView !== 'templates' && currentNode && (
           <MarkdownDrawer
             node={currentNode}
             content={docsMap[currentNode.docPath] || ''}
@@ -858,6 +960,15 @@ const App: React.FC = () => {
         isOpen={isUpdateModalOpen}
         onClose={() => setIsUpdateModalOpen(false)}
       />
+
+      {/* 节点模板选择弹窗 */}
+      {templateParentNode && (
+        <TemplatePickerModal
+          parentNodeTitle={templateParentNode.title}
+          onClose={() => setTemplateParentNode(null)}
+          onSelectTemplate={handleConfirmCreateWithTemplate}
+        />
+      )}
 
       {/* 底部状态栏 */}
       <footer className="app-statusbar">
