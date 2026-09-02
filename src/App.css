@@ -3221,11 +3221,6 @@ select.form-input {
   gap: 4px;
 }
 
-.kanban-filter-input:focus {
-  border-color: var(--primary-500);
-  width: 240px;
-}
-
 .kanban-board-columns {
   flex: 1;
   display: flex;
@@ -3252,6 +3247,27 @@ select.form-input {
   border-color: var(--primary-500);
   background-color: var(--primary-50);
   box-shadow: 0 0 0 2px var(--primary-400);
+}
+
+.kanban-column.drag-over * {
+  pointer-events: none;
+}
+
+.card-quick-move-select {
+  font-size: 10px;
+  background-color: var(--bg-app);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  padding: 1px 4px;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.card-quick-move-select:hover {
+  border-color: var(--primary-400);
+  color: var(--primary-600);
 }
 
 .kanban-column-header {

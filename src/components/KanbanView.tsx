@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { MindNode, Status, Priority } from '../types';
 import {
   Kanban,
@@ -95,6 +95,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
+  
+  // 使用 Ref 跨事件持久化当前拖拽的 Node ID，防止 Webview 中 event timing 造成丢失
+  const draggedNodeIdRef = useRef<string | null>(null);
 
   const breadcrumbsMap = useMemo(() => buildBreadcrumbsMap(rootNode), [rootNode]);
 
@@ -112,36 +115,54 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
     });
   }, [allNodes, rootNode, searchFilter, docsMap]);
 
-  // 拖拽处理
+  // 拖拽开始
   const handleDragStart = (e: React.DragEvent, nodeId: string) => {
+    draggedNodeIdRef.current = nodeId;
+    setDraggedNodeId(nodeId);
     e.dataTransfer.setData('text/plain', nodeId);
     e.dataTransfer.effectAllowed = 'move';
-    setDraggedNodeId(nodeId);
   };
 
+  // 拖拽结束
   const handleDragEnd = () => {
+    draggedNodeIdRef.current = null;
     setDraggedNodeId(null);
     setDragOverColumn(null);
   };
 
+  // 拖拽经过列
   const handleDragOver = (e: React.DragEvent, colKey: string) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
     if (dragOverColumn !== colKey) {
       setDragOverColumn(colKey);
     }
   };
 
+  const handleDragEnter = (e: React.DragEvent, colKey: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverColumn(colKey);
+  };
+
   const handleDragLeave = (e: React.DragEvent, colKey: string) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (e.currentTarget.contains(e.relatedTarget as HTMLElement)) return;
     if (dragOverColumn === colKey) {
       setDragOverColumn(null);
     }
   };
 
+  // 放置到列
   const handleDrop = (e: React.DragEvent, targetColumnKey: string) => {
     e.preventDefault();
-    const nodeId = e.dataTransfer.getData('text/plain') || draggedNodeId;
+    e.stopPropagation();
+
+    const nodeId = e.dataTransfer.getData('text/plain') || draggedNodeIdRef.current || draggedNodeId;
+    
+    draggedNodeIdRef.current = null;
     setDraggedNodeId(null);
     setDragOverColumn(null);
 
@@ -215,6 +236,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   key={col.key}
                   className={`kanban-column ${isOver ? 'drag-over' : ''}`}
                   onDragOver={(e) => handleDragOver(e, col.key)}
+                  onDragEnter={(e) => handleDragEnter(e, col.key)}
                   onDragLeave={(e) => handleDragLeave(e, col.key)}
                   onDrop={(e) => handleDrop(e, col.key)}
                 >
@@ -228,7 +250,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
                   <div className="kanban-column-body">
                     {colNodes.length === 0 ? (
-                      <div className="kanban-column-empty">暂无此状态任务</div>
+                      <div className="kanban-column-empty">
+                        <span>可拖拽任务卡片到此状态</span>
+                      </div>
                     ) : (
                       colNodes.map((node) => {
                         const isSelected = selectedNodeId === node.id;
@@ -286,15 +310,34 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                               </div>
                             )}
 
-                            {/* 底部元数据 */}
+                            {/* 底部元数据与快捷流转 */}
                             <div className="card-footer-meta">
                               <div className="footer-left-pills">
                                 <span className={`priority-badge ${node.priority.toLowerCase()}`}>
                                   {node.priority}
                                 </span>
+
+                                {/* 快捷状态切换下拉 */}
+                                <select
+                                  className="card-quick-move-select"
+                                  value={node.status}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateNodeMeta(node.id, { status: e.target.value as Status });
+                                  }}
+                                  title="点击快捷流转状态"
+                                >
+                                  <option value="draft">草稿</option>
+                                  <option value="todo">待办</option>
+                                  <option value="in_progress">进行中</option>
+                                  <option value="completed">已完成</option>
+                                  <option value="deprecated">废弃</option>
+                                </select>
+
                                 {hasWikiLinks && (
                                   <span className="card-wikilink-pill" title="包含双向链接引用">
-                                    <Link2 size={11} /> 引用
+                                    <Link2 size={11} />
                                   </span>
                                 )}
                               </div>
@@ -324,6 +367,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   key={col.key}
                   className={`kanban-column ${isOver ? 'drag-over' : ''}`}
                   onDragOver={(e) => handleDragOver(e, col.key)}
+                  onDragEnter={(e) => handleDragEnter(e, col.key)}
                   onDragLeave={(e) => handleDragLeave(e, col.key)}
                   onDrop={(e) => handleDrop(e, col.key)}
                 >
@@ -336,7 +380,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
                   <div className="kanban-column-body">
                     {colNodes.length === 0 ? (
-                      <div className="kanban-column-empty">暂无此优先级任务</div>
+                      <div className="kanban-column-empty">
+                        <span>可拖拽任务卡片到此优先级</span>
+                      </div>
                     ) : (
                       colNodes.map((node) => {
                         const isSelected = selectedNodeId === node.id;
@@ -393,12 +439,30 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
                             <div className="card-footer-meta">
                               <div className="footer-left-pills">
-                                <span className={`priority-badge ${node.priority.toLowerCase()}`}>
-                                  {node.priority}
+                                <span className={`status-badge-pill ${node.status}`}>
+                                  {node.status}
                                 </span>
+
+                                {/* 快捷优先级切换下拉 */}
+                                <select
+                                  className="card-quick-move-select"
+                                  value={node.priority}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateNodeMeta(node.id, { priority: e.target.value as Priority });
+                                  }}
+                                  title="点击快捷调整优先级"
+                                >
+                                  <option value="P0">P0 紧急</option>
+                                  <option value="P1">P1 高</option>
+                                  <option value="P2">P2 中</option>
+                                  <option value="P3">P3 低</option>
+                                </select>
+
                                 {hasWikiLinks && (
                                   <span className="card-wikilink-pill" title="包含双向链接引用">
-                                    <Link2 size={11} /> 引用
+                                    <Link2 size={11} />
                                   </span>
                                 )}
                               </div>
