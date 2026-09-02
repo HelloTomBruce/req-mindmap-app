@@ -160,25 +160,23 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       <div className="kanban-header-bar">
         <div className="kanban-header-left">
           <div className="kanban-title-tag">
-            <Kanban size={16} />
-            <span>任务泳道看板</span>
+            <Kanban size={15} />
+            <span className="title-text">看板</span>
           </div>
 
-          <div className="kanban-group-switch">
-            <span className="switch-label">
-              <Filter size={13} /> 分组方式:
-            </span>
+          <div className="kanban-group-switch" title="切换看板分组维度">
+            <Filter size={12} className="switch-icon" />
             <button
               className={`group-switch-btn ${groupBy === 'status' ? 'active' : ''}`}
               onClick={() => setGroupBy('status')}
             >
-              按生命周期状态
+              按状态
             </button>
             <button
               className={`group-switch-btn ${groupBy === 'priority' ? 'active' : ''}`}
               onClick={() => setGroupBy('priority')}
             >
-              按优先级矩阵
+              按优先级
             </button>
           </div>
         </div>
@@ -187,18 +185,19 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           <input
             type="text"
             className="kanban-filter-input"
-            placeholder="筛选看板卡片..."
+            placeholder="筛选卡片..."
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
           />
 
           {rootNode && onAddChildNode && (
             <button
-              className="btn outline small"
+              className="btn outline small kanban-add-btn"
               onClick={() => onAddChildNode(rootNode.id)}
               title="在根模块下快速添加任务"
             >
-              <Plus size={13} /> 添加任务
+              <Plus size={13} />
+              <span className="add-btn-text">添加任务</span>
             </button>
           )}
         </div>
