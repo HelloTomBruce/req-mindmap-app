@@ -35,8 +35,49 @@ const STATUS_LABELS: Record<Status, { label: string; color: string }> = {
   deprecated: { label: '废弃', color: '#ef4444' }
 };
 
-const NODE_WIDTH = 220;
-const NODE_HEIGHT = 70;
+const NODE_WIDTH = 240;
+const NODE_HEIGHT = 76;
+
+interface SubtreeStats {
+  completed: number;
+  total: number;
+  percent: number;
+  hasUnresolvedP0: boolean;
+}
+
+function computeSubtreeStats(node: MindNode): SubtreeStats {
+  if (!node.children || node.children.length === 0) {
+    const isDone = node.status === 'completed';
+    const isUnresolvedP0 = node.priority === 'P0' && !isDone;
+    return {
+      completed: isDone ? 1 : 0,
+      total: 1,
+      percent: isDone ? 100 : 0,
+      hasUnresolvedP0: isUnresolvedP0
+    };
+  }
+
+  let completed = 0;
+  let total = 0;
+  let hasUnresolvedP0 = false;
+
+  const traverse = (n: MindNode) => {
+    if (!n.children || n.children.length === 0) {
+      total += 1;
+      if (n.status === 'completed') {
+        completed += 1;
+      } else if (n.priority === 'P0') {
+        hasUnresolvedP0 = true;
+      }
+    } else {
+      n.children.forEach(traverse);
+    }
+  };
+
+  traverse(node);
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+  return { completed, total, percent, hasUnresolvedP0 };
+}
 
 // 自定义思维导图节点组件 Custom MindNode Component for React Flow
 const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
@@ -54,6 +95,7 @@ const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
   const { node, isRoot, onRenameNode, onAddChildNode, onDeleteNode, onToggleCollapse } = nodeData;
   const hasChildren = node.children && node.children.length > 0;
   const isCollapsed = !!node.collapsed;
+  const stats = useMemo(() => computeSubtreeStats(node), [node]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(node.title);
@@ -91,7 +133,7 @@ const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
 
   return (
     <div
-      className={`mindmap-node-card ${isRoot ? 'root-node' : ''} ${selected ? 'selected' : ''}`}
+      className={`mindmap-node-card ${isRoot ? 'root-node' : ''} ${selected ? 'selected' : ''} ${hasChildren && stats.hasUnresolvedP0 ? 'has-p0-alert' : ''}`}
       style={{ margin: 0, width: `${NODE_WIDTH}px` }}
     >
       {/* 输入 Connect Handle (左侧) */}
@@ -139,13 +181,31 @@ const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
       </div>
 
       <div className="node-footer-meta">
-        <span className={`priority-badge ${node.priority.toLowerCase()}`}>
-          {node.priority}
-        </span>
+        <div className="node-meta-left">
+          <span className={`priority-badge ${node.priority.toLowerCase()}`}>
+            {node.priority}
+          </span>
 
-        <span className="status-badge" style={{ color: STATUS_LABELS[node.status].color }}>
-          ● {STATUS_LABELS[node.status].label}
-        </span>
+          <span className="status-badge" style={{ color: STATUS_LABELS[node.status].color }}>
+            ● {STATUS_LABELS[node.status].label}
+          </span>
+        </div>
+
+        {hasChildren && (
+          <div className="node-meta-right">
+            <span
+              className={`node-progress-pill ${stats.percent === 100 ? 'done' : ''}`}
+              title={`子任务完成度: ${stats.completed}/${stats.total} (${stats.percent}%)`}
+            >
+              {stats.completed}/{stats.total}
+            </span>
+            {stats.hasUnresolvedP0 && (
+              <span className="node-p0-alert-badge" title="分支下存在未完成的 P0 紧急需求">
+                P0!
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 悬浮操作栏 */}

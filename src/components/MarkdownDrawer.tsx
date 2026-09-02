@@ -1,10 +1,71 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import MDEditor from '@uiw/react-md-editor';
+import mermaid from 'mermaid';
 import { MindNode, Priority, Status } from '../types';
 import { X, Save, FileCode, Image as ImageIcon, Link2, ArrowUpRight, Network } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { WikiLinkAutocomplete } from './WikiLinkAutocomplete';
+
+// 初始化 Mermaid 图表渲染引擎（适配暗色水墨主题）
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2c5e53',
+    primaryTextColor: '#e2f5ee',
+    primaryBorderColor: '#3c7a6e',
+    lineColor: '#5da092',
+    secondaryColor: '#1e3832',
+    tertiaryColor: '#162a25',
+    background: '#131f1c'
+  },
+  securityLevel: 'loose'
+});
+
+// Mermaid 动态渲染代码块组件
+const MermaidRenderer: React.FC<{ chart: string }> = ({ chart }) => {
+  const [svgContent, setSvgContent] = useState<string>('');
+  const [hasError, setHasError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const renderChart = async () => {
+      try {
+        setHasError(null);
+        const id = `mermaid-${Math.random().toString(36).substring(2, 9)}`;
+        const { svg } = await mermaid.render(id, chart.trim());
+        if (isMounted) {
+          setSvgContent(svg);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setHasError(err?.message || 'Mermaid 语法解析失败');
+        }
+      }
+    };
+    renderChart();
+    return () => {
+      isMounted = false;
+    };
+  }, [chart]);
+
+  if (hasError) {
+    return (
+      <div className="mermaid-render-error">
+        <div className="mermaid-error-title">⚠️ Mermaid 渲染失败</div>
+        <pre className="mermaid-raw-code">{chart}</pre>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="mermaid-render-box"
+      dangerouslySetInnerHTML={{ __html: svgContent }}
+    />
+  );
+};
 
 interface MarkdownDrawerProps {
   node: MindNode | null;
@@ -334,6 +395,16 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
                   );
                 }
                 return <a href={href} target="_blank" rel="noreferrer" {...props}>{children}</a>;
+              },
+              code: ({ inline, className, children, ...props }: any) => {
+                const match = /language-(\w+)/.exec(className || '');
+                const language = match ? match[1] : '';
+                const codeText = String(children).replace(/\n$/, '');
+
+                if (!inline && language === 'mermaid') {
+                  return <MermaidRenderer chart={codeText} />;
+                }
+                return <code className={className} {...props}>{children}</code>;
               }
             }
           }}

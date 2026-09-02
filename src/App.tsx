@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ProjectData, MindNode } from './types';
 import { INITIAL_PROJECT_DATA, INITIAL_DOC_CONTENTS } from './mockData';
 import { MindmapCanvas } from './components/MindmapCanvas';
+import { KanbanView } from './components/KanbanView';
 import { MarkdownDrawer } from './components/MarkdownDrawer';
 import { Sidebar } from './components/Sidebar';
 import { GitSidebar } from './components/GitSidebar';
@@ -24,7 +25,7 @@ import { mcpServerManager } from './mcpServerManager';
 import { useMcpPolling, loadDocsForTree } from './hooks/useMcpPolling';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch, Bookmark, Search } from 'lucide-react';
+import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch, Bookmark, Search, Kanban, Network } from 'lucide-react';
 import './App.css';
 
 const App: React.FC = () => {
@@ -35,6 +36,7 @@ const App: React.FC = () => {
   const [projectData, setProjectData] = useState<ProjectData>(INITIAL_PROJECT_DATA);
   const [docsMap, setDocsMap] = useState<Record<string, string>>(INITIAL_DOC_CONTENTS);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>('root-node');
+  const [canvasViewMode, setCanvasViewMode] = useState<'mindmap' | 'kanban'>('mindmap');
   
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(true);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
@@ -855,6 +857,25 @@ const App: React.FC = () => {
         </div>
 
         <div className="header-actions">
+          <div className="view-mode-toggle-group">
+            <button
+              className={`toggle-btn ${canvasViewMode === 'mindmap' ? 'active' : ''}`}
+              onClick={() => setCanvasViewMode('mindmap')}
+              title="切换至思维导图视图"
+            >
+              <Network size={14} />
+              <span>脑图</span>
+            </button>
+            <button
+              className={`toggle-btn ${canvasViewMode === 'kanban' ? 'active' : ''}`}
+              onClick={() => setCanvasViewMode('kanban')}
+              title="切换至任务看板视图"
+            >
+              <Kanban size={14} />
+              <span>看板</span>
+            </button>
+          </div>
+
           <button
             className="btn outline header-search-btn"
             title="全局搜索节点与正文 (Cmd + K)"
@@ -925,26 +946,43 @@ const App: React.FC = () => {
         )}
 
         <main className="app-main-canvas">
-          <div className="canvas-header-bar">
-            <span className="canvas-title">🧠 模块拓扑关系视图</span>
-            <button
-              className="btn small"
-              onClick={() => handleAddChildNode(selectedNodeId || projectData.root.id)}
-            >
-              <Plus size={14} /> 添加子需求节点
-            </button>
-          </div>
+          {canvasViewMode === 'mindmap' ? (
+            <>
+              <div className="canvas-header-bar">
+                <span className="canvas-title">🧠 模块拓扑关系视图</span>
+                <button
+                  className="btn small"
+                  onClick={() => handleAddChildNode(selectedNodeId || projectData.root.id)}
+                >
+                  <Plus size={14} /> 添加子需求节点
+                </button>
+              </div>
 
-          <MindmapCanvas
-            rootNode={projectData.root}
-            selectedNodeId={selectedNodeId}
-            onSelectNode={handleSelectNode}
-            onOpenDrawer={() => setIsDrawerOpen(true)}
-            onRenameNode={(nodeId, newTitle) => handleUpdateMeta(nodeId, { title: newTitle })}
-            onAddChildNode={handleAddChildNode}
-            onDeleteNode={handleDeleteNode}
-            onToggleCollapse={handleToggleCollapse}
-          />
+              <MindmapCanvas
+                rootNode={projectData.root}
+                selectedNodeId={selectedNodeId}
+                onSelectNode={handleSelectNode}
+                onOpenDrawer={() => setIsDrawerOpen(true)}
+                onRenameNode={(nodeId, newTitle) => handleUpdateMeta(nodeId, { title: newTitle })}
+                onAddChildNode={handleAddChildNode}
+                onDeleteNode={handleDeleteNode}
+                onToggleCollapse={handleToggleCollapse}
+              />
+            </>
+          ) : (
+            <KanbanView
+              rootNode={projectData.root}
+              allNodes={allProjectNodes}
+              docsMap={docsMap}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={(nodeId) => {
+                setSelectedNodeId(nodeId);
+                setIsDrawerOpen(true);
+              }}
+              onUpdateNodeMeta={handleUpdateMeta}
+              onAddChildNode={handleAddChildNode}
+            />
+          )}
         </main>
 
         {isDrawerOpen && activeSidebarView === 'templates' && selectedEditingTemplate && (
@@ -1008,6 +1046,16 @@ const App: React.FC = () => {
         onSelectNode={(nodeId) => {
           setSelectedNodeId(nodeId);
           setIsDrawerOpen(true);
+        }}
+        onExecuteAction={(actionId) => {
+          if (actionId === 'kanban') setCanvasViewMode('kanban');
+          else if (actionId === 'mindmap') setCanvasViewMode('mindmap');
+          else if (actionId === 'export') setIsExportModalOpen(true);
+          else if (actionId === 'git') setActiveSidebarView('git');
+          else if (actionId === 'mcp') setIsMCPModalOpen(true);
+          else if (actionId === 'new_child' && projectData?.root) {
+            handleAddChildNode(selectedNodeId || projectData.root.id);
+          }
         }}
       />
 
