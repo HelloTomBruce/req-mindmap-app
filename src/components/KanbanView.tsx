@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { MindNode, Status, Priority } from '../types';
 import {
   Kanban,
@@ -24,6 +25,14 @@ interface KanbanViewProps {
 }
 
 type GroupByMode = 'status' | 'priority';
+
+interface DraggingCardState {
+  nodeId: string;
+  nodeTitle: string;
+  sourceKey: string;
+  currentX: number;
+  currentY: number;
+}
 
 const STATUS_COLUMNS: Array<{ key: Status; label: string; color: string; icon: React.ReactNode }> = [
   { key: 'draft', label: '草稿', color: '#9ca3af', icon: <FileText size={15} /> },
@@ -92,12 +101,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   onAddChildNode
 }) => {
   const [groupBy, setGroupBy] = useState<GroupByMode>('status');
-  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [draggingState, setDraggingState] = useState<DraggingCardState | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
-  
-  // 使用 Ref 跨事件持久化当前拖拽的 Node ID，防止 Webview 中 event timing 造成丢失
-  const draggedNodeIdRef = useRef<string | null>(null);
 
   const breadcrumbsMap = useMemo(() => buildBreadcrumbsMap(rootNode), [rootNode]);
 
@@ -115,64 +121,81 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
     });
   }, [allNodes, rootNode, searchFilter, docsMap]);
 
-  // 拖拽开始
-  const handleDragStart = (e: React.DragEvent, nodeId: string) => {
-    draggedNodeIdRef.current = nodeId;
-    setDraggedNodeId(nodeId);
-    e.dataTransfer.setData('text/plain', nodeId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  // 拖拽结束
-  const handleDragEnd = () => {
-    draggedNodeIdRef.current = null;
-    setDraggedNodeId(null);
-    setDragOverColumn(null);
-  };
-
-  // 拖拽经过列
-  const handleDragOver = (e: React.DragEvent, colKey: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
-    if (dragOverColumn !== colKey) {
-      setDragOverColumn(colKey);
+  // 指针驱动的拖拽引擎 (Pointer Event Based DnD - 彻底解决 WebKit / Tauri HTML5 drag 偶发不生效问题)
+  const handleCardPointerDown = (e: React.PointerEvent, node: MindNode, sourceKey: string) => {
+    // 若点击在下拉选择或按钮上则不触发拖拽
+    if ((e.target as HTMLElement).closest('select') || (e.target as HTMLElement).closest('button')) {
+      return;
     }
-  };
 
-  const handleDragEnter = (e: React.DragEvent, colKey: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverColumn(colKey);
-  };
+    if (e.button !== 0) return; // 仅左键拖拽
 
-  const handleDragLeave = (e: React.DragEvent, colKey: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.currentTarget.contains(e.relatedTarget as HTMLElement)) return;
-    if (dragOverColumn === colKey) {
-      setDragOverColumn(null);
-    }
-  };
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let isDraggingActive = false;
 
-  // 放置到列
-  const handleDrop = (e: React.DragEvent, targetColumnKey: string) => {
-    e.preventDefault();
-    e.stopPropagation();
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
 
-    const nodeId = e.dataTransfer.getData('text/plain') || draggedNodeIdRef.current || draggedNodeId;
-    
-    draggedNodeIdRef.current = null;
-    setDraggedNodeId(null);
-    setDragOverColumn(null);
+      if (!isDraggingActive && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        isDraggingActive = true;
+        document.body.classList.add('kanban-dragging-active');
+        window.getSelection()?.removeAllRanges();
+      }
 
-    if (!nodeId) return;
+      if (isDraggingActive) {
+        moveEvent.preventDefault();
+        window.getSelection()?.removeAllRanges();
 
-    if (groupBy === 'status') {
-      onUpdateNodeMeta(nodeId, { status: targetColumnKey as Status });
-    } else {
-      onUpdateNodeMeta(nodeId, { priority: targetColumnKey as Priority });
-    }
+        setDraggingState({
+          nodeId: node.id,
+          nodeTitle: node.title,
+          sourceKey,
+          currentX: moveEvent.clientX,
+          currentY: moveEvent.clientY
+        });
+
+        const elements = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY);
+        const colEl = elements.find((el) => el.getAttribute('data-col-key'));
+        if (colEl) {
+          const colKey = colEl.getAttribute('data-col-key');
+          setDragOverColumn(colKey || null);
+        } else {
+          setDragOverColumn(null);
+        }
+      }
+    };
+
+    const handlePointerUp = (upEvent: PointerEvent) => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      document.body.classList.remove('kanban-dragging-active');
+      window.getSelection()?.removeAllRanges();
+
+      if (isDraggingActive) {
+        const elements = document.elementsFromPoint(upEvent.clientX, upEvent.clientY);
+        const colEl = elements.find((el) => el.getAttribute('data-col-key'));
+        if (colEl) {
+          const targetColKey = colEl.getAttribute('data-col-key');
+          if (targetColKey) {
+            if (groupBy === 'status') {
+              onUpdateNodeMeta(node.id, { status: targetColKey as Status });
+            } else {
+              onUpdateNodeMeta(node.id, { priority: targetColKey as Priority });
+            }
+          }
+        }
+        setDraggingState(null);
+        setDragOverColumn(null);
+      } else {
+        // 未移动判定为纯点击，打开对应节点抽屉
+        onSelectNode(node.id);
+      }
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
   };
 
   return (
@@ -234,11 +257,8 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
               return (
                 <div
                   key={col.key}
+                  data-col-key={col.key}
                   className={`kanban-column ${isOver ? 'drag-over' : ''}`}
-                  onDragOver={(e) => handleDragOver(e, col.key)}
-                  onDragEnter={(e) => handleDragEnter(e, col.key)}
-                  onDragLeave={(e) => handleDragLeave(e, col.key)}
-                  onDrop={(e) => handleDrop(e, col.key)}
                 >
                   <div className="kanban-column-header" style={{ borderTopColor: col.color }}>
                     <div className="col-title-group">
@@ -256,7 +276,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                     ) : (
                       colNodes.map((node) => {
                         const isSelected = selectedNodeId === node.id;
-                        const isDragging = draggedNodeId === node.id;
+                        const isBeingDragged = draggingState?.nodeId === node.id;
                         const breadcrumbs = breadcrumbsMap[node.id] || [];
                         const progress = calculateNodeProgress(node);
                         const hasChildren = node.children && node.children.length > 0;
@@ -266,11 +286,8 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         return (
                           <div
                             key={node.id}
-                            className={`kanban-card ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, node.id)}
-                            onDragEnd={handleDragEnd}
-                            onClick={() => onSelectNode(node.id)}
+                            className={`kanban-card ${isSelected ? 'selected' : ''} ${isBeingDragged ? 'dragging' : ''}`}
+                            onPointerDown={(e) => handleCardPointerDown(e, node, col.key)}
                           >
                             {/* 面包屑链路 */}
                             {breadcrumbs.length > 0 && (
@@ -321,9 +338,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                                 <select
                                   className="card-quick-move-select"
                                   value={node.status}
-                                  onClick={(e) => e.stopPropagation()}
                                   onChange={(e) => {
-                                    e.stopPropagation();
                                     onUpdateNodeMeta(node.id, { status: e.target.value as Status });
                                   }}
                                   title="点击快捷流转状态"
@@ -365,11 +380,8 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
               return (
                 <div
                   key={col.key}
+                  data-col-key={col.key}
                   className={`kanban-column ${isOver ? 'drag-over' : ''}`}
-                  onDragOver={(e) => handleDragOver(e, col.key)}
-                  onDragEnter={(e) => handleDragEnter(e, col.key)}
-                  onDragLeave={(e) => handleDragLeave(e, col.key)}
-                  onDrop={(e) => handleDrop(e, col.key)}
                 >
                   <div className="kanban-column-header" style={{ borderTopColor: col.color }}>
                     <div className="col-title-group">
@@ -386,7 +398,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                     ) : (
                       colNodes.map((node) => {
                         const isSelected = selectedNodeId === node.id;
-                        const isDragging = draggedNodeId === node.id;
+                        const isBeingDragged = draggingState?.nodeId === node.id;
                         const breadcrumbs = breadcrumbsMap[node.id] || [];
                         const progress = calculateNodeProgress(node);
                         const hasChildren = node.children && node.children.length > 0;
@@ -396,11 +408,8 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         return (
                           <div
                             key={node.id}
-                            className={`kanban-card ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, node.id)}
-                            onDragEnd={handleDragEnd}
-                            onClick={() => onSelectNode(node.id)}
+                            className={`kanban-card ${isSelected ? 'selected' : ''} ${isBeingDragged ? 'dragging' : ''}`}
+                            onPointerDown={(e) => handleCardPointerDown(e, node, col.key)}
                           >
                             {breadcrumbs.length > 0 && (
                               <div className="card-breadcrumbs">
@@ -447,9 +456,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                                 <select
                                   className="card-quick-move-select"
                                   value={node.priority}
-                                  onClick={(e) => e.stopPropagation()}
                                   onChange={(e) => {
-                                    e.stopPropagation();
                                     onUpdateNodeMeta(node.id, { priority: e.target.value as Priority });
                                   }}
                                   title="点击快捷调整优先级"
@@ -484,6 +491,27 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
               );
             })}
       </div>
+
+      {/* 拖拽浮层预览 (通过 Portal 挂载至 document.body，彻底避免被任意 overflow 或 contain 裁剪) */}
+      {draggingState &&
+        createPortal(
+          <div
+            className="kanban-drag-ghost"
+            style={{
+              left: `${draggingState.currentX + 12}px`,
+              top: `${draggingState.currentY + 12}px`
+            }}
+          >
+            <div className="ghost-title-row">
+              <Kanban size={14} className="ghost-icon" />
+              <span className="ghost-title">{draggingState.nodeTitle}</span>
+            </div>
+            <div className="ghost-target-hint">
+              {dragOverColumn ? `✨ 释放流转至此列` : `👉 拖拽至目标泳道...`}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
