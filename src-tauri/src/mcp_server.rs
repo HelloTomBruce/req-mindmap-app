@@ -67,7 +67,7 @@ fn add_log(state: &AppState, tool: String, params: Value, status: String) {
 }
 
 // 辅助函数：根据双重 MCP 客户端标准，同时支持在 HTTP 200 响应体中直接返回 JSON-RPC 以及经由 SSE 广播回执
-async fn send_rpc_response(state: &AppState, res_val: Value) -> impl IntoResponse {
+async fn send_rpc_response(state: &AppState, res_val: Value) -> axum::response::Response {
     use axum::response::sse::Event;
 
     if let Ok(guard) = state.sse_clients.lock() {
@@ -76,16 +76,31 @@ async fn send_rpc_response(state: &AppState, res_val: Value) -> impl IntoRespons
             let _ = tx.try_send(Ok(Event::default().event("message").data(json_str)));
         }
     }
-    Json(res_val)
+
+    axum::response::Response::builder()
+        .status(axum::http::StatusCode::OK)
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(serde_json::to_string(&res_val).unwrap_or_default()))
+        .unwrap()
 }
 
-// 模拟扩展的标准 MCP Tools 处理器
+// 标准 MCP JSON-RPC 处理器
 pub async fn handle_mcp_rpc(
     State(state): State<AppState>,
     Json(payload): Json<Value>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
     let method = payload.get("method").and_then(|v| v.as_str()).unwrap_or("");
-    let id = payload.get("id").cloned().unwrap_or(json!(1));
+    let is_notification = payload.get("id").is_none() || method.starts_with("notifications/");
+    let id = payload.get("id").cloned().unwrap_or(Value::Null);
+
+    // 1. JSON-RPC Notification (如 notifications/initialized)：规范严格要求不可向客户端回复任何 JSON-RPC 消息
+    if is_notification {
+        return axum::response::Response::builder()
+            .status(axum::http::StatusCode::ACCEPTED)
+            .header("Content-Type", "text/plain")
+            .body(axum::body::Body::from("Accepted"))
+            .unwrap();
+    }
 
     let p_path = safe_lock!(state.project_path).clone();
 
@@ -96,21 +111,59 @@ pub async fn handle_mcp_rpc(
             "result": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {
-                    "tools": {}
+                    "tools": {
+                        "listChanged": true
+                    },
+                    "resources": {
+                        "listChanged": true
+                    },
+                    "prompts": {
+                        "listChanged": true
+                    }
                 },
                 "serverInfo": {
                     "name": "req-mindmark-mcp",
-                    "version": "1.0.0"
+                    "version": "1.4.0"
                 }
             }
         })).await;
     }
 
-    if method == "notifications/initialized" || method == "ping" {
+    if method == "ping" {
         return send_rpc_response(&state, json!({
             "jsonrpc": "2.0",
             "id": id,
             "result": {}
+        })).await;
+    }
+
+    if method == "resources/list" {
+        return send_rpc_response(&state, json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "result": {
+                "resources": []
+            }
+        })).await;
+    }
+
+    if method == "resources/templates/list" {
+        return send_rpc_response(&state, json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "result": {
+                "resourceTemplates": []
+            }
+        })).await;
+    }
+
+    if method == "prompts/list" {
+        return send_rpc_response(&state, json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "result": {
+                "prompts": []
+            }
         })).await;
     }
 
@@ -1039,6 +1092,7 @@ pub fn start_mcp_server_rust(
             .route("/sse", get(sse_handler))
             .route("/messages", post(handle_mcp_rpc))
             .route("/rpc", post(handle_mcp_rpc))
+            .route("/", post(handle_mcp_rpc))
             .layer(CorsLayer::permissive())
             .with_state(state_clone.clone());
 
