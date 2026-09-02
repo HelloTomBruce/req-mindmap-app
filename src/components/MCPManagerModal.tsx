@@ -25,49 +25,73 @@ const MCP_TOOLS_CATALOG: MCPToolDef[] = [
   {
     name: 'list_projects',
     category: 'query',
-    description: '获取当前所有的需求项目列表（包含项目名称、本地目录路径及当前激活状态）',
+    description: '获取当前所有的文档项目列表（包含项目名称、本地目录路径及当前激活状态）',
     parameters: '无参数'
   },
   {
     name: 'get_requirements_tree',
     category: 'query',
-    description: '获取当前需求项目的完整模块树架构、节点ID、文档路径及完成状态',
+    description: '获取当前文档项目的完整模块树架构、节点ID、文档路径及完成状态',
     parameters: '无参数'
   },
   {
     name: 'get_requirement_detail',
     category: 'query',
-    description: '读取并返回某个特定需求节点的详细 Markdown 描述内容',
+    description: '读取并返回某个特定节点的详细 Markdown 描述内容',
     parameters: 'doc_path?: string, node_id?: string'
   },
   {
     name: 'search_requirements',
     category: 'query',
-    description: '在需求文档库中全局搜索指定关键词（如接口定义、功能点、业务规则）',
+    description: '在文档库中全局搜索指定关键词（如接口定义、功能点、业务规则）',
     parameters: 'query: string'
+  },
+  {
+    name: 'get_document_outline',
+    category: 'query',
+    description: '【全局速览】极速获取当前项目的完整拓扑脉络与所有节点的摘要快照 (极省 Token)',
+    parameters: '无参数'
+  },
+  {
+    name: 'export_aggregate_document',
+    category: 'query',
+    description: '【长文聚合】一键将全项目所有文档按思维导图层级自动拼接为带 TOC 目录的长篇 Markdown 大文档',
+    parameters: '无参数'
   },
   {
     name: 'update_requirement_status',
     category: 'mutation',
-    description: '当 AI 完成编码或重构后，自动更新需求节点的状态 (draft, todo, in_progress, completed)',
+    description: '当 AI 完成编码或重构后，自动更新节点的状态 (draft, todo, in_progress, completed)',
     parameters: 'node_id: string, status: string'
   },
   {
     name: 'add_node',
     category: 'mutation',
-    description: '向需求思维导图中添加一个新的子节点，并自动创建关联的 Markdown 需求文档',
+    description: '向思维导图中添加一个新的子节点，并自动创建关联的 Markdown 文档',
     parameters: 'parent_id: string, title: string, priority?: string, status?: string, tags?: string[], content?: string'
+  },
+  {
+    name: 'expand_node_outline',
+    category: 'mutation',
+    description: '【高阶AI工具】批量向指定父节点下拆解、拓展生成多个子模块节点及关联的初始 Markdown 文档骨架',
+    parameters: 'parent_id: string, children: Array<{ title, priority?, status?, tags?, content? }>'
+  },
+  {
+    name: 'link_nodes',
+    category: 'mutation',
+    description: '【双向链接工具】在源节点的 Markdown 文档中智能插入对目标节点的 [[WikiLink]] 双向引用链接',
+    parameters: 'source_node_id: string, target_node_title: string, context_note?: string'
   },
   {
     name: 'update_node',
     category: 'mutation',
-    description: '更新需求思维导图中指定节点的元数据信息（标题、优先级、状态、标签、Markdown 详细文档）',
+    description: '更新思维导图中指定节点的元数据信息（标题、优先级、状态、标签、Markdown 详细文档）',
     parameters: 'node_id: string, title?: string, priority?: string, status?: string, tags?: string[], content?: string'
   },
   {
     name: 'delete_node',
     category: 'mutation',
-    description: '从需求思维导图中删除指定的节点及其所有子节点，同时清理关联的 Markdown 文件',
+    description: '从思维导图中删除指定的节点及其所有子节点，同时清理关联的 Markdown 文件',
     parameters: 'node_id: string'
   }
 ];

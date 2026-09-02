@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ProjectData, MindNode } from './types';
 import { INITIAL_PROJECT_DATA, INITIAL_DOC_CONTENTS } from './mockData';
 import { MindmapCanvas } from './components/MindmapCanvas';
@@ -15,6 +15,7 @@ import { ImportMdModal } from './components/ImportMdModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { MCPManagerModal } from './components/MCPManagerModal';
 import { UpdateModal } from './components/UpdateModal';
+import { CommandPaletteModal } from './components/CommandPaletteModal';
 import { TemplatePickerModal } from './components/TemplatePickerModal';
 import { NodeTemplate, renderTemplateMarkdown } from './templates';
 import { PROJECT_PRESETS } from './projectPresets';
@@ -23,7 +24,7 @@ import { mcpServerManager } from './mcpServerManager';
 import { useMcpPolling, loadDocsForTree } from './hooks/useMcpPolling';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch, Bookmark } from 'lucide-react';
+import { Download, Layout, Plus, CheckCircle2, Home, Folder, GitBranch, Bookmark, Search } from 'lucide-react';
 import './App.css';
 
 const App: React.FC = () => {
@@ -41,6 +42,7 @@ const App: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
   const [isMCPModalOpen, setIsMCPModalOpen] = useState<boolean>(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [targetDeleteProject, setTargetDeleteProject] = useState<ProjectMeta | null>(null);
   const [templateParentNode, setTemplateParentNode] = useState<{ id: string; title: string } | null>(null);
   const [selectedEditingTemplate, setSelectedEditingTemplate] = useState<{
@@ -48,6 +50,18 @@ const App: React.FC = () => {
     content: string;
     isCustom: boolean;
   } | null>(null);
+
+  // 全局快捷键监听 (Cmd/Ctrl + K 打开全局搜索)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const { mcpStatus, mcpLogs } = useMcpPolling({
     currentProjectPath,
@@ -748,6 +762,26 @@ const App: React.FC = () => {
     });
   };
 
+  // 获取整棵树的所有节点扁平列表
+  const allProjectNodes = useMemo(() => {
+    const list: MindNode[] = [];
+    const traverse = (n: MindNode) => {
+      list.push(n);
+      if (n.children) n.children.forEach(traverse);
+    };
+    if (projectData?.root) traverse(projectData.root);
+    return list;
+  }, [projectData?.root]);
+
+  // 双向链接跳转：根据节点标题在脑图与右侧抽屉中快速聚焦
+  const handleNavigateToNodeByTitle = (title: string) => {
+    const target = allProjectNodes.find((n: MindNode) => n.title.trim() === title.trim() || n.title.toLowerCase().includes(title.toLowerCase()));
+    if (target) {
+      setSelectedNodeId(target.id);
+      setIsDrawerOpen(true);
+    }
+  };
+
   const [activeSidebarView, setActiveSidebarView] = useState<'explorer' | 'git' | 'templates'>('explorer');
 
   if (viewMode === 'manager') {
@@ -821,6 +855,16 @@ const App: React.FC = () => {
         </div>
 
         <div className="header-actions">
+          <button
+            className="btn outline header-search-btn"
+            title="全局搜索节点与正文 (Cmd + K)"
+            onClick={() => setIsCommandPaletteOpen(true)}
+          >
+            <Search size={14} />
+            <span>搜索...</span>
+            <kbd className="header-kbd">⌘K</kbd>
+          </button>
+
           <button className="btn primary" onClick={() => setIsExportModalOpen(true)}>
             <Download size={14} /> 聚合导出文档
           </button>
@@ -919,9 +963,12 @@ const App: React.FC = () => {
             node={currentNode}
             content={docsMap[currentNode.docPath] || ''}
             projectPath={currentProjectPath}
+            allNodes={allProjectNodes}
+            docsMap={docsMap}
             onClose={() => setIsDrawerOpen(false)}
             onContentChange={handleContentChange}
             onUpdateMeta={handleUpdateMeta}
+            onNavigateToNode={handleNavigateToNodeByTitle}
           />
         )}
       </div>
@@ -950,6 +997,18 @@ const App: React.FC = () => {
       <UpdateModal
         isOpen={isUpdateModalOpen}
         onClose={() => setIsUpdateModalOpen(false)}
+      />
+
+      {/* 全局快捷搜索面板 (Cmd/Ctrl + K) */}
+      <CommandPaletteModal
+        nodes={allProjectNodes}
+        docsMap={docsMap}
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelectNode={(nodeId) => {
+          setSelectedNodeId(nodeId);
+          setIsDrawerOpen(true);
+        }}
       />
 
       {/* 节点模板选择弹窗 */}

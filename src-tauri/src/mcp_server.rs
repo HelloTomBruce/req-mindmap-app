@@ -196,7 +196,7 @@ pub async fn handle_mcp_rpc(
                     },
                     {
                         "name": "delete_node",
-                        "description": "从需求思维导图中删除指定的节点及其所有子节点，同时清理关联的 Markdown 文件",
+                        "description": "从思维导图中删除指定的节点及其所有子节点，同时清理关联的 Markdown 文件",
                         "inputSchema": {
                             "type": "object",
                             "properties": {
@@ -204,6 +204,55 @@ pub async fn handle_mcp_rpc(
                             },
                             "required": ["node_id"]
                         }
+                    },
+                    {
+                        "name": "expand_node_outline",
+                        "description": "【高阶AI工具】批量向指定父节点下拆解、拓展生成多个子模块节点及关联的初始 Markdown 文档骨架",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "parent_id": { "type": "string", "description": "父节点的 ID" },
+                                "children": {
+                                    "type": "array",
+                                    "description": "需要批量创建的子节点列表",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "title": { "type": "string", "description": "子节点标题" },
+                                            "priority": { "type": "string", "description": "优先级 (P0, P1, P2, P3)" },
+                                            "status": { "type": "string", "description": "状态 (draft, todo, in_progress, completed)" },
+                                            "tags": { "type": "array", "items": { "type": "string" }, "description": "标签" },
+                                            "content": { "type": "string", "description": "详细 Markdown 文档内容" }
+                                        },
+                                        "required": ["title"]
+                                    }
+                                }
+                            },
+                            "required": ["parent_id", "children"]
+                        }
+                    },
+                    {
+                        "name": "link_nodes",
+                        "description": "【双向链接工具】在源节点的 Markdown 文档中智能插入对目标节点的 [[WikiLink]] 双向引用链接",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "source_node_id": { "type": "string", "description": "发起引用的源节点 ID" },
+                                "target_node_title": { "type": "string", "description": "被引用的目标节点标题" },
+                                "context_note": { "type": "string", "description": "引用的关联背景说明 (可选)" }
+                            },
+                            "required": ["source_node_id", "target_node_title"]
+                        }
+                    },
+                    {
+                        "name": "get_document_outline",
+                        "description": "【全局速览】极速获取当前项目的完整拓扑脉络与所有节点的摘要快照 (极省 Token)",
+                        "inputSchema": { "type": "object", "properties": {} }
+                    },
+                    {
+                        "name": "export_aggregate_document",
+                        "description": "【长文聚合】一键将全项目所有文档按思维导图层级自动拼接为带 TOC 目录的长篇 Markdown 大文档",
+                        "inputSchema": { "type": "object", "properties": {} }
                     }
                 ]
             }
@@ -611,6 +660,291 @@ pub async fn handle_mcp_rpc(
                 "jsonrpc": "2.0",
                 "id": id,
                 "error": { "code": -32603, "message": "无法找到指定的节点或无法删除根节点" }
+            })).await;
+        }
+
+        // ==================== 批量拆解大纲与子模块 expand_node_outline ====================
+        if tool_name == "expand_node_outline" {
+            let parent_id = args.get("parent_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let children = args.get("children").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+            let config_path = Path::new(&p_path).join(".requirements.json");
+
+            if let Ok(json_str) = fs::read_to_string(&config_path) {
+                if let Ok(mut val) = serde_json::from_str::<Value>(&json_str) {
+                    let mut created_nodes = Vec::new();
+                    let mut created_docs = Vec::new();
+
+                    for (idx, child_item) in children.iter().enumerate() {
+                        let title = child_item.get("title").and_then(|v| v.as_str()).unwrap_or("新建子节点").to_string();
+                        let priority = child_item.get("priority").and_then(|v| v.as_str()).unwrap_or("P1").to_string();
+                        let status = child_item.get("status").and_then(|v| v.as_str()).unwrap_or("todo").to_string();
+                        let tags = child_item.get("tags").cloned().unwrap_or(json!([]));
+                        let content = child_item.get("content").and_then(|v| v.as_str()).unwrap_or("").to_string();
+
+                        let nanos = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.subsec_nanos())
+                            .unwrap_or(0);
+                        let new_node_id = format!("node-{}-{}-{}", chrono::Local::now().timestamp_millis(), idx, nanos);
+                        let new_doc_path = format!("modules/{}.md", new_node_id);
+
+                        let new_child_val = json!({
+                            "id": new_node_id,
+                            "title": title,
+                            "docPath": new_doc_path,
+                            "priority": priority,
+                            "status": status,
+                            "tags": tags,
+                            "children": []
+                        });
+
+                        created_nodes.push(new_child_val.clone());
+                        let final_content = if content.is_empty() {
+                            format!("# {}\n\n由 AI 自动生成骨架，请在此补充详细业务与技术设计说明...", title)
+                        } else {
+                            content
+                        };
+                        created_docs.push((new_doc_path, final_content));
+                    }
+
+                    fn add_multiple_children(n: &mut Value, target_id: &str, new_children: &[Value]) -> bool {
+                        if n.get("id").and_then(|v| v.as_str()) == Some(target_id) {
+                            if let Some(arr) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                                for c in new_children {
+                                    arr.push(c.clone());
+                                }
+                            } else {
+                                n["children"] = json!(new_children);
+                            }
+                            return true;
+                        }
+                        if let Some(children) = n.get_mut("children").and_then(|v| v.as_array_mut()) {
+                            for c in children {
+                                if add_multiple_children(c, target_id, new_children) {
+                                    return true;
+                                }
+                            }
+                        }
+                        false
+                    }
+
+                    if let Some(root) = val.get_mut("root") {
+                        if add_multiple_children(root, &parent_id, &created_nodes) {
+                            let _ = fs::write(&config_path, serde_json::to_string_pretty(&val).unwrap_or_default());
+                            mark_mcp_write(&state);
+
+                            for (doc_rel, doc_body) in created_docs {
+                                let doc_full = Path::new(&p_path).join(doc_rel);
+                                if let Some(parent) = doc_full.parent() {
+                                    let _ = fs::create_dir_all(parent);
+                                }
+                                let _ = fs::write(doc_full, doc_body);
+                            }
+
+                            add_log(&state, tool_name.to_string(), args, "success".to_string());
+                            return send_rpc_response(&state, json!({
+                                "jsonrpc": "2.0",
+                                "id": id,
+                                "result": { "content": [{ "type": "text", "text": format!("已成功向节点 {} 下批量拓展生成 {} 个子模块及关联 Markdown 文件", parent_id, created_nodes.len()) }] }
+                            })).await;
+                        }
+                    }
+                }
+            }
+
+            add_log(&state, tool_name.to_string(), args, "error".to_string());
+            return send_rpc_response(&state, json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": { "code": -32603, "message": "无法找到指定的父节点 parent_id" }
+            })).await;
+        }
+
+        // ==================== 双向链接与引用 link_nodes ====================
+        if tool_name == "link_nodes" {
+            let source_node_id = args.get("source_node_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let target_node_title = args.get("target_node_title").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let context_note = args.get("context_note").and_then(|v| v.as_str()).unwrap_or("");
+            let config_path = Path::new(&p_path).join(".requirements.json");
+
+            if let Ok(json_str) = fs::read_to_string(&config_path) {
+                if let Ok(val) = serde_json::from_str::<Value>(&json_str) {
+                    fn find_doc_path(n: &Value, target_id: &str) -> Option<String> {
+                        if n.get("id").and_then(|v| v.as_str()) == Some(target_id) {
+                            return n.get("docPath").and_then(|v| v.as_str()).map(|s| s.to_string());
+                        }
+                        if let Some(children) = n.get("children").and_then(|v| v.as_array()) {
+                            for c in children {
+                                if let Some(p) = find_doc_path(c, target_id) {
+                                    return Some(p);
+                                }
+                            }
+                        }
+                        None
+                    }
+
+                    if let Some(root) = val.get("root") {
+                        if let Some(doc_rel) = find_doc_path(root, &source_node_id) {
+                            let doc_full = Path::new(&p_path).join(&doc_rel);
+                            let current_content = fs::read_to_string(&doc_full).unwrap_or_default();
+
+                            let link_str = format!("[[{}]]", target_node_title);
+                            let append_content = if !context_note.is_empty() {
+                                format!("\n\n> 🔗 **关联模块引用**: {} - {}\n", link_str, context_note)
+                            } else {
+                                format!("\n\n> 🔗 **关联模块引用**: {}\n", link_str)
+                            };
+
+                            let updated_content = format!("{}{}", current_content.trim_end(), append_content);
+                            let _ = fs::write(&doc_full, updated_content);
+                            mark_mcp_write(&state);
+
+                            add_log(&state, tool_name.to_string(), args, "success".to_string());
+                            return send_rpc_response(&state, json!({
+                                "jsonrpc": "2.0",
+                                "id": id,
+                                "result": { "content": [{ "type": "text", "text": format!("已成功在节点 {} ({}) 中嵌入双向引用 [[{}]]", source_node_id, doc_rel, target_node_title) }] }
+                            })).await;
+                        }
+                    }
+                }
+            }
+
+            add_log(&state, tool_name.to_string(), args, "error".to_string());
+            return send_rpc_response(&state, json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": { "code": -32603, "message": "未找到源节点 source_node_id" }
+            })).await;
+        }
+
+        // ==================== 全局大纲与摘要速览 get_document_outline ====================
+        if tool_name == "get_document_outline" {
+            let config_path = Path::new(&p_path).join(".requirements.json");
+            if let Ok(json_str) = fs::read_to_string(&config_path) {
+                if let Ok(val) = serde_json::from_str::<Value>(&json_str) {
+                    fn build_outline(n: &Value, p_dir: &str, depth: usize) -> Value {
+                        let title = n.get("title").and_then(|v| v.as_str()).unwrap_or("");
+                        let id = n.get("id").and_then(|v| v.as_str()).unwrap_or("");
+                        let priority = n.get("priority").and_then(|v| v.as_str()).unwrap_or("");
+                        let status = n.get("status").and_then(|v| v.as_str()).unwrap_or("");
+                        let doc_path = n.get("docPath").and_then(|v| v.as_str()).unwrap_or("");
+
+                        let summary = if !doc_path.is_empty() {
+                            let doc_full = Path::new(p_dir).join(doc_path);
+                            if let Ok(content) = fs::read_to_string(doc_full) {
+                                let clean = content.lines().filter(|l| !l.starts_with('#')).collect::<Vec<&str>>().join(" ");
+                                let chars: Vec<char> = clean.chars().collect();
+                                if chars.len() > 160 {
+                                    format!("{}...", chars[..160].iter().collect::<String>())
+                                } else {
+                                    clean
+                                }
+                            } else {
+                                String::new()
+                            }
+                        } else {
+                            String::new()
+                        };
+
+                        let mut children_outline = Vec::new();
+                        if let Some(children) = n.get("children").and_then(|v| v.as_array()) {
+                            for c in children {
+                                children_outline.push(build_outline(c, p_dir, depth + 1));
+                            }
+                        }
+
+                        json!({
+                            "id": id,
+                            "depth": depth,
+                            "title": title,
+                            "priority": priority,
+                            "status": status,
+                            "doc_path": doc_path,
+                            "summary": summary,
+                            "children": children_outline
+                        })
+                    }
+
+                    let outline_res = if let Some(root) = val.get("root") {
+                        build_outline(root, &p_path, 1)
+                    } else {
+                        json!({})
+                    };
+
+                    add_log(&state, tool_name.to_string(), args, "success".to_string());
+                    return send_rpc_response(&state, json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": { "content": [{ "type": "text", "text": serde_json::to_string_pretty(&outline_res).unwrap_or_default() }] }
+                    })).await;
+                }
+            }
+
+            add_log(&state, tool_name.to_string(), args, "error".to_string());
+            return send_rpc_response(&state, json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": { "code": -32603, "message": "无法读取项目拓扑文件" }
+            })).await;
+        }
+
+        // ==================== 长篇长文聚合 export_aggregate_document ====================
+        if tool_name == "export_aggregate_document" {
+            let config_path = Path::new(&p_path).join(".requirements.json");
+            if let Ok(json_str) = fs::read_to_string(&config_path) {
+                if let Ok(val) = serde_json::from_str::<Value>(&json_str) {
+                    let project_name = val.get("projectName").and_then(|v| v.as_str()).unwrap_or("DocMind 文档");
+
+                    fn aggregate_tree(n: &Value, p_dir: &str, depth: usize) -> String {
+                        let hashes = "#".repeat(depth.min(6));
+                        let title = n.get("title").and_then(|v| v.as_str()).unwrap_or("");
+                        let doc_path = n.get("docPath").and_then(|v| v.as_str()).unwrap_or("");
+                        let priority = n.get("priority").and_then(|v| v.as_str()).unwrap_or("");
+                        let status = n.get("status").and_then(|v| v.as_str()).unwrap_or("");
+
+                        let mut body = String::new();
+                        if !doc_path.is_empty() {
+                            let doc_full = Path::new(p_dir).join(doc_path);
+                            if let Ok(c) = fs::read_to_string(doc_full) {
+                                body = c;
+                            }
+                        }
+
+                        let mut result = format!("{} {}\n\n> **状态**: `{}` | **优先级**: `{}`\n\n", hashes, title, status, priority);
+                        if !body.trim().is_empty() {
+                            result.push_str(body.trim());
+                            result.push_str("\n\n");
+                        }
+
+                        if let Some(children) = n.get("children").and_then(|v| v.as_array()) {
+                            for c in children {
+                                result.push_str(&aggregate_tree(c, p_dir, depth + 1));
+                            }
+                        }
+                        result
+                    }
+
+                    let full_doc = if let Some(root) = val.get("root") {
+                        format!("# {}\n\n> 聚合生成时间: {}\n\n---\n\n{}", project_name, chrono::Local::now().format("%Y-%m-%d %H:%M:%S"), aggregate_tree(root, &p_path, 1))
+                    } else {
+                        String::new()
+                    };
+
+                    add_log(&state, tool_name.to_string(), args, "success".to_string());
+                    return send_rpc_response(&state, json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": { "content": [{ "type": "text", "text": full_doc }] }
+                    })).await;
+                }
+            }
+
+            add_log(&state, tool_name.to_string(), args, "error".to_string());
+            return send_rpc_response(&state, json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": { "code": -32603, "message": "无法导出聚合文档" }
             })).await;
         }
     }
