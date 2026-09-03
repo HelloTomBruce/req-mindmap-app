@@ -6,6 +6,7 @@ import { X, Save, FileCode, Image as ImageIcon, Link2, ArrowUpRight, Network } f
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { WikiLinkAutocomplete } from './WikiLinkAutocomplete';
+import { processCustomMarkdownSyntax, parseColorQuery, createColorCommands } from '../utils/markdownColor';
 
 // 初始化 Mermaid 图表渲染引擎（适配暗色水墨主题）
 mermaid.initialize({
@@ -88,7 +89,14 @@ export function clearImageCache() {
 }
 
 // 独立组件：从 assets/ 加载本地图片并缓存为 DataURL
-const CachedImage: React.FC<{ src?: string; alt?: string; projectPath: string }> = ({ src, alt, projectPath }) => {
+const CachedImage: React.FC<{ src?: string; alt?: string; style?: React.CSSProperties; width?: any; height?: any; projectPath: string }> = ({
+  src,
+  alt,
+  style,
+  width,
+  height,
+  projectPath
+}) => {
   const cacheKey = `${projectPath}:${src}`;
   const cachedSrc = imageCache.get(cacheKey);
   const [srcUrl, setSrcUrl] = React.useState<string>(cachedSrc || src || '');
@@ -120,7 +128,15 @@ const CachedImage: React.FC<{ src?: string; alt?: string; projectPath: string }>
   return (
     <img
       src={srcUrl}
-      style={{ maxWidth: '100%', borderRadius: 6, margin: '8px 0', display: 'block' }}
+      width={width}
+      height={height}
+      style={{
+        maxWidth: '100%',
+        borderRadius: 6,
+        margin: '8px 0',
+        display: 'block',
+        ...style
+      }}
       alt={alt || '图片'}
     />
   );
@@ -207,6 +223,8 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
   }), [isFullscreen]);
 
   const extraCommands: ICommand[] = useMemo(() => [
+    createColorCommands(),
+    commands.divider,
     commands.codeEdit,
     commands.codeLive,
     commands.codePreview,
@@ -288,11 +306,9 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
     setAutocompleteState((prev) => ({ ...prev, isOpen: false }));
   };
 
-  // 转换/渲染带 [[WikiLink]] 的 Markdown
-  // 自定义链接拦截：如果链接格式为 #wikilink:标题，或者文本匹配 [[...]]
+  // 转换/渲染带 [[WikiLink]] 和自定义颜色高亮语法的 Markdown
   const processedContent = useMemo(() => {
-    // 将正文中的 [[节点名称]] 转为可点击的 Markdown 超链接 [🏷️ 节点名称](#wikilink:节点名称)
-    return content.replace(/\[\[(.*?)\]\]/g, '[$1](#wikilink:$1)');
+    return processCustomMarkdownSyntax(content);
   }, [content]);
 
   // 上传/粘贴图片处理
@@ -432,8 +448,8 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
           preview="live"
           previewOptions={{
             components: {
-              img: ({ src, alt }: any) => (
-                <CachedImage src={src} alt={alt} projectPath={projectPath} />
+              img: ({ src, alt, style, width, height, ...props }: any) => (
+                <CachedImage src={src} alt={alt} style={style} width={width} height={height} projectPath={projectPath} {...props} />
               ),
               a: ({ href, children, ...props }: any) => {
                 if (href && href.startsWith('#wikilink:')) {
@@ -456,6 +472,28 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
                     </span>
                   );
                 }
+
+                if (href && href.startsWith('#color:')) {
+                  const { textColor, bgColor, isHighlight } = parseColorQuery(href);
+                  if (isHighlight) {
+                    return <mark className="md-highlight-text">{children}</mark>;
+                  }
+                  return (
+                    <span
+                      className="md-custom-color-text"
+                      style={{
+                        color: textColor || 'inherit',
+                        backgroundColor: bgColor || 'transparent',
+                        fontWeight: textColor ? 600 : undefined,
+                        borderRadius: bgColor ? '3px' : undefined,
+                        padding: bgColor ? '1px 4px' : undefined
+                      }}
+                    >
+                      {children}
+                    </span>
+                  );
+                }
+
                 return <a href={href} target="_blank" rel="noreferrer" {...props}>{children}</a>;
               },
               code: ({ inline, className, children, ...props }: any) => {

@@ -129,52 +129,73 @@ const App: React.FC = () => {
       const sourceDir = mdPath.substring(0, mdPath.lastIndexOf('/'));
       let imgIdx = 1;
 
-      // 正则匹配 Markdown 图片语法: ![alt](url)
-      const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-
-      // 异步辅助函数：处理并替换一行中的图片引用
+      // 异步辅助函数：处理并替换一行中的所有图片引用（支持 Markdown 语法与 HTML <img> 语法）
       const processLineImages = async (textLine: string): Promise<string> => {
         let newLine = textLine;
-        const matches = Array.from(textLine.matchAll(imgRegex));
 
-        for (const match of matches) {
+        // 1. 处理 Markdown 图片: ![alt](url)
+        const mdMatches = Array.from(textLine.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g));
+        for (const match of mdMatches) {
           const fullMatch = match[0];
           const altText = match[1];
-          const originalSrc = match[2].trim();
+          const rawSrc = match[2].trim();
 
-          // 如果是网络图片（http/https）或 data: 格式，保持原样
-          if (/^(https?:\/\/|data:)/i.test(originalSrc)) {
-            continue;
-          }
+          if (/^(https?:\/\/|data:)/i.test(rawSrc)) continue;
 
-          // 计算本地图片的绝对路径
-          const absoluteSrcPath = originalSrc.startsWith('/')
-            ? originalSrc
-            : `${sourceDir}/${originalSrc.replace(/^\.\//, '')}`;
-
-          const fileExt = originalSrc.split('.').pop()?.split('?')[0] || 'png';
+          // 解码 URL 编码并清理前缀
+          let decodedSrc = decodeURIComponent(rawSrc).replace(/^file:\/\//i, '');
+          const cleanRel = decodedSrc.startsWith('/') ? decodedSrc : `${sourceDir}/${decodedSrc.replace(/^\.\//, '')}`;
+          const fileExt = decodedSrc.split('.').pop()?.split('?')[0] || 'png';
           const newFileName = `md_img_${Date.now()}_${imgIdx++}.${fileExt}`;
           const destPath = `${targetPath}/assets/${newFileName}`;
           const newRelativeSrc = `assets/${newFileName}`;
 
           try {
-            // 调用 Rust 命令将原本地图片深拷贝到新项目的 assets/ 目录中
             await invoke('copy_local_file_custom', {
-              srcPath: absoluteSrcPath,
+              srcPath: cleanRel,
               destPath
             });
-            // 替换 Markdown 中的链接路径为新项目的 assets/xxx
             newLine = newLine.replace(fullMatch, `![${altText}](${newRelativeSrc})`);
           } catch (err) {
-            console.warn(`Failed to copy image ${absoluteSrcPath}:`, err);
+            console.warn(`Failed to copy md image ${cleanRel}:`, err);
           }
         }
+
+        // 2. 处理 HTML <img> 标签: <img ... src="..." ... />
+        const htmlImgMatches = Array.from(newLine.matchAll(/<img\s+([^>]*?)src=["']([^"']+)["']([^>]*?)\/?>/gi));
+        for (const match of htmlImgMatches) {
+          const fullTag = match[0];
+          const beforeSrc = match[1];
+          const rawSrc = match[2].trim();
+          const afterSrc = match[3];
+
+          if (/^(https?:\/\/|data:)/i.test(rawSrc)) continue;
+
+          let decodedSrc = decodeURIComponent(rawSrc).replace(/^file:\/\//i, '');
+          const cleanRel = decodedSrc.startsWith('/') ? decodedSrc : `${sourceDir}/${decodedSrc.replace(/^\.\//, '')}`;
+          const fileExt = decodedSrc.split('.').pop()?.split('?')[0] || 'png';
+          const newFileName = `md_img_${Date.now()}_${imgIdx++}.${fileExt}`;
+          const destPath = `${targetPath}/assets/${newFileName}`;
+          const newRelativeSrc = `assets/${newFileName}`;
+
+          try {
+            await invoke('copy_local_file_custom', {
+              srcPath: cleanRel,
+              destPath
+            });
+            // 转换为标准的 Markdown 图片语法 ![alt](assets/xxx) 或者保留 img 标签
+            newLine = newLine.replace(fullTag, `<img ${beforeSrc}src="${newRelativeSrc}"${afterSrc} />`);
+          } catch (err) {
+            console.warn(`Failed to copy html image ${cleanRel}:`, err);
+          }
+        }
+
         return newLine;
       };
 
       for (let i = 0; i < lines.length; i++) {
         let line = lines[i];
-        if (line.includes('![')) {
+        if (line.includes('![') || /<img\b/i.test(line)) {
           line = await processLineImages(line);
         }
 

@@ -3,6 +3,7 @@ import MDEditor, { commands, ICommand } from '@uiw/react-md-editor';
 import { NodeTemplate } from '../templates';
 import { Priority, Status } from '../types';
 import { X, Save, Sparkles, Code2, Database, Layout, Wrench, FileText } from 'lucide-react';
+import { processCustomMarkdownSyntax, parseColorQuery, createColorCommands } from '../utils/markdownColor';
 
 interface TemplateMarkdownDrawerProps {
   template: NodeTemplate | null;
@@ -72,12 +73,18 @@ export const TemplateMarkdownDrawer: React.FC<TemplateMarkdownDrawerProps> = ({
   }), [isFullscreen]);
 
   const extraCommands: ICommand[] = useMemo(() => [
+    createColorCommands(),
+    commands.divider,
     commands.codeEdit,
     commands.codeLive,
     commands.codePreview,
     commands.divider,
     customFullscreenCommand
   ], [customFullscreenCommand]);
+
+  const processedContent = useMemo(() => {
+    return processCustomMarkdownSyntax(content);
+  }, [content]);
 
   if (!template) return null;
 
@@ -164,7 +171,7 @@ export const TemplateMarkdownDrawer: React.FC<TemplateMarkdownDrawerProps> = ({
 
       <div className="drawer-editor-container" ref={editorContainerRef}>
         <MDEditor
-          value={content}
+          value={isCustom ? content : processedContent}
           onChange={(val) => {
             if (isCustom) {
               onContentChange(val || '');
@@ -174,6 +181,33 @@ export const TemplateMarkdownDrawer: React.FC<TemplateMarkdownDrawerProps> = ({
           fullscreen={isFullscreen}
           height="100%"
           preview={isCustom ? 'live' : 'preview'}
+          previewOptions={{
+            components: {
+              a: ({ href, children, ...props }: any) => {
+                if (href && href.startsWith('#color:')) {
+                  const { textColor, bgColor, isHighlight } = parseColorQuery(href);
+                  if (isHighlight) {
+                    return <mark className="md-highlight-text">{children}</mark>;
+                  }
+                  return (
+                    <span
+                      className="md-custom-color-text"
+                      style={{
+                        color: textColor || 'inherit',
+                        backgroundColor: bgColor || 'transparent',
+                        fontWeight: textColor ? 600 : undefined,
+                        borderRadius: bgColor ? '3px' : undefined,
+                        padding: bgColor ? '1px 4px' : undefined
+                      }}
+                    >
+                      {children}
+                    </span>
+                  );
+                }
+                return <a href={href} target="_blank" rel="noreferrer" {...props}>{children}</a>;
+              }
+            }
+          }}
         />
       </div>
 

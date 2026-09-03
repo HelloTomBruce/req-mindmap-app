@@ -165,6 +165,7 @@ use mcp_server::{get_mcp_status_rust, start_mcp_server_rust, stop_mcp_server_rus
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_state = AppState {
+        app_handle: std::sync::Arc::new(std::sync::Mutex::new(None)),
         project_path: std::sync::Arc::new(std::sync::Mutex::new(String::new())),
         port: std::sync::Arc::new(std::sync::Mutex::new(6001)),
         is_running: std::sync::Arc::new(std::sync::Mutex::new(false)),

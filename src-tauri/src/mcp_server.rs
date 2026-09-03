@@ -39,6 +39,7 @@ pub struct MCPLogItem {
 
 #[derive(Clone)]
 pub struct AppState {
+    pub app_handle: Arc<Mutex<Option<tauri::AppHandle>>>,
     pub project_path: Arc<Mutex<String>>,
     pub port: Arc<Mutex<u16>>,
     pub is_running: Arc<Mutex<bool>>,
@@ -319,14 +320,52 @@ pub async fn handle_mcp_rpc(
 
         if tool_name == "list_projects" {
             let mut info = Vec::new();
-            if !p_path.is_empty() {
+            let mut seen_paths = std::collections::HashSet::new();
+
+            // 1. 尝试从 AppData 读取所有历史/近期项目列表 (projects_index.json)
+            let app_handle_opt = safe_lock!(state.app_handle).clone();
+            if let Some(app) = app_handle_opt {
+                use tauri::Manager;
+                if let Ok(app_dir) = app.path().app_data_dir() {
+                    let index_path = app_dir.join("projects_index.json");
+                    if index_path.exists() {
+                        if let Ok(content) = fs::read_to_string(&index_path) {
+                            if let Ok(list) = serde_json::from_str::<Vec<Value>>(&content) {
+                                for item in list {
+                                    if let Some(path_str) = item.get("path").and_then(|v| v.as_str()) {
+                                        let is_active = !p_path.is_empty() && path_str == p_path;
+                                        let name = item.get("name").and_then(|v| v.as_str())
+                                            .or_else(|| Path::new(path_str).file_name().and_then(|s| s.to_str()))
+                                            .unwrap_or("project");
+                                        let node_count = item.get("nodeCount").and_then(|v| v.as_u64()).unwrap_or(0);
+                                        let last_opened = item.get("lastOpened").and_then(|v| v.as_str()).unwrap_or("");
+
+                                        seen_paths.insert(path_str.to_string());
+                                        info.push(json!({
+                                            "name": name,
+                                            "path": path_str,
+                                            "active": is_active,
+                                            "nodeCount": node_count,
+                                            "lastOpened": last_opened
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. 如果当前激活的项目不在历史列表中，将其补充进来
+            if !p_path.is_empty() && !seen_paths.contains(&p_path) {
                 let name = Path::new(&p_path).file_name().and_then(|s| s.to_str()).unwrap_or("active_project");
-                info.push(json!({
+                info.insert(0, json!({
                     "name": name,
                     "path": p_path,
                     "active": true
                 }));
             }
+
             add_log(&state, tool_name.to_string(), args, "success".to_string());
             return send_rpc_response(&state, json!({
                 "jsonrpc": "2.0",
@@ -1051,6 +1090,7 @@ pub async fn sse_handler(State(state): State<AppState>) -> impl IntoResponse {
 
 #[tauri::command]
 pub fn start_mcp_server_rust(
+    app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     port: u16,
     project_path: String,
@@ -1065,6 +1105,10 @@ pub fn start_mcp_server_rust(
         }
     }
 
+    {
+        let mut h = safe_lock!(state.app_handle);
+        *h = Some(app);
+    }
     {
         let mut p = safe_lock!(state.project_path);
         *p = project_path.clone();

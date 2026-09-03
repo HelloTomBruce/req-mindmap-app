@@ -1444,6 +1444,125 @@ button, input, select, textarea {
   opacity: 1;
 }
 
+/* Markdown 自定义颜色与高亮样式 */
+.md-custom-color-text {
+  display: inline;
+  transition: opacity var(--transition-fast);
+}
+
+.md-highlight-text {
+  background: linear-gradient(120deg, rgba(254, 240, 138, 0.9) 0%, rgba(253, 224, 71, 0.8) 100%);
+  color: #1c1917;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+  .md-highlight-text {
+    background: linear-gradient(120deg, rgba(202, 138, 4, 0.45) 0%, rgba(234, 179, 8, 0.45) 100%);
+    color: #fef08a;
+  }
+}
+
+/* MDEditor 颜色下拉面板 */
+.md-color-picker-dropdown {
+  padding: 8px 10px;
+  min-width: 170px;
+  background-color: var(--bg-surface-elevated);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-default);
+  user-select: none;
+}
+
+.md-color-picker-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+
+.md-color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.md-color-swatch-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.md-color-swatch-btn:hover {
+  background-color: var(--bg-subtle-hover);
+  border-color: var(--border-default);
+}
+
+.md-color-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+}
+
+.md-color-name {
+  font-size: 11px;
+}
+
+.md-color-picker-divider {
+  height: 1px;
+  background-color: var(--border-default);
+  margin: 8px 0;
+}
+
+.md-color-action-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.md-color-action-btn:hover {
+  background-color: var(--bg-subtle-hover);
+  border-color: var(--border-default);
+}
+
+.md-highlight-badge {
+  background-color: #fef08a;
+  color: #854d0e;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  .md-highlight-badge {
+    background-color: #713f12;
+    color: #fef08a;
+  }
+}
+
 /* WikiLink 输入 [[ 联想弹出菜单 */
 .wikilink-autocomplete-popup {
   position: absolute;
