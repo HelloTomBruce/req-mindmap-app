@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { X, FileText, FolderOpen, FileUp } from 'lucide-react';
+import { X, FileText, FolderOpen, FileUp, Loader2 } from 'lucide-react';
 
 interface ImportMdModalProps {
   onClose: () => void;
   onSelectMd: () => Promise<string | null>;
   onSelectFolder: () => Promise<string | null>;
-  onImport: (mdPath: string, targetPath: string, projectName: string) => void;
+  onImport: (mdPath: string, targetPath: string, projectName: string) => Promise<void>;
 }
 
 export const ImportMdModal: React.FC<ImportMdModalProps> = ({
@@ -17,6 +17,7 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
   const [mdPath, setMdPath] = useState('');
   const [targetPath, setTargetPath] = useState('');
   const [projectName, setProjectName] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handlePickMd = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -24,7 +25,7 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
     const selected = await onSelectMd();
     if (selected) {
       setMdPath(selected);
-      const fileName = selected.split('/').pop()?.replace(/\.(md|markdown)$/i, '') || '从 Markdown 导入的项目';
+      const fileName = selected.split('/').pop()?.replace(/\.(md|markdown|docx?|docm?)$/i, '') || '从文档导入的项目';
       if (!projectName) {
         setProjectName(fileName);
       }
@@ -40,10 +41,15 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mdPath || !targetPath || !projectName.trim()) return;
-    onImport(mdPath, targetPath, projectName.trim());
+    setLoading(true);
+    try {
+      await onImport(mdPath, targetPath, projectName.trim());
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,7 +57,7 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
       <div className="modal-content create-project-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title">
-            <FileUp size={18} /> 从 Markdown (.md) 导入转换项目
+            <FileUp size={18} /> 从文档导入转换项目
           </div>
           <button className="close-btn" onClick={onClose}><X size={18} /></button>
         </div>
@@ -59,13 +65,13 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             <div className="form-group">
-              <label>选择源 Markdown 文档 (.md)</label>
+              <label>选择源文档 (Markdown / Word)</label>
               <div className="folder-picker-group">
                 <input
                   type="text"
                   className="form-input"
                   readOnly
-                  placeholder="点击选择本地 Markdown 文档..."
+                  placeholder="点击选择 Markdown 或 Word (.docx/.doc) 文档..."
                   value={mdPath}
                 />
                 <button type="button" className="btn outline" onClick={handlePickMd}>
@@ -103,15 +109,21 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn outline" onClick={onClose}>
+            <button type="button" className="btn outline" onClick={onClose} disabled={loading}>
               取消
             </button>
             <button
               type="submit"
               className="btn primary"
-              disabled={!mdPath || !targetPath || !projectName.trim()}
+              disabled={!mdPath || !targetPath || !projectName.trim() || loading}
             >
-              解析并转换项目
+              {loading ? (
+                <>
+                  <Loader2 size={14} className="spin" /> 转换中...
+                </>
+              ) : (
+                '解析并转换项目'
+              )}
             </button>
           </div>
         </form>

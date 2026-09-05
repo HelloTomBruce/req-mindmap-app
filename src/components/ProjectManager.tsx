@@ -185,7 +185,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           </button>
 
           <button className="btn outline large" onClick={onOpenImportModal}>
-            <FileUp size={16} /> 从 Markdown (.md) 转换
+            <FileUp size={16} /> 从文档导入
           </button>
 
           <button className="btn outline large" onClick={onOpenFolder}>

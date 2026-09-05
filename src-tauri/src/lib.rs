@@ -159,6 +159,77 @@ fn save_image_binary(project_path: String, file_name: String, base64_data: Strin
     Ok(format!("assets/{}", file_name))
 }
 
+#[tauri::command]
+fn convert_word_to_markdown(docx_path: String, assets_dir: String) -> Result<String, String> {
+    use anytomd;
+
+    // 创建 assets 目录（用于存放 Word 中提取的图片）
+    fs::create_dir_all(&assets_dir).map_err(|e| format!("创建 assets 目录失败: {}", e))?;
+
+    // 调用 anytomd 将 .docx 转换为 Markdown
+    let options = anytomd::ConversionOptions {
+        extract_images: true,
+        ..Default::default()
+    };
+    
+    let result = anytomd::convert_file(&docx_path, &options)
+        .map_err(|e| format!("Word 文档转换失败: {}", e))?;
+
+    // 第一步：保存所有图片到 assets 目录
+    let mut image_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    
+    for (idx, (filename, bytes)) in result.images.iter().enumerate() {
+        let ext = if let Some(pos) = filename.rfind('.') {
+            &filename[pos + 1..]
+        } else {
+            "png"
+        };
+        
+        let save_filename = format!("image_{}.{}", idx, ext);
+        let filepath = std::path::Path::new(&assets_dir).join(&save_filename);
+        
+        fs::write(&filepath, bytes)
+            .map_err(|e| format!("保存图片失败: {}", e))?;
+        
+        // 记录原始文件名 -> 新文件名的映射
+        image_map.insert(filename.clone(), save_filename);
+    }
+    
+    // 第二步：替换 markdown 中的所有图片引用
+    let mut markdown = result.markdown;
+    
+    // 替换 base64 内嵌图片: ![](data:image/xxx;base64,...)
+    let base64_pattern = regex::Regex::new(r"!\[[^\]]*\]\(data:image/[^;]+;base64,[^)]+\)").unwrap();
+    let mut base64_idx = 0;
+    markdown = base64_pattern.replace_all(&markdown, |_caps: &regex::Captures| {
+        let save_filename = if base64_idx < result.images.len() {
+            let ext = if let Some(pos) = result.images[base64_idx].0.rfind('.') {
+                &result.images[base64_idx].0[pos + 1..]
+            } else {
+                "png"
+            };
+            let name = format!("image_{}.{}", base64_idx, ext);
+            base64_idx += 1;
+            name
+        } else {
+            format!("image_{}.png", base64_idx)
+        };
+        format!("![image](assets/{})", save_filename)
+    }).to_string();
+    
+    // 替换原始文件名引用: ![](filename.png) 或 ![alt](filename.png)
+    for (original_filename, save_filename) in &image_map {
+        let escaped_name = regex::escape(original_filename);
+        let pattern = format!(r"!\[[^\]]*\]\(([^/]*){}(?:\?[^\)]*)?\)", escaped_name);
+        if let Ok(re) = regex::Regex::new(&pattern) {
+            let new_ref = format!("![image](assets/{})", save_filename);
+            markdown = re.replace_all(&markdown, new_ref.as_str()).to_string();
+        }
+    }
+
+    Ok(markdown)
+}
+
 mod mcp_server;
 use mcp_server::{get_mcp_status_rust, start_mcp_server_rust, stop_mcp_server_rust, AppState};
 
@@ -196,7 +267,8 @@ pub fn run() {
             start_mcp_server_rust,
             stop_mcp_server_rust,
             get_mcp_status_rust,
-            run_git_command
+            run_git_command,
+            convert_word_to_markdown
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

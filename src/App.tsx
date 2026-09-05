@@ -89,22 +89,36 @@ const App: React.FC = () => {
     try {
       const selected = await open({
         multiple: false,
-        filters: [{ name: 'Markdown File', extensions: ['md', 'markdown'] }]
+        filters: [{ name: 'Document Files', extensions: ['md', 'markdown', 'docx', 'doc'] }]
       });
       if (selected && typeof selected === 'string') {
         return selected;
       }
     } catch (e) {
-      console.warn('Select md file error:', e);
+      console.warn('Select file error:', e);
     }
     return null;
   };
 
-  // 解析源 Markdown 文件，按 #, ##, ### 标题精准拆分为模块结构树
+  // 解析源文档，按 #, ##, ### 标题精准拆分为模块结构树
   const handleImportMd = async (mdPath: string, targetPath: string, name: string) => {
     try {
-      const fullMarkdown = await invoke<string>('read_text_file_custom', { path: mdPath });
+      const isWordFile = /\.(docx?|docm?)$/i.test(mdPath);
+      let fullMarkdown: string;
+
+      if (isWordFile) {
+        // Word → Markdown（图片自动提取到 targetPath/assets/）
+        fullMarkdown = await invoke<string>('convert_word_to_markdown', {
+          docxPath: mdPath,
+          assetsDir: `${targetPath}/assets`
+        });
+      } else {
+        fullMarkdown = await invoke<string>('read_text_file_custom', { path: mdPath });
+      }
+
       const lines = fullMarkdown.split('\n');
+      const sourceFileName = mdPath.split('/').pop() || mdPath.split('\\').pop() || '';
+      const sourceType = isWordFile ? 'Word' : 'Markdown';
 
       const rootNode: MindNode = {
         id: 'root-node',
@@ -112,12 +126,12 @@ const App: React.FC = () => {
         docPath: 'index.md',
         status: 'in_progress',
         priority: 'P0',
-        tags: ['MD导入'],
+        tags: [isWordFile ? 'Word导入' : 'MD导入'],
         children: []
       };
 
       const docsMapResult: Record<string, string> = {
-        'index.md': `# ${name}\n\n从 Markdown 文件 ${mdPath.split('/').pop()} 拆分导入。\n\n`
+        'index.md': `# ${name}\n\n从${sourceType}文件 ${sourceFileName} 拆分导入。\n\n`
       };
 
       // 栈结构维护树多维深度 [node, level]
@@ -141,6 +155,8 @@ const App: React.FC = () => {
           const rawSrc = match[2].trim();
 
           if (/^(https?:\/\/|data:)/i.test(rawSrc)) continue;
+          // 跳过已经在 assets/ 目录的图片（Word 导入时已由后端保存）
+          if (rawSrc.startsWith('assets/')) continue;
 
           // 解码 URL 编码并清理前缀
           let decodedSrc = decodeURIComponent(rawSrc).replace(/^file:\/\//i, '');
@@ -170,6 +186,8 @@ const App: React.FC = () => {
           const afterSrc = match[3];
 
           if (/^(https?:\/\/|data:)/i.test(rawSrc)) continue;
+          // 跳过已经在 assets/ 目录的图片（Word 导入时已由后端保存）
+          if (rawSrc.startsWith('assets/')) continue;
 
           let decodedSrc = decodeURIComponent(rawSrc).replace(/^file:\/\//i, '');
           const cleanRel = decodedSrc.startsWith('/') ? decodedSrc : `${sourceDir}/${decodedSrc.replace(/^\.\//, '')}`;
@@ -204,6 +222,16 @@ const App: React.FC = () => {
         if (match) {
           const level = match[1].length;
           const rawTitleText = match[2].trim();
+
+          // Word 和 Markdown 导入都按 H1-H6 拆分节点
+          const maxSplitLevel = 6;
+
+          if (level > maxSplitLevel) {
+            // 深层标题作为普通段落追加到当前节点内容
+            docsMapResult[activeContentKey] += `${line}\n`;
+            continue;
+          }
+
           const docRelPath = `modules/sec_${nodeIdx++}.md`;
 
           const newNode: MindNode = {
@@ -289,9 +317,9 @@ const App: React.FC = () => {
       setViewMode('editor');
       setIsDrawerOpen(true);
     } catch (err) {
-      console.error('Failed to parse md file:', err);
+      console.error('Failed to parse file:', err);
       const { message } = await import('@tauri-apps/plugin-dialog');
-      await message('解析 Markdown 文件失败', { title: '错误', kind: 'error' });
+      await message('文档解析转换失败', { title: '错误', kind: 'error' });
     }
   };
 
