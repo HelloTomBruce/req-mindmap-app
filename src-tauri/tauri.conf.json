@@ -33,7 +33,7 @@
   "bundle": {
     "active": true,
     "targets": ["dmg", "nsis", "app"],
-    "publisher": "ReqMindmark Team",
+    "publisher": "DocMind",
     "createUpdaterArtifacts": true,
     "shortDescription": "需求规格说明书工作台",
     "longDescription": "基于 Markdown 与 MCP 协议的可视化需求树与跨工具协同工作台",
