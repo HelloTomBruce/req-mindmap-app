@@ -116,7 +116,7 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
       <div className="sidebar-header">
         <div className="sidebar-title-group">
           <Bookmark size={16} />
-          <span className="sidebar-title">需求模板库</span>
+          <span className="sidebar-title">模板库</span>
         </div>
         <button
           className="btn outline icon-only"

@@ -34,3 +34,5 @@ axum = "0.7"
 tower-http = { version = "0.5", features = ["cors"] }
 regex = "1"
 anytomd = "1.3"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
