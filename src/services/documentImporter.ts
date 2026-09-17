@@ -121,7 +121,8 @@ export const importDocumentToProject = async (
     fullMarkdown = await invoke<string>('read_text_file_custom', { path: mdPath });
   }
 
-  // 预处理：修复 Word 转换时可能丢失 # 前缀的列表型小节标题（如 "      20. 流程管理" -> "#### 流程管理"）
+  // 预处理：仅针对 Markdown 导入保留兼容补丁（把 "20. 流程管理" 这类行提升为 #### 小节标题）
+  // Word 导入已由后端 docx2md 按样式精确还原标题与有序列表，不需要此补丁（否则会把有序列表项误判为标题）
   const rawLines = fullMarkdown.split('\n');
   const lines: string[] = [];
   let inBody = false;
@@ -132,7 +133,7 @@ export const importDocumentToProject = async (
       inBody = true;
     }
 
-    if (inBody && !line.startsWith('#')) {
+    if (!isWordFile && inBody && !line.startsWith('#')) {
       const singleNumMatch = line.match(/^\s*(\d+)[\.、\s]\s*([^\n:：;；。，,!\?？]{2,35})$/);
       if (singleNumMatch) {
         const title = singleNumMatch[2].trim();

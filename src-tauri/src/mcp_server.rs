@@ -1195,6 +1195,7 @@ mod tests {
 
     fn make_state() -> AppState {
         AppState {
+            app_handle: Arc::new(Mutex::new(None)),
             project_path: Arc::new(Mutex::new(String::new())),
             port: Arc::new(Mutex::new(6001)),
             is_running: Arc::new(Mutex::new(false)),
