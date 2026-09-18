@@ -83,18 +83,20 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
       );
 
       if (isDarkMode) {
-        gradient.addColorStop(0, '#1a1f26');
-        gradient.addColorStop(0.6, '#14171a');
-        gradient.addColorStop(1, '#0e1013');
+        // Linear dark：近黑画布的亮度阶梯
+        gradient.addColorStop(0, '#191a1b');
+        gradient.addColorStop(0.6, '#0f1011');
+        gradient.addColorStop(1, '#08090a');
       } else {
-        gradient.addColorStop(0, '#faf8f5');
-        gradient.addColorStop(0.6, '#f3f0e8');
-        gradient.addColorStop(1, '#e5e1d4');
+        // Linear light：中性冷灰
+        gradient.addColorStop(0, '#fbfbfc');
+        gradient.addColorStop(0.6, '#f7f8f8');
+        gradient.addColorStop(1, '#eff0f2');
       }
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
 
-      const dotColor = isDarkMode ? '60, 125, 111' : '44, 94, 83'; // 竹青墨韵
+      const dotColor = isDarkMode ? '113, 112, 255' : '94, 106, 210'; // Linear indigo-violet
 
       // 2. 更新与绘制粒子节点
       for (let i = 0; i < PARTICLE_COUNT; i++) {

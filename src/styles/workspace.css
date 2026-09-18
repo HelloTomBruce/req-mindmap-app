@@ -1,0 +1,63 @@
+/* ==================== 2. 顶栏与应用工作区框架 ==================== */
+.app-header {
+  height: 48px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 20;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-logo {
+  color: var(--primary-600);
+}
+
+.app-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-search-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background-color: var(--bg-app);
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+  font-size: 12px;
+  border-radius: var(--radius-md);
+  min-width: 140px;
+  justify-content: space-between;
+}
+
+.header-search-btn:hover {
+  border-color: var(--primary-400);
+  color: var(--primary-600);
+}
+
+.header-kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  padding: 1px 4px;
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+}
+

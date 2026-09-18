@@ -1,0 +1,181 @@
+/* ==================== Mermaid 架构图渲染样式 ==================== */
+.mermaid-render-box {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin: 12px 0;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.mermaid-render-box svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-render-error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin: 10px 0;
+  color: #991b1b;
+}
+
+.mermaid-error-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.mermaid-raw-code {
+  font-family: monospace;
+  font-size: 11px;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 8px;
+  border-radius: var(--radius-xs);
+  overflow-x: auto;
+  margin: 0;
+}
+
+/* ==================== 脑图节点进度与 P0 预警样式 ==================== */
+.mindmap-node-card.has-p0-alert {
+  border-color: #f87171 !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.25) !important;
+}
+
+.node-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.node-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.node-progress-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background-color: var(--bg-app);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+}
+
+.node-progress-pill.done {
+  background-color: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.node-p0-alert-badge {
+  font-size: 9px;
+  font-weight: 590;
+  padding: 1px 4px;
+  border-radius: var(--radius-xs);
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  animation: inkPulse 2s infinite ease-in-out;
+}
+
+@keyframes inkPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+/* ==================== Command Palette 快捷过滤提示条 ==================== */
+.command-palette-hint-chips {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-app);
+  border-bottom: 1px solid var(--border-default);
+  overflow-x: auto;
+}
+
+.hint-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.hint-chip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.hint-chip:hover {
+  border-color: var(--primary-400);
+  color: var(--primary-600);
+  background-color: var(--primary-50);
+}
+
+.palette-result-item.action-item {
+  border-left: 3px solid var(--primary-500);
+}
+
+.action-tag-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background-color: var(--primary-50);
+  color: var(--primary-600);
+  border: 1px solid var(--primary-200);
+}
+
+/* ==================== 看板拖拽浮层预览 (Kanban Drag Ghost) ==================== */
+.kanban-drag-ghost {
+  position: fixed !important;
+  z-index: 99999999 !important;
+  pointer-events: none !important;
+  background-color: var(--bg-surface-elevated);
+  border: 1.5px solid var(--primary-500);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--primary-400);
+  padding: 10px 14px;
+  width: 220px;
+  backdrop-filter: blur(12px);
+  opacity: 0.96;
+}
+
+.ghost-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ghost-icon {
+  color: var(--primary-600);
+}
+
+.ghost-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ghost-target-hint {
+  font-size: 11px;
+  color: var(--primary-600);
+  margin-top: 4px;
+  font-weight: 500;
+}

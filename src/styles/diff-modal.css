@@ -1,0 +1,33 @@
+/* ==================== 13. Diff Modal ==================== */
+.diff-modal {
+  width: 90vw;
+  max-width: 1000px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-viewer {
+  flex: 1;
+  overflow: auto;
+  background-color: #1e1e1e; /* 经典深色代码背景 */
+  color: #d4d4d4;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.diff-empty {
+  padding: 24px;
+  text-align: center;
+  color: #888;
+}
+
+.diff-line {
+  display: flex;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+

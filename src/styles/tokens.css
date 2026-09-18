@@ -1,0 +1,171 @@
+/* ==================== 设计 token（Linear 风格 Design System Tokens） ==================== */
+:root {
+  /* 中性冷灰底（Linear light neutrals） */
+  --bg-app: #f7f8f8;                /* 页面底 */
+  --bg-surface: #ffffff;            /* 卡片表面 */
+  --bg-surface-elevated: #ffffff;
+  --bg-subtle: #f0f1f2;             /* hover 底 */
+  --bg-subtle-hover: #e8eaec;
+
+  --border-default: #e6e6e9;        /* 1px 细描边 */
+  --border-strong: #d0d3d9;         /* 强调描边 */
+  --border-focus: #7170ff;          /* Linear accent violet */
+
+  --text-primary: #282a30;          /* 冷调近黑 */
+  --text-secondary: #4d535c;
+  --text-muted: #8a8f98;            /* Linear tertiary */
+  --text-on-primary: #ffffff;
+
+  /* 单一品牌强调色：Linear indigo-violet */
+  --primary-50: #eef0fd;
+  --primary-100: #dfe2fa;
+  --primary-200: #c3c8f5;
+  --primary-400: #828fff;           /* accent hover */
+  --primary-500: #5e6ad2;           /* brand indigo */
+  --primary-600: #4e57b8;
+  --primary-700: #3d4494;
+
+  /* 状态色（去饱和、冷调） */
+  --success-bg: #ecf9f0;
+  --success-text: #27a644;
+  --warning-bg: #fdf6e8;
+  --warning-text: #96660f;
+  --danger-bg: #fdeded;
+  --danger-text: #c2252c;
+
+  /* 首页卡片半透表面 */
+  --manager-card-bg: rgba(255, 255, 255, 0.9);
+  --manager-card-border: rgba(230, 230, 233, 0.9);
+
+  /* 画布网格与控制器 */
+  --canvas-grid-color: #e8e9ec;
+  --node-root-bg: #eef0fd;
+  --node-root-border: #c3c8f5;
+
+  /* 阴影系统：扁平化，以 1px 描边为主、投影仅用于浮层 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 1px 2px 0 rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 4px 12px 0 rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  --shadow-xl: 0 16px 32px -8px rgba(0, 0, 0, 0.12), 0 3px 6px -2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.04);
+
+  /* 间距与圆角（Linear radius 阶梯：4 / 6 / 8 / 12） */
+  --radius-sm: 5px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* 过渡动效 */
+  --transition-fast: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 简约中国风暗色主题 (水墨玄青与冷月松风 - Dark Mode) */
+/* Linear 风格暗色主题（dark-native：近黑画布 + 半透明白描边 + 亮度阶梯分层） */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-app: #08090a;              /* marketing black 画布 */
+    --bg-surface: #0f1011;          /* panel dark */
+    --bg-surface-elevated: #191a1b; /* level 3 elevated */
+    --bg-subtle: rgba(255, 255, 255, 0.04);   /* hover 亮度阶梯 */
+    --bg-subtle-hover: rgba(255, 255, 255, 0.07);
+
+    --border-default: rgba(255, 255, 255, 0.08);  /* 半透明白 1px 描边 */
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --border-focus: #7170ff;
+
+    --text-primary: #f7f8f8;        /* 非纯白，防刺眼 */
+    --text-secondary: #d0d6e0;
+    --text-muted: #8a8f98;
+    --text-on-primary: #ffffff;
+
+    /* 暗色下的 indigo-violet 阶梯（亮度递增） */
+    --primary-50: rgba(113, 112, 255, 0.12);
+    --primary-100: rgba(113, 112, 255, 0.2);
+    --primary-200: rgba(113, 112, 255, 0.32);
+    --primary-400: #9ba3ff;
+    --primary-500: #7170ff;         /* accent */
+    --primary-600: #828fff;         /* accent hover / 高亮文字 */
+    --primary-700: #aab0ff;
+
+    --success-bg: rgba(39, 166, 68, 0.15);
+    --success-text: #4ac26b;
+    --warning-bg: rgba(187, 128, 9, 0.15);
+    --warning-text: #e3b341;
+    --danger-bg: rgba(229, 72, 77, 0.12);
+    --danger-text: #ff6369;
+
+    --manager-card-bg: rgba(25, 26, 27, 0.9);
+    --manager-card-border: rgba(255, 255, 255, 0.08);
+
+    --canvas-grid-color: rgba(255, 255, 255, 0.05);
+    --node-root-bg: rgba(113, 112, 255, 0.12);
+    --node-root-border: rgba(113, 112, 255, 0.4);
+
+    /* 暗面阴影：投影几乎不可见，用 1px 半透明白环做层次 */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 6px 0 rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    --shadow-lg: 0 4px 12px 0 rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    --shadow-xl: 0 16px 32px -8px rgba(0, 0, 0, 0.5), 0 3px 6px -2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* 动效关键帧 (Chinese Aesthetic Motion Keyframes) */
+@keyframes inkFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes inkScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes inkPulseSubtle {
+  0% {
+    box-shadow: 0 0 0 0 rgba(94, 106, 210, 0.3);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(94, 106, 210, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(94, 106, 210, 0);
+  }
+}
+
+
+/* ==================== 动效：Drawer 滑入 & 无障碍降级 ==================== */
+@keyframes inkSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Linear 式微动效以不打扰为前提：prefers-reduced-motion 下全部折叠为瞬时 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

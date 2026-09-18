@@ -1,0 +1,189 @@
+/* ==================== 6. 底部状态栏 (Status Bar) ==================== */
+.app-statusbar {
+  height: 24px;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  z-index: 20;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Spinner 旋转通用样式 */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ==================== 12. Activity Bar & Git Sidebar ==================== */
+.activity-bar {
+  width: 48px;
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 16px;
+  z-index: 10;
+}
+
+.activity-icon {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-icon:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-subtle);
+}
+
+.activity-icon.active {
+  color: var(--primary-600);
+  background-color: var(--primary-50);
+}
+
+.git-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.git-commit-box {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.git-commit-box textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  resize: vertical;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.git-commit-box textarea:focus {
+  outline: none;
+  border-color: var(--primary-500);
+}
+
+.commit-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.git-changes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.git-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.git-empty-state {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.git-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.git-file-item:hover {
+  background-color: var(--bg-subtle);
+}
+
+.git-badge {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: bold;
+  width: 18px;
+  text-align: center;
+}
+
+.git-badge.M { color: #d97706; }
+.git-badge.A { color: #16a34a; }
+.git-badge.D { color: #dc2626; }
+
+.git-file-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-file-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.git-file-item:hover .git-file-actions {
+  opacity: 1;
+}
+
+.icon-action {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.icon-action:hover {
+  background-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+

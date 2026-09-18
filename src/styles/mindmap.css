@@ -1,0 +1,316 @@
+/* ==================== 3. 主画布 (Mindmap Canvas) ==================== */
+.app-main-canvas {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-app);
+  overflow: hidden;
+  position: relative;
+}
+
+.canvas-header-bar {
+  height: 40px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.react-flow-mindmap-container {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-app);
+  position: relative;
+}
+
+.react-flow-mindmap-container .react-flow__background-pattern {
+  stroke: var(--canvas-grid-color);
+}
+
+.react-flow-mindmap-container .react-flow__controls {
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+}
+
+.react-flow-mindmap-container .react-flow__controls-button {
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-primary);
+  fill: var(--text-primary);
+}
+
+.react-flow-mindmap-container .react-flow__controls-button:hover {
+  background-color: var(--bg-subtle-hover);
+}
+
+.react-flow-mindmap-container .react-flow__edge-path {
+  stroke: var(--border-strong);
+}
+
+/* SVG 连接线通用绝对定位图层 */
+.mindmap-svg-connector-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mindmap-horizontal-viewport {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  min-width: max-content;
+}
+
+/* 水平节点节点组 (包含当前节点 + 右侧所有的子节点列) */
+.mindmap-horizontal-node-group {
+  display: flex;
+  align-items: center;
+  gap: 48px; /* 节点层级间距 */
+}
+
+/* 节点卡片 Horizontal Node Card */
+.mindmap-node-card {
+  position: relative;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  min-width: 180px;
+  max-width: 260px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.mindmap-node-card:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-subtle);
+}
+
+.mindmap-node-card.selected {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 2px var(--primary-100);
+}
+
+.mindmap-node-card.root-node {
+  border-width: 2px;
+  border-color: var(--primary-500);
+  background-color: var(--primary-50);
+}
+
+.node-main-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.node-type-icon {
+  color: var(--primary-600);
+  flex-shrink: 0;
+}
+
+.node-title-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-title-input {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  padding: 2px 6px;
+  border: 1px solid var(--primary-500);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background-color: var(--bg-surface);
+}
+
+.node-collapse-toggle {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.node-collapse-toggle:hover {
+  background-color: var(--bg-subtle-hover);
+  color: var(--text-primary);
+}
+
+.node-footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+/* 节点悬浮操作栏 */
+.node-hover-actions {
+  position: absolute;
+  top: -12px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.mindmap-node-card:hover .node-hover-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  border: none;
+  background: transparent;
+  padding: 3px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+}
+
+.action-btn.add:hover {
+  background-color: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.action-btn.delete:hover {
+  background-color: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+/* 子节点垂直列 */
+.mindmap-children-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+}
+
+.node-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.node-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.node-icon {
+  color: var(--primary-600);
+}
+
+.node-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.priority-badge {
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 590;
+  font-size: 10px;
+}
+
+.priority-badge.p0 {
+  background-color: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.priority-badge.p1 {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.priority-badge.p2 {
+  background-color: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.priority-badge.p3 {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.status-badge {
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.node-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0.3;
+  transition: opacity var(--transition-fast);
+}
+
+.node-card:hover .node-actions {
+  opacity: 1;
+}
+
+.icon-action-btn {
+  border: none;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.icon-action-btn:hover {
+  background: var(--bg-subtle-hover);
+  color: var(--text-primary);
+}
+
+.icon-action-btn.delete:hover {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.node-children-container {
+  border-left: 2px solid var(--border-default);
+  margin-left: 14px;
+  padding-left: 14px;
+}
+
