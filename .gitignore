@@ -22,14 +22,3 @@ dist-ssr
 # Graphify
 graphify-out
 
-/.claude
-/accessibility
-/frameworks
-/components
-/content
-/design-systems
-/scripts
-/tokens
-/taste
-/workflows
-/CLAUDE.md
