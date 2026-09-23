@@ -39,6 +39,8 @@ export const EditorPage: React.FC = () => {
     handleDeleteNode,
     handleToggleCollapse,
     handleNavigateToNodeByTitle,
+    handleAddEdge,
+    handleDeleteEdge,
     handleCreateProject,
     handleDeleteProjectConfirm,
     handleImportDocument,
@@ -72,11 +74,39 @@ export const EditorPage: React.FC = () => {
     setTargetDeleteProject
   } = useProjectContext();
 
-  // 全局快捷键监听 (Cmd/Ctrl + K)
+  // 状态循环顺序定义
+  const STATUS_CYCLE_ORDER: Array<'draft' | 'todo' | 'in_progress' | 'completed'> = [
+    'draft',
+    'todo',
+    'in_progress',
+    'completed'
+  ];
+
+  // 快速轮转当前选中节点的状态
+  const handleCycleCurrentNodeStatus = useCallback(() => {
+    if (!currentNode || !selectedNodeId) return;
+    const currentIndex = STATUS_CYCLE_ORDER.indexOf(currentNode.status as any);
+    const nextStatus =
+      currentIndex === -1
+        ? 'todo'
+        : STATUS_CYCLE_ORDER[(currentIndex + 1) % STATUS_CYCLE_ORDER.length];
+    handleUpdateMeta(selectedNodeId, { status: nextStatus });
+  }, [currentNode, selectedNodeId, handleUpdateMeta]);
+
+  // 全局快捷键监听 (Cmd/Ctrl + K/O, Space 轮转状态, Alt+D 开关抽屉, Tab 加子节点)
   useGlobalShortcuts({
     onToggleCommandPalette: useCallback(() => {
       setIsCommandPaletteOpen((prev) => !prev);
-    }, [setIsCommandPaletteOpen])
+    }, [setIsCommandPaletteOpen]),
+    onToggleDrawer: useCallback(() => {
+      setIsDrawerOpen(!isDrawerOpen);
+    }, [isDrawerOpen, setIsDrawerOpen]),
+    onCycleStatus: handleCycleCurrentNodeStatus,
+    onAddChild: useCallback(() => {
+      if (projectData?.root) {
+        handleAddChildNode(selectedNodeId || projectData.root.id);
+      }
+    }, [projectData, selectedNodeId, handleAddChildNode])
   });
 
   // 全局命令面板动作路由
@@ -152,6 +182,7 @@ export const EditorPage: React.FC = () => {
 
               <MindmapCanvas
                 rootNode={projectData.root}
+                edgesData={projectData.edges}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={handleSelectNode}
                 onOpenDrawer={() => setIsDrawerOpen(true)}
@@ -159,6 +190,8 @@ export const EditorPage: React.FC = () => {
                 onAddChildNode={handleAddChildNode}
                 onDeleteNode={handleDeleteNode}
                 onToggleCollapse={handleToggleCollapse}
+                onAddEdge={handleAddEdge}
+                onDeleteEdge={handleDeleteEdge}
               />
             </>
           ) : (
@@ -210,6 +243,7 @@ export const EditorPage: React.FC = () => {
         isExportModalOpen={isExportModalOpen}
         onCloseExportModal={() => setIsExportModalOpen(false)}
         rootNode={projectData.root}
+        edgesData={projectData.edges}
         docsMap={docsMap}
         projectName={projectData.projectName}
         isCreateModalOpen={isCreateModalOpen}

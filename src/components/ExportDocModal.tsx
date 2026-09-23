@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { MindNode } from '../types';
+import { MindNode, MindEdge } from '../types';
 import { X, FileDown, CheckCircle, FileText, Globe, Copy, Printer } from 'lucide-react';
+import { flattenTreeNodes } from '../services/treeOperations';
 
 interface ExportDocModalProps {
   rootNode: MindNode;
+  edgesData?: MindEdge[];
   docsMap: Record<string, string>;
   projectName: string;
   onClose: () => void;
@@ -11,6 +13,7 @@ interface ExportDocModalProps {
 
 export const ExportDocModal: React.FC<ExportDocModalProps> = ({
   rootNode,
+  edgesData = [],
   docsMap,
   projectName,
   onClose
@@ -18,9 +21,11 @@ export const ExportDocModal: React.FC<ExportDocModalProps> = ({
   const [activeTab, setActiveTab] = useState<'markdown' | 'html'>('markdown');
   const [copied, setCopied] = useState(false);
 
-  // 1. 生成 TOC 目录与深度优先聚合 Markdown
+  // 1. 生成 TOC 目录、依赖关系概览与深度优先聚合 Markdown
   const { fullMarkdownText, tocList } = useMemo(() => {
     const toc: Array<{ depth: number; title: string; anchor: string }> = [];
+    const allNodes = flattenTreeNodes(rootNode);
+    const nodeMap = new Map<string, MindNode>(allNodes.map((n) => [n.id, n]));
 
     const generateFullDoc = (node: MindNode, depth: number = 1): string => {
       const headingHashes = '#'.repeat(Math.min(depth, 6));
@@ -55,6 +60,23 @@ export const ExportDocModal: React.FC<ExportDocModalProps> = ({
 
     const docBody = generateFullDoc(rootNode);
 
+    // 拼装前置依赖矩阵章节
+    let dependencySection = '';
+    if (edgesData.length > 0) {
+      dependencySection = `## 🔗 需求关联与依赖矩阵 (Dependency Matrix)\n\n| 源需求模块 (前置依赖) | 目标需求模块 (被阻塞/关联项) | 依赖关系 | 状态检测 |\n| :--- | :--- | :--- | :--- |\n`;
+      edgesData.forEach((edge) => {
+        const srcNode = nodeMap.get(edge.source);
+        const tgtNode = nodeMap.get(edge.target);
+        if (srcNode && tgtNode) {
+          const isBlocked =
+            srcNode.status !== 'completed' &&
+            (tgtNode.status === 'in_progress' || tgtNode.status === 'completed');
+          dependencySection += `| **${srcNode.title}** (\`${srcNode.status}\`) | **${tgtNode.title}** (\`${tgtNode.status}\`) | \`${edge.type}\` | ${isBlocked ? '⚠️ **阻塞中 (前置未完成)**' : '✅ 正常'} |\n`;
+        }
+      });
+      dependencySection += `\n---\n\n`;
+    }
+
     // 拼装目录 (Table of Contents)
     let tocMarkdown = `## 📑 目录导航 (Table of Contents)\n\n`;
     for (const item of toc) {
@@ -63,10 +85,10 @@ export const ExportDocModal: React.FC<ExportDocModalProps> = ({
     }
     tocMarkdown += `\n---\n\n`;
 
-    const fullMarkdownText = `# ${projectName}\n\n> 自动聚合导出时间: ${new Date().toLocaleString()}\n\n---\n\n${tocMarkdown}${docBody}`;
+    const fullMarkdownText = `# ${projectName}\n\n> 自动聚合导出时间: ${new Date().toLocaleString()}\n\n---\n\n${tocMarkdown}${dependencySection}${docBody}`;
 
     return { fullMarkdownText, tocList: toc };
-  }, [rootNode, docsMap, projectName]);
+  }, [rootNode, edgesData, docsMap, projectName]);
 
   // 2. 生成单文件自包含的离线 HTML (带 GitHub 风格排版与响应式目录，支持直接打印为 PDF)
   const fullHtmlContent = useMemo(() => {

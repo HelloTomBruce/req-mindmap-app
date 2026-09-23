@@ -8,16 +8,22 @@ import {
   Node,
   Edge,
   NodeProps,
-  useNodesState,
-  useEdgesState
+  EdgeProps,
+  ReactFlowProvider,
+  useReactFlow,
+  getBezierPath,
+  EdgeLabelRenderer,
+  Connection,
+  MarkerType
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
-import { MindNode, Status } from '../types';
-import { ChevronRight, ChevronDown, Plus, Trash2, FileText, Edit2 } from 'lucide-react';
+import { MindNode, MindEdge, Status, DependencyEdgeType } from '../types';
+import { ChevronRight, ChevronDown, Plus, Trash2, FileText, Edit2, Link2, AlertTriangle, X } from 'lucide-react';
 
 interface MindmapCanvasProps {
   rootNode: MindNode;
+  edgesData?: MindEdge[];
   selectedNodeId: string | null;
   onSelectNode: (node: MindNode) => void;
   onOpenDrawer: () => void;
@@ -25,6 +31,8 @@ interface MindmapCanvasProps {
   onAddChildNode: (parentId: string) => void;
   onDeleteNode: (nodeId: string) => void;
   onToggleCollapse: (nodeId: string) => void;
+  onAddEdge?: (sourceId: string, targetId: string, type?: DependencyEdgeType) => void;
+  onDeleteEdge?: (edgeId: string) => void;
 }
 
 const STATUS_LABELS: Record<Status, { label: string; color: string }> = {
@@ -78,6 +86,78 @@ function computeSubtreeStats(node: MindNode): SubtreeStats {
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
   return { completed, total, percent, hasUnresolvedP0 };
 }
+
+// 自定义依赖边组件（带动画流动与阻塞警示）
+const CustomDependencyEdge: React.FC<EdgeProps> = ({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+  style
+}) => {
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition
+  });
+
+  const edgeData = data as unknown as {
+    edgeId: string;
+    type: DependencyEdgeType;
+    isBlocked: boolean;
+    onDelete?: (id: string) => void;
+  };
+
+  const isBlocked = edgeData?.isBlocked;
+
+  return (
+    <>
+      <path
+        id={id}
+        className="react-flow__edge-path dependency-edge-path"
+        d={edgePath}
+        style={{
+          ...style,
+          stroke: isBlocked ? '#ef4444' : '#f59e0b',
+          strokeWidth: isBlocked ? 2.5 : 2
+        }}
+      />
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            pointerEvents: 'all'
+          }}
+          className={`dep-edge-pill ${isBlocked ? 'blocked' : ''}`}
+          title={isBlocked ? '⚠️ 依赖未完成：前置任务尚未完成！' : '前置依赖关系'}
+        >
+          {isBlocked ? <AlertTriangle size={12} /> : <Link2 size={12} />}
+          <span>{isBlocked ? '阻塞中' : '依赖'}</span>
+          {edgeData?.onDelete && (
+            <button
+              className="dep-edge-delete-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                edgeData.onDelete?.(edgeData.edgeId);
+              }}
+              title="删除此依赖关联"
+            >
+              <X size={11} />
+            </button>
+          )}
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+};
 
 // 自定义思维导图节点组件 Custom MindNode Component for React Flow
 const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
@@ -136,8 +216,19 @@ const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
       className={`mindmap-node-card ${isRoot ? 'root-node' : ''} ${selected ? 'selected' : ''} ${hasChildren && stats.hasUnresolvedP0 ? 'has-p0-alert' : ''}`}
       style={{ margin: 0, width: `${NODE_WIDTH}px` }}
     >
-      {/* 输入 Connect Handle (左侧) */}
-      {!isRoot && <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />}
+      {/* 顶部/左侧 Handle 供连接 */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="target-left"
+        style={{ width: 8, height: 8, background: '#64748b', opacity: 0.6 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="target-top"
+        style={{ width: 8, height: 8, background: '#64748b', opacity: 0.6 }}
+      />
 
       <div className="node-main-row">
         <FileText size={16} className="node-type-icon" />
@@ -237,8 +328,19 @@ const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
         )}
       </div>
 
-      {/* 输出 Connect Handle (右侧) */}
-      <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
+      {/* 底部/右侧 Handle 供连线 */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="source-right"
+        style={{ width: 8, height: 8, background: '#3b82f6', opacity: 0.6 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="source-bottom"
+        style={{ width: 8, height: 8, background: '#3b82f6', opacity: 0.6 }}
+      />
     </div>
   );
 };
@@ -259,7 +361,10 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   });
 
   edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
+    // 仅基于层级树进行 Dagre 排版
+    if (edge.type === 'default' || !edge.type) {
+      dagreGraph.setEdge(edge.source, edge.target);
+    }
   });
 
   dagre.layout(dagreGraph);
@@ -280,24 +385,31 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   return { nodes: layoutedNodes, edges };
 };
 
-export const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
+const MindmapFlowInner: React.FC<MindmapCanvasProps> = ({
   rootNode,
+  edgesData = [],
   selectedNodeId,
   onSelectNode,
   onOpenDrawer,
   onRenameNode,
   onAddChildNode,
   onDeleteNode,
-  onToggleCollapse
+  onToggleCollapse,
+  onAddEdge,
+  onDeleteEdge
 }) => {
   const nodeTypes = useMemo(() => ({ mindNode: CustomMindNodeComponent }), []);
+  const edgeTypes = useMemo(() => ({ dependencyEdge: CustomDependencyEdge }), []);
+  const reactFlowInstance = useReactFlow();
 
   // 转换为 React Flow Nodes & Edges
   const { initialNodes, initialEdges } = useMemo(() => {
     const nodesAcc: Node[] = [];
     const edgesAcc: Edge[] = [];
+    const nodeStatusMap: Record<string, Status> = {};
 
     const traverse = (currentNode: MindNode, isRoot: boolean = false) => {
+      nodeStatusMap[currentNode.id] = currentNode.status;
       nodesAcc.push({
         id: currentNode.id,
         type: 'mindNode',
@@ -321,7 +433,9 @@ export const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
             id: `edge-${currentNode.id}-${child.id}`,
             source: currentNode.id,
             target: child.id,
-            type: 'bezier',
+            sourceHandle: 'source-right',
+            targetHandle: 'target-left',
+            type: 'default',
             style: { stroke: '#94a3b8', strokeWidth: 2 }
           });
           traverse(child, false);
@@ -331,17 +445,84 @@ export const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
 
     traverse(rootNode, true);
 
+    // 追加跨分支依赖边
+    edgesData.forEach((depEdge) => {
+      const sourceStatus = nodeStatusMap[depEdge.source];
+      const targetStatus = nodeStatusMap[depEdge.target];
+      // 如果目标节点已经进入开发或已完成，而前置源节点未完成，则标记为阻塞 (Blocked)
+      const isBlocked =
+        sourceStatus !== 'completed' &&
+        (targetStatus === 'in_progress' || targetStatus === 'completed');
+
+      edgesAcc.push({
+        id: depEdge.id,
+        source: depEdge.source,
+        target: depEdge.target,
+        sourceHandle: 'source-right',
+        targetHandle: 'target-left',
+        type: 'dependencyEdge',
+        animated: true,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: isBlocked ? '#ef4444' : '#f59e0b',
+          width: 14,
+          height: 14
+        },
+        data: {
+          edgeId: depEdge.id,
+          type: depEdge.type,
+          isBlocked,
+          onDelete: onDeleteEdge
+        }
+      });
+    });
+
     const layouted = getLayoutedElements(nodesAcc, edgesAcc);
     return { initialNodes: layouted.nodes, initialEdges: layouted.edges };
-  }, [rootNode, selectedNodeId, onSelectNode, onOpenDrawer, onRenameNode, onAddChildNode, onDeleteNode, onToggleCollapse]);
+  }, [
+    rootNode,
+    edgesData,
+    selectedNodeId,
+    onSelectNode,
+    onOpenDrawer,
+    onRenameNode,
+    onAddChildNode,
+    onDeleteNode,
+    onToggleCollapse,
+    onDeleteEdge
+  ]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  // 当外部选中的节点改变时，平滑聚焦居中至该节点
+  const prevSelectedIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedNodeId) {
+      prevSelectedIdRef.current = null;
+      return;
+    }
+    if (prevSelectedIdRef.current === selectedNodeId) {
+      return;
+    }
+    prevSelectedIdRef.current = selectedNodeId;
 
-  React.useEffect(() => {
-    setNodes(initialNodes);
-    setEdges(initialEdges);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+    const target = initialNodes.find((n) => n.id === selectedNodeId);
+    if (target && target.position) {
+      reactFlowInstance.setCenter(
+        target.position.x + NODE_WIDTH / 2,
+        target.position.y + NODE_HEIGHT / 2,
+        { duration: 400, zoom: Math.max(reactFlowInstance.getZoom(), 0.9) }
+      );
+    }
+  }, [selectedNodeId, initialNodes, reactFlowInstance]);
+
+  // 处理拖拽连线创建依赖
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      if (connection.source && connection.target && connection.source !== connection.target) {
+        onAddEdge?.(connection.source, connection.target, 'depends_on');
+      }
+    },
+    [onAddEdge]
+  );
 
   // 单击：仅选中节点
   const handleNodeClick = useCallback(
@@ -384,14 +565,14 @@ export const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
   return (
     <div className="react-flow-mindmap-container">
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={initialNodes}
+        edges={initialEdges}
         nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        edgeTypes={edgeTypes}
+        onConnect={handleConnect}
         onNodeClick={handleNodeClick}
         onNodeDoubleClick={handleNodeDoubleClick}
-        deleteKeyCode={null} // 禁用自带的删除，改用上面自定义的拦截，以支持二次确认
+        deleteKeyCode={null} // 禁用自带的删除，改用自定义拦截以支持二次确认
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}
@@ -403,3 +584,12 @@ export const MindmapCanvas: React.FC<MindmapCanvasProps> = ({
     </div>
   );
 };
+
+export const MindmapCanvas: React.FC<MindmapCanvasProps> = (props) => {
+  return (
+    <ReactFlowProvider>
+      <MindmapFlowInner {...props} />
+    </ReactFlowProvider>
+  );
+};
+

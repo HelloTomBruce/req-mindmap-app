@@ -134,7 +134,7 @@ export const useProject = ({
   );
 
   // 通过选择文件夹打开项目
-  const handleSelectFolder = useCallback(async () => {
+  const handleSelectFolder = useCallback(async (): Promise<boolean> => {
     const selected = await selectFolder('选择需求项目文件夹');
     if (selected) {
       const folderName = selected.split('/').pop() || '本地需求项目';
@@ -146,7 +146,9 @@ export const useProject = ({
         nodeCount: 1
       };
       await handleOpenProject(meta);
+      return true;
     }
+    return false;
   }, [handleOpenProject]);
 
   // 新建项目
@@ -308,11 +310,84 @@ export const useProject = ({
     [projectData]
   );
 
-  // 更新节点属性元信息
+  // 更新节点属性元信息（支持 Obsidian 风格的 WikiLink 级联重构修复）
   const handleUpdateMeta = useCallback(
     (nodeId: string, updates: Partial<MindNode>) => {
+      const oldNode = findNodeById(projectData.root, nodeId);
+      const oldTitle = oldNode?.title;
+      const isTitleChanged = updates.title && oldTitle && updates.title !== oldTitle;
+
+      let nextDocsMap = docsMap;
+
+      // 如果修改了节点标题，级联扫描所有文档中的 [[oldTitle]] 替换为 [[newTitle]]
+      if (isTitleChanged && oldTitle) {
+        const newTitle = updates.title!;
+        const updatedDocs: Record<string, string> = {};
+        const oldTagRegex = new RegExp(`\\[\\[${oldTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\]\\]|#[^\\]]+\\]\\])`, 'g');
+
+        let replacedCount = 0;
+        for (const [path, content] of Object.entries(docsMap)) {
+          if (oldTagRegex.test(content)) {
+            const newContent = content.replace(oldTagRegex, (_match, suffix) => {
+              replacedCount++;
+              return `[[${newTitle}${suffix}`;
+            });
+            updatedDocs[path] = newContent;
+          } else {
+            updatedDocs[path] = content;
+          }
+        }
+
+        if (replacedCount > 0) {
+          nextDocsMap = updatedDocs;
+          setDocsMap(updatedDocs);
+        }
+      }
+
       const updatedRoot = updateNodeInTree(projectData.root, nodeId, updates);
       const updatedProject = { ...projectData, root: updatedRoot };
+      setProjectData(updatedProject);
+      debouncedSyncToDisk(currentProjectPath, updatedProject, nextDocsMap);
+    },
+    [projectData, currentProjectPath, docsMap, debouncedSyncToDisk]
+  );
+
+  // 添加跨分支依赖边
+  const handleAddEdge = useCallback(
+    (sourceId: string, targetId: string, type: 'depends_on' | 'blocks' | 'relates_to' = 'depends_on') => {
+      if (sourceId === targetId) return;
+      const existingEdges = projectData.edges || [];
+      const isDuplicate = existingEdges.some(
+        (e) => (e.source === sourceId && e.target === targetId) || (e.source === targetId && e.target === sourceId)
+      );
+      if (isDuplicate) return;
+
+      const newEdge = {
+        id: `dep-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        source: sourceId,
+        target: targetId,
+        type
+      };
+
+      const updatedProject = {
+        ...projectData,
+        edges: [...existingEdges, newEdge]
+      };
+      setProjectData(updatedProject);
+      debouncedSyncToDisk(currentProjectPath, updatedProject, docsMap);
+    },
+    [projectData, currentProjectPath, docsMap, debouncedSyncToDisk]
+  );
+
+  // 删除跨分支依赖边
+  const handleDeleteEdge = useCallback(
+    (edgeId: string) => {
+      const existingEdges = projectData.edges || [];
+      const updatedEdges = existingEdges.filter((e) => e.id !== edgeId);
+      const updatedProject = {
+        ...projectData,
+        edges: updatedEdges
+      };
       setProjectData(updatedProject);
       debouncedSyncToDisk(currentProjectPath, updatedProject, docsMap);
     },
@@ -384,7 +459,10 @@ export const useProject = ({
     handleDeleteNode,
     handleToggleCollapse,
     handleUpdateMeta,
+    handleAddEdge,
+    handleDeleteEdge,
     handleContentChange,
     handleNavigateToNodeByTitle
   };
 };
+

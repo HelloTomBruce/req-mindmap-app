@@ -314,3 +314,59 @@
   padding-left: 14px;
 }
 
+/* 跨分支依赖边 (Dependency Edges) 样式 */
+.react-flow-mindmap-container .react-flow__edge.dependency-edge-path path {
+  stroke-dasharray: 5 4;
+  animation: dashdraw 1s linear infinite;
+}
+
+.dep-edge-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform var(--transition-fast);
+}
+
+.dep-edge-pill:hover {
+  transform: scale(1.05);
+}
+
+.dep-edge-pill.blocked {
+  background-color: var(--danger-bg);
+  border-color: var(--danger-border, #fca5a5);
+  color: var(--danger-text);
+}
+
+.dep-edge-delete-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.dep-edge-delete-btn:hover {
+  opacity: 1;
+}
+
+@keyframes dashdraw {
+  from {
+    stroke-dashoffset: 20;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+

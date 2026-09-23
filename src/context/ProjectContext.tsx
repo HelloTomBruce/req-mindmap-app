@@ -33,10 +33,12 @@ interface ProjectContextType {
   handleDeleteNode: (nodeId: string) => Promise<void>;
   handleToggleCollapse: (nodeId: string) => void;
   handleNavigateToNodeByTitle: (title: string) => void;
+  handleAddEdge: (sourceId: string, targetId: string, type?: 'depends_on' | 'blocks' | 'relates_to') => void;
+  handleDeleteEdge: (edgeId: string) => void;
 
   // 项目管理
   handleOpenProject: (meta: ProjectMeta) => Promise<void>;
-  handleSelectFolder: () => Promise<void>;
+  handleSelectFolder: () => Promise<boolean>;
   handleCreateProject: (name: string, targetPath: string, presetId?: string) => Promise<void>;
   handleDeleteProjectConfirm: (targetProject: ProjectMeta, deletePhysicalFiles: boolean) => Promise<void>;
   handleImportDocument: (mdPath: string, targetPath: string, name: string) => Promise<void>;
@@ -126,6 +128,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     handleDeleteNode,
     handleToggleCollapse,
     handleUpdateMeta,
+    handleAddEdge,
+    handleDeleteEdge,
     handleContentChange,
     handleNavigateToNodeByTitle
   } = useProject({
@@ -247,6 +251,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         handleDeleteNode,
         handleToggleCollapse,
         handleNavigateToNodeByTitle,
+        handleAddEdge,
+        handleDeleteEdge,
         handleOpenProject,
         handleSelectFolder,
         handleCreateProject,

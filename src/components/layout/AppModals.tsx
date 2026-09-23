@@ -17,6 +17,7 @@ interface AppModalsProps {
   isExportModalOpen: boolean;
   onCloseExportModal: () => void;
   rootNode: MindNode;
+  edgesData?: import('../../types').MindEdge[];
   docsMap: Record<string, string>;
   projectName: string;
 
@@ -65,6 +66,7 @@ export const AppModals: React.FC<AppModalsProps> = ({
   isExportModalOpen,
   onCloseExportModal,
   rootNode,
+  edgesData,
   docsMap,
   projectName,
   isCreateModalOpen,
@@ -100,6 +102,7 @@ export const AppModals: React.FC<AppModalsProps> = ({
       {isExportModalOpen && (
         <ExportDocModal
           rootNode={rootNode}
+          edgesData={edgesData}
           docsMap={docsMap}
           projectName={projectName}
           onClose={onCloseExportModal}

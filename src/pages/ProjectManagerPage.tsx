@@ -48,8 +48,10 @@ export const ProjectManagerPage: React.FC = () => {
   };
 
   const onOpenFolderAndNavigate = async () => {
-    await handleSelectFolder();
-    navigate('/editor');
+    const opened = await handleSelectFolder();
+    if (opened) {
+      navigate('/editor');
+    }
   };
 
   return (
