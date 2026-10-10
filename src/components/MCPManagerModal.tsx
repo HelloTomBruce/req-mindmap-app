@@ -29,6 +29,12 @@ const MCP_TOOLS_CATALOG: MCPToolDef[] = [
     parameters: '无参数'
   },
   {
+    name: 'activate_project',
+    category: 'mutation',
+    description: '激活/切换当前操作的需求项目。可传入项目本地绝对路径(path)或项目名称(name)',
+    parameters: 'path?: string, name?: string'
+  },
+  {
     name: 'get_requirements_tree',
     category: 'query',
     description: '获取当前文档项目的完整模块树架构、节点ID、文档路径及完成状态',

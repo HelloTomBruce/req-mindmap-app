@@ -119,6 +119,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     allProjectNodes,
     saveRecentProjects,
     handleOpenProject,
+    handleOpenProjectByPath,
     handleSelectFolder,
     handleCreateProject,
     handleDeleteProjectConfirm,
@@ -154,7 +155,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     onMcpWriteReload: (loadedProjectData, loadedDocsMap) => {
       setProjectData(loadedProjectData);
       setDocsMap(loadedDocsMap);
-    }
+    },
+    onProjectSwitch: handleOpenProjectByPath
   });
 
   const handleToggleMCPServer = useCallback(

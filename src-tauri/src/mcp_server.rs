@@ -124,7 +124,7 @@ pub async fn handle_mcp_rpc(
                 },
                 "serverInfo": {
                     "name": "req-mindmark-mcp",
-                    "version": "1.4.0"
+                    "version": "1.8.0"
                 }
             }
         })).await;
@@ -178,6 +178,17 @@ pub async fn handle_mcp_rpc(
                         "name": "list_projects",
                         "description": "获取当前所有的需求项目列表（包含项目名称、本地目录路径及当前激活状态）",
                         "inputSchema": { "type": "object", "properties": {} }
+                    },
+                    {
+                        "name": "activate_project",
+                        "description": "激活/切换当前操作的需求项目。可传入项目本地绝对路径(path)或项目名称(name)",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "path": { "type": "string", "description": "目标需求项目的本地绝对目录路径" },
+                                "name": { "type": "string", "description": "目标需求项目的名称（若未提供 path，则在已知项目中按名称匹配）" }
+                            }
+                        }
                     },
                     {
                         "name": "get_requirements_tree",
@@ -371,6 +382,173 @@ pub async fn handle_mcp_rpc(
                 "jsonrpc": "2.0",
                 "id": id,
                 "result": { "content": [{ "type": "text", "text": serde_json::to_string_pretty(&info).unwrap_or_default() }] }
+            })).await;
+        }
+
+        if tool_name == "activate_project" {
+            let raw_path = args.get("path").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+            let raw_name = args.get("name").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+
+            if raw_path.is_empty() && raw_name.is_empty() {
+                add_log(&state, tool_name.to_string(), args, "error".to_string());
+                return send_rpc_response(&state, json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": {
+                        "isError": true,
+                        "content": [{ "type": "text", "text": "参数错误：请提供 path (项目本地路径) 或 name (项目名称)" }]
+                    }
+                })).await;
+            }
+
+            let mut target_path = raw_path.clone();
+            let mut target_name = raw_name.clone();
+
+            let app_handle_opt = safe_lock!(state.app_handle).clone();
+
+            // 若未提供 path 但提供了 name，尝试从 projects_index.json 中查找
+            if target_path.is_empty() && !raw_name.is_empty() {
+                if let Some(ref app) = app_handle_opt {
+                    use tauri::Manager;
+                    if let Ok(app_dir) = app.path().app_data_dir() {
+                        let index_path = app_dir.join("projects_index.json");
+                        if index_path.exists() {
+                            if let Ok(content) = fs::read_to_string(&index_path) {
+                                if let Ok(list) = serde_json::from_str::<Vec<Value>>(&content) {
+                                    for item in list {
+                                        let item_name = item.get("name").and_then(|v| v.as_str()).unwrap_or("");
+                                        let item_path = item.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                                        let folder_name = Path::new(item_path).file_name().and_then(|s| s.to_str()).unwrap_or("");
+                                        if item_name.eq_ignore_ascii_case(&raw_name) || folder_name.eq_ignore_ascii_case(&raw_name) {
+                                            target_path = item_path.to_string();
+                                            if target_name.is_empty() {
+                                                target_name = item_name.to_string();
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if target_path.is_empty() {
+                add_log(&state, tool_name.to_string(), args, "error".to_string());
+                return send_rpc_response(&state, json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": {
+                        "isError": true,
+                        "content": [{ "type": "text", "text": format!("未找到名称匹配 '{}' 的已知项目，请提供准确的 path 参数。", raw_name) }]
+                    }
+                })).await;
+            }
+
+            let p_buf = Path::new(&target_path);
+            if !p_buf.exists() {
+                add_log(&state, tool_name.to_string(), args, "error".to_string());
+                return send_rpc_response(&state, json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": {
+                        "isError": true,
+                        "content": [{ "type": "text", "text": format!("目标路径不存在: {}", target_path) }]
+                    }
+                })).await;
+            }
+
+            let config_path = p_buf.join(".requirements.json");
+            if !config_path.exists() {
+                add_log(&state, tool_name.to_string(), args, "error".to_string());
+                return send_rpc_response(&state, json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": {
+                        "isError": true,
+                        "content": [{ "type": "text", "text": format!("目标目录中未找到需求配置文件 (.requirements.json): {}", target_path) }]
+                    }
+                })).await;
+            }
+
+            // 尝试读取项目名称
+            if target_name.is_empty() {
+                if let Ok(config_content) = fs::read_to_string(&config_path) {
+                    if let Ok(cfg_json) = serde_json::from_str::<Value>(&config_content) {
+                        if let Some(title) = cfg_json.get("root").and_then(|r| r.get("title")).and_then(|t| t.as_str()) {
+                            target_name = title.to_string();
+                        }
+                    }
+                }
+                if target_name.is_empty() {
+                    target_name = p_buf.file_name().and_then(|s| s.to_str()).unwrap_or("project").to_string();
+                }
+            }
+
+            // 1. 更新 AppState 中的当前项目路径
+            {
+                let mut p = safe_lock!(state.project_path);
+                *p = target_path.clone();
+            }
+            mark_mcp_write(&state);
+
+            // 2. 更新 AppData 中的 projects_index.json
+            if let Some(ref app) = app_handle_opt {
+                use tauri::Manager;
+                if let Ok(app_dir) = app.path().app_data_dir() {
+                    let index_path = app_dir.join("projects_index.json");
+                    let mut list: Vec<Value> = if index_path.exists() {
+                        fs::read_to_string(&index_path)
+                            .ok()
+                            .and_then(|c| serde_json::from_str(&c).ok())
+                            .unwrap_or_default()
+                    } else {
+                        Vec::new()
+                    };
+
+                    let now_str = chrono::Local::now().format("%Y-%m-%d").to_string();
+                    let mut found = false;
+                    for item in list.iter_mut() {
+                        if item.get("path").and_then(|v| v.as_str()) == Some(&target_path) {
+                            item["lastOpened"] = json!(now_str);
+                            if !target_name.is_empty() {
+                                item["name"] = json!(target_name);
+                            }
+                            found = true;
+                            break;
+                        }
+                    }
+                    if !found {
+                        list.insert(0, json!({
+                            "id": format!("proj-{}", chrono::Local::now().timestamp_millis()),
+                            "name": target_name,
+                            "path": target_path,
+                            "lastOpened": now_str,
+                            "nodeCount": 1
+                        }));
+                    }
+                    let _ = fs::write(&index_path, serde_json::to_string_pretty(&list).unwrap_or_default());
+                }
+
+                // 3. 触发 Tauri 前端事件通知界面同步切换
+                use tauri::Emitter;
+                let _ = app.emit("mcp:project_switched", json!({
+                    "path": target_path,
+                    "name": target_name
+                }));
+            }
+
+            add_log(&state, tool_name.to_string(), args, "success".to_string());
+            return send_rpc_response(&state, json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "result": {
+                    "content": [{
+                        "type": "text",
+                        "text": format!("已成功激活需求项目: {} ({})", target_name, target_path)
+                    }]
+                }
             })).await;
         }
 
@@ -1362,4 +1540,40 @@ mod tests {
         assert_eq!(tree["children"].as_array().unwrap().len(), 1);
         assert_eq!(tree["children"][0]["id"], "child-1");
     }
+
+    #[tokio::test]
+    async fn test_tools_list_contains_activate_project() {
+        let state = make_state();
+        let payload = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list"
+        });
+        let res = handle_mcp_rpc(State(state), Json(payload)).await;
+        let bytes = axum::body::to_bytes(res.into_body(), 10000).await.unwrap();
+        let body: Value = serde_json::from_slice(&bytes).unwrap();
+        let tools = body["result"]["tools"].as_array().unwrap();
+        assert!(tools.iter().any(|t| t["name"] == "activate_project"));
+    }
+
+    #[tokio::test]
+    async fn test_activate_project_invalid_path() {
+        let state = make_state();
+        let payload = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "activate_project",
+                "arguments": {
+                    "path": "/non/existent/path/for/test"
+                }
+            }
+        });
+        let res = handle_mcp_rpc(State(state), Json(payload)).await;
+        let bytes = axum::body::to_bytes(res.into_body(), 10000).await.unwrap();
+        let body: Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(body["result"]["isError"], true);
+    }
 }
+

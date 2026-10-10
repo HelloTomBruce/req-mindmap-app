@@ -133,6 +133,24 @@ export const useProject = ({
     [recentProjects, loadFromDisk, saveRecentProjects, onNavigateToEditor]
   );
 
+  // 通过路径直接打开项目（如 MCP 触发切换时）
+  const handleOpenProjectByPath = useCallback(
+    async (targetPath: string) => {
+      if (!targetPath) return;
+      const matched = recentProjects.find((p) => p.path === targetPath);
+      const folderName = targetPath.split('/').pop() || '需求项目';
+      const meta: ProjectMeta = matched || {
+        id: `proj-${Date.now()}`,
+        name: folderName,
+        path: targetPath,
+        lastOpened: new Date().toLocaleDateString(),
+        nodeCount: 1
+      };
+      await handleOpenProject(meta);
+    },
+    [recentProjects, handleOpenProject]
+  );
+
   // 通过选择文件夹打开项目
   const handleSelectFolder = useCallback(async (): Promise<boolean> => {
     const selected = await selectFolder('选择需求项目文件夹');
@@ -450,6 +468,7 @@ export const useProject = ({
     saveRecentProjects,
     debouncedSyncToDisk,
     handleOpenProject,
+    handleOpenProjectByPath,
     handleSelectFolder,
     handleCreateProject,
     handleDeleteProjectConfirm,
