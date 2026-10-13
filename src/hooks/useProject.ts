@@ -55,13 +55,33 @@ export const useProject = ({
     };
   }, []);
 
-  // 初始化加载最近项目
+  // 初始化加载最近项目（并重算各项目真实的节点总数，修复卡片上的过期快照）
   useEffect(() => {
     const initProjects = async () => {
       const list = await loadRecentProjects();
-      setRecentProjects(list);
-      if (list.length > 0) {
-        invoke('start_mcp_server_rust', { port: 6001, projectPath: list[0].path }).catch(
+
+      const refreshed = await Promise.all(
+        list.map(async (p) => {
+          try {
+            const jsonStr = await invoke<string>('read_text_file_custom', {
+              path: `${p.path}/.requirements.json`
+            });
+            const data: ProjectData = JSON.parse(jsonStr);
+            const total = countNodes(data.root);
+            return total !== p.nodeCount ? { ...p, nodeCount: total } : p;
+          } catch {
+            return p;
+          }
+        })
+      );
+
+      setRecentProjects(refreshed);
+      if (JSON.stringify(refreshed) !== JSON.stringify(list)) {
+        persistRecentProjects(refreshed);
+      }
+
+      if (refreshed.length > 0) {
+        invoke('start_mcp_server_rust', { port: 6001, projectPath: refreshed[0].path }).catch(
           console.error
         );
       }
@@ -73,6 +93,19 @@ export const useProject = ({
     setRecentProjects(list);
     await persistRecentProjects(list);
   }, []);
+
+  // 当前项目节点树变化时，实时回写最新节点总数到项目卡片元数据
+  useEffect(() => {
+    if (!currentProjectPath) return;
+    const total = countNodes(projectData.root);
+    const matched = recentProjects.find((p) => p.path === currentProjectPath);
+    if (matched && matched.nodeCount !== total) {
+      const updated = recentProjects.map((p) =>
+        p.path === currentProjectPath ? { ...p, nodeCount: total } : p
+      );
+      saveRecentProjects(updated);
+    }
+  }, [projectData.root, currentProjectPath, recentProjects, saveRecentProjects]);
 
   // 防抖同步
   const debouncedSyncToDisk = useCallback(
