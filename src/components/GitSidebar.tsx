@@ -12,6 +12,7 @@ export const GitSidebar: React.FC<GitSidebarProps> = ({ projectPath }) => {
   const [historyList, setHistoryList] = useState<GitCommitItem[]>([]);
   const [commitMessage, setCommitMessage] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCommitting, setIsCommitting] = useState(false);
   const [isCommitsExpanded, setIsCommitsExpanded] = useState(false);
   
   const [expandedCommitHash, setExpandedCommitHash] = useState<string | null>(null);
@@ -87,14 +88,33 @@ export const GitSidebar: React.FC<GitSidebarProps> = ({ projectPath }) => {
   };
 
   const handleCommit = async () => {
-    if (!commitMessage.trim()) return;
+    const msg = commitMessage.trim();
+    if (!msg || isCommitting) return;
+
+    // 没有暂存文件但存在未暂存更改时，模仿 VS Code：确认后自动暂存全部并提交
+    if (stagedFiles.length === 0) {
+      if (unstagedFiles.length === 0) return;
+      const { ask } = await import('@tauri-apps/plugin-dialog');
+      const confirmed = await ask('当前没有已暂存的更改。\n是否自动暂存全部更改并提交？', {
+        title: '暂存并提交',
+        kind: 'info',
+        okLabel: '全部暂存并提交',
+        cancelLabel: '取消'
+      });
+      if (!confirmed) return;
+      await gitAdd(projectPath, '.');
+    }
+
+    setIsCommitting(true);
     try {
-      await gitCommit(projectPath, commitMessage);
+      await gitCommit(projectPath, msg);
       setCommitMessage('');
       await fetchStatus();
     } catch (e) {
       const { message } = await import('@tauri-apps/plugin-dialog');
       await message('提交失败: ' + String(e), { title: '错误', kind: 'error' });
+    } finally {
+      setIsCommitting(false);
     }
   };
 
@@ -104,6 +124,8 @@ export const GitSidebar: React.FC<GitSidebarProps> = ({ projectPath }) => {
   const stagedFiles = statusList.filter(item => item.status[0] !== ' ' && item.status[0] !== '?');
   // 工作区有变更的文件: Y 不是空格 (含 'M', 'D', '?' 等)
   const unstagedFiles = statusList.filter(item => item.status[1] !== ' ' && item.status[1] !== undefined);
+  // 暂存或未暂存存在任一变更即可提交 (无暂存时会先确认自动暂存全部)
+  const hasCommittableChanges = stagedFiles.length > 0 || unstagedFiles.length > 0;
 
   return (
     <>
@@ -123,8 +145,22 @@ export const GitSidebar: React.FC<GitSidebarProps> = ({ projectPath }) => {
             rows={3}
           />
           <div className="commit-actions">
-            <button className="btn small primary" onClick={handleCommit} disabled={!commitMessage.trim() || stagedFiles.length === 0}>
-              <Check size={14} /> 提交 (Commit)
+            <button
+              className="btn small primary"
+              onClick={handleCommit}
+              disabled={!commitMessage.trim() || !hasCommittableChanges || isCommitting}
+              title={
+                !commitMessage.trim()
+                  ? '请先输入提交信息'
+                  : !hasCommittableChanges
+                    ? '没有可提交的变更'
+                    : stagedFiles.length === 0
+                      ? '没有已暂存的更改，点击后将询问是否自动暂存全部并提交'
+                      : '提交已暂存的更改'
+              }
+            >
+              {isCommitting ? <RefreshCw size={14} className="spinning" /> : <Check size={14} />}
+              {isCommitting ? ' 提交中...' : ' 提交 (Commit)'}
             </button>
           </div>
         </div>

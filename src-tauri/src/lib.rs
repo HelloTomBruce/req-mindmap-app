@@ -39,31 +39,36 @@ fn read_binary_file(path: String) -> Result<Vec<u8>, String> {
 }
 
 #[tauri::command]
-fn run_git_command(cwd: String, args: Vec<String>) -> Result<String, String> {
-    // 子命令白名单，防止前端传入危险 git 操作 (如 push, config --global, rm 等)
-    const ALLOWED_SUBCOMMANDS: &[&str] = &[
-        "init", "add", "commit", "status", "log", "diff", "checkout",
-        "reset", "rm", "diff-tree", "show", "stash", "branch", "merge",
-    ];
-    if let Some(first) = args.first() {
-        if !ALLOWED_SUBCOMMANDS.contains(&first.as_str()) {
-            return Err(format!("不允许的 git 子命令: {}", first));
+async fn run_git_command(cwd: String, args: Vec<String>) -> Result<String, String> {
+    // git 为阻塞式子进程调用，放入阻塞线程池执行，避免卡住 App 主线程 (事件循环) 导致点击无响应
+    tauri::async_runtime::spawn_blocking(move || {
+        // 子命令白名单，防止前端传入危险 git 操作 (如 push, config --global, rm 等)
+        const ALLOWED_SUBCOMMANDS: &[&str] = &[
+            "init", "add", "commit", "status", "log", "diff", "checkout",
+            "reset", "rm", "diff-tree", "show", "stash", "branch", "merge",
+        ];
+        if let Some(first) = args.first() {
+            if !ALLOWED_SUBCOMMANDS.contains(&first.as_str()) {
+                return Err(format!("不允许的 git 子命令: {}", first));
+            }
+        } else {
+            return Err("git 命令参数不能为空".to_string());
         }
-    } else {
-        return Err("git 命令参数不能为空".to_string());
-    }
 
-    let output = std::process::Command::new("git")
-        .current_dir(&cwd)
-        .args(&args)
-        .output()
-        .map_err(|e| format!("Failed to execute git: {}", e))?;
+        let output = std::process::Command::new("git")
+            .current_dir(&cwd)
+            .args(&args)
+            .output()
+            .map_err(|e| format!("Failed to execute git: {}", e))?;
 
-    if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).to_string())
-    } else {
-        Err(String::from_utf8_lossy(&output.stderr).to_string())
-    }
+        if output.status.success() {
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        } else {
+            Err(String::from_utf8_lossy(&output.stderr).to_string())
+        }
+    })
+    .await
+    .map_err(|e| format!("git 任务执行异常: {}", e))?
 }
 
 #[tauri::command]
