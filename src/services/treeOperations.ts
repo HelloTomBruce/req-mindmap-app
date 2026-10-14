@@ -49,6 +49,58 @@ export const flattenTreeNodes = (root: MindNode): MindNode[] => {
 };
 
 /**
+ * 扁平化整棵树并携带层级深度（用于章节大纲缩进展示）
+ */
+export const flattenTreeWithDepth = (
+  root: MindNode
+): Array<{ node: MindNode; depth: number }> => {
+  const list: Array<{ node: MindNode; depth: number }> = [];
+  const traverse = (n: MindNode, depth: number) => {
+    list.push({ node: n, depth });
+    if (n.children) n.children.forEach((child) => traverse(child, depth + 1));
+  };
+  if (root) traverse(root, 0);
+  return list;
+};
+
+/**
+ * 节点的章节导航上下文：父节点、同级兄弟列表、自身在兄弟中的序号与祖先链
+ */
+export interface NodeNavContext {
+  parent: MindNode | null;
+  siblings: MindNode[];
+  index: number;
+  ancestors: MindNode[];
+}
+
+export const getNodeNavContext = (root: MindNode, nodeId: string): NodeNavContext | null => {
+  let result: NodeNavContext | null = null;
+
+  const walk = (n: MindNode, trail: MindNode[]): boolean => {
+    if (n.id === nodeId) {
+      const parent = trail.length > 0 ? trail[trail.length - 1] : null;
+      const siblings = parent ? parent.children || [] : [n];
+      result = {
+        parent,
+        siblings,
+        index: parent ? siblings.findIndex((c) => c.id === nodeId) : 0,
+        ancestors: trail
+      };
+      return true;
+    }
+    if (n.children) {
+      for (const child of n.children) {
+        if (walk(child, [...trail, n])) return true;
+      }
+    }
+    return false;
+  };
+
+  walk(root, []);
+  return result;
+};
+
+/**
  * 向指定父节点添加子节点
  */
 export const addChildNodeToTree = (

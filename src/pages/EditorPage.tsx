@@ -228,12 +228,14 @@ export const EditorPage: React.FC = () => {
             node={currentNode}
             content={docsMap[currentNode.docPath] || ''}
             projectPath={currentProjectPath}
+            rootNode={projectData.root}
             allNodes={allProjectNodes}
             docsMap={docsMap}
             onClose={() => setIsDrawerOpen(false)}
             onContentChange={handleContentChange}
             onUpdateMeta={handleUpdateMeta}
             onNavigateToNode={handleNavigateToNodeByTitle}
+            onNavigateToNodeById={(nodeId) => setSelectedNodeId(nodeId)}
           />
         )}
       </div>

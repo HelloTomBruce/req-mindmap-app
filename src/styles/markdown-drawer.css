@@ -488,3 +488,92 @@
   align-items: center;
 }
 
+/* ==================== 全屏沉浸模式章节快速切换浮条 ==================== */
+.drawer-chapter-nav {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100000;
+}
+
+.drawer-chapter-nav .chapter-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.drawer-chapter-nav .chapter-nav-btn:hover:not(:disabled) {
+  border-color: var(--primary-400);
+  color: var(--primary-600);
+  background-color: var(--primary-50);
+}
+
+.drawer-chapter-nav .chapter-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.drawer-chapter-nav .chapter-nav-select {
+  max-width: 300px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.drawer-chapter-nav .chapter-nav-pos {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  padding: 0 2px 0 4px;
+  flex-shrink: 0;
+}
+
+/* 章节导航收起态：仅保留圆形悬浮按钮 */
+.drawer-chapter-nav-fab {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  z-index: 100000;
+}
+
+.drawer-chapter-nav-fab:hover {
+  border-color: var(--primary-400);
+  color: var(--primary-600);
+  background-color: var(--primary-50);
+}
+

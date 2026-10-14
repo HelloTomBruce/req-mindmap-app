@@ -2,11 +2,12 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import MDEditor, { commands, ICommand } from '@uiw/react-md-editor';
 import mermaid from 'mermaid';
 import { MindNode, Priority, Status } from '../types';
-import { X, Save, FileCode, Image as ImageIcon, Link2, ArrowUpRight, Network } from 'lucide-react';
+import { X, Save, FileCode, Image as ImageIcon, Link2, ArrowUpRight, Network, ChevronLeft, ChevronRight, ListTree } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { WikiLinkAutocomplete } from './WikiLinkAutocomplete';
 import { processCustomMarkdownSyntax, parseColorQuery, createColorCommands } from '../utils/markdownColor';
+import { getNodeNavContext, flattenTreeWithDepth } from '../services/treeOperations';
 
 // 初始化 Mermaid 图表渲染引擎（适配暗色水墨主题）
 mermaid.initialize({
@@ -72,12 +73,14 @@ interface MarkdownDrawerProps {
   node: MindNode | null;
   content: string;
   projectPath: string;
+  rootNode?: MindNode | null;
   allNodes?: MindNode[];
   docsMap?: Record<string, string>;
   onClose: () => void;
   onContentChange: (newContent: string) => void;
   onUpdateMeta: (nodeId: string, updates: Partial<MindNode>) => void;
   onNavigateToNode?: (nodeTitle: string) => void;
+  onNavigateToNodeById?: (nodeId: string) => void;
 }
 
 // 本地图片 DataURL 全局内存缓存，避免输入文本导致组件重新渲染时的频繁 IPC 重新读取与图片闪烁
@@ -146,12 +149,14 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
   node,
   content,
   projectPath,
+  rootNode = null,
   allNodes = [],
   docsMap = {},
   onClose,
   onContentChange,
   onUpdateMeta,
-  onNavigateToNode
+  onNavigateToNode,
+  onNavigateToNodeById
 }) => {
   if (!node) return null;
 
@@ -170,6 +175,8 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
 
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // 全屏章节导航条收起状态：true 时仅保留圆形悬浮按钮
+  const [isChapterNavCollapsed, setIsChapterNavCollapsed] = useState(false);
 
   // 监听浏览器原生全屏状态变化（包括按 Esc 键退出全屏时）
   useEffect(() => {
@@ -186,8 +193,9 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
 
   const toggleFullscreen = () => {
     const isCurrentlyFs = !!document.fullscreenElement || isFullscreen;
-    const editorEl = editorContainerRef.current?.querySelector('.w-md-editor') as HTMLElement | null;
-    const targetEl = editorEl || editorContainerRef.current;
+    // 原生全屏目标为整个编辑容器（而非 .w-md-editor 元素本身），
+    // 保证容器内的全屏章节导航条在原生 Fullscreen 顶层层级下依然可见
+    const targetEl = editorContainerRef.current;
 
     if (!isCurrentlyFs) {
       setIsFullscreen(true);
@@ -201,6 +209,54 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
       }
     }
   };
+
+  // 全屏章节导航数据：整树大纲（层级缩进） + 当前节点的兄弟导航上下文
+  const outline = useMemo(() => (rootNode ? flattenTreeWithDepth(rootNode) : []), [rootNode]);
+
+  const navContext = useMemo(
+    () => (rootNode ? getNodeNavContext(rootNode, node.id) : null),
+    [rootNode, node.id]
+  );
+
+  const gotoNodeById = (targetId: string | undefined) => {
+    if (targetId && targetId !== node.id) {
+      onNavigateToNodeById?.(targetId);
+    }
+  };
+
+  const prevChapter =
+    navContext && navContext.index > 0 ? navContext.siblings[navContext.index - 1] : null;
+  const nextChapter =
+    navContext && navContext.index >= 0 && navContext.index < navContext.siblings.length - 1
+      ? navContext.siblings[navContext.index + 1]
+      : null;
+
+  // 全屏模式下快捷键切换章节：Alt+Shift+← / Alt+Shift+→
+  // 输入控件聚焦时不劫持，避免干扰文本编辑
+  useEffect(() => {
+    if (!isFullscreen) return;
+
+    const handleChapterKeydown = (e: KeyboardEvent) => {
+      if (!e.altKey || !e.shiftKey) return;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return;
+
+      e.preventDefault();
+      if (e.key === 'ArrowLeft' && prevChapter) {
+        gotoNodeById(prevChapter.id);
+      } else if (e.key === 'ArrowRight' && nextChapter) {
+        gotoNodeById(nextChapter.id);
+      }
+    };
+
+    window.addEventListener('keydown', handleChapterKeydown);
+    return () => {
+      window.removeEventListener('keydown', handleChapterKeydown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFullscreen, prevChapter?.id, nextChapter?.id]);
 
   // 自定义全屏命令：支持浏览器原生 Fullscreen API 与 CSS 视口全屏联动
   const customFullscreenCommand: ICommand = useMemo(() => ({
@@ -519,6 +575,72 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
             onSelect={handleSelectWikiNode}
             onClose={() => setAutocompleteState((prev) => ({ ...prev, isOpen: false }))}
           />
+        )}
+
+        {/* 全屏沉浸模式下的章节快速切换浮条（含整树大纲跳转与同级上一/下一节） */}
+        {isFullscreen && outline.length > 1 && (
+          isChapterNavCollapsed ? (
+            <button
+              type="button"
+              className="drawer-chapter-nav-fab"
+              onClick={() => setIsChapterNavCollapsed(false)}
+              title={`展开章节导航 | 当前：${node.title}${
+                navContext && navContext.index >= 0
+                  ? `（${navContext.index + 1}/${navContext.siblings.length}）`
+                  : ''
+              } (Alt+Shift+←/→ 仍可翻章)`}
+            >
+              <ListTree size={15} />
+            </button>
+          ) : (
+            <div className="drawer-chapter-nav">
+              <button
+                type="button"
+                className="chapter-nav-btn"
+                onClick={() => setIsChapterNavCollapsed(true)}
+                title="收起章节导航（点击圆形按钮可重新展开）"
+              >
+                <ListTree size={13} />
+              </button>
+              <button
+                type="button"
+                className="chapter-nav-btn"
+                disabled={!prevChapter}
+                onClick={() => gotoNodeById(prevChapter?.id)}
+                title={prevChapter ? `上一章节：${prevChapter.title} (Alt+Shift+←)` : '没有上一章节'}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <select
+                className="chapter-nav-select"
+                value={node.id}
+                onChange={(e) => gotoNodeById(e.target.value)}
+                title="章节大纲（按层级缩进），选择即可跳转"
+              >
+                {outline.map(({ node: outlineNode, depth }) => (
+                  <option key={outlineNode.id} value={outlineNode.id}>
+                    {'　'.repeat(Math.max(0, depth - 1))}
+                    {depth > 0 ? '└ ' : ''}
+                    {outlineNode.title}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="chapter-nav-btn"
+                disabled={!nextChapter}
+                onClick={() => gotoNodeById(nextChapter?.id)}
+                title={nextChapter ? `下一章节：${nextChapter.title} (Alt+Shift+→)` : '没有下一章节'}
+              >
+                <ChevronRight size={14} />
+              </button>
+              {navContext && navContext.index >= 0 && (
+                <span className="chapter-nav-pos" title="当前章节在同级中的序号">
+                  {navContext.index + 1}/{navContext.siblings.length}
+                </span>
+              )}
+            </div>
+          )
         )}
       </div>
 
