@@ -190,6 +190,11 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         setDocsMap(docsMapResult);
         setSelectedNodeId('root-node');
 
+        // 与 handleCreateProject 同理：同步切换 Rust MCP 项目路径，
+        // 避免轮询误判项目切换而把界面弹回旧项目
+        mcpServerManager.setProjectPath(targetPath);
+        await mcpServerManager.startServer(6001, targetPath);
+
         const updated = [meta, ...recentProjects.filter((p) => p.path !== targetPath)];
         await saveRecentProjects(updated);
 

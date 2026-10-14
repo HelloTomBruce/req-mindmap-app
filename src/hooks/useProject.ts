@@ -222,6 +222,12 @@ export const useProject = ({
       await syncToDisk(targetPath, newProject, newDocsMap);
       await initGitRepo(targetPath);
 
+      // 关键：同步切换 Rust MCP 服务的项目路径。
+      // 否则 useMcpPolling 的 1s 轮询会发现 Rust 端 projectPath 仍指向旧项目，
+      // 误判为“MCP 端切换了项目”而把界面弹回老项目。
+      mcpServerManager.setProjectPath(targetPath);
+      await mcpServerManager.startServer(6001, targetPath);
+
       const meta: ProjectMeta = {
         id: `proj-${Date.now()}`,
         name,
