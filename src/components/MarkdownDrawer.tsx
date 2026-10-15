@@ -26,6 +26,15 @@ mermaid.initialize({
   securityLevel: 'loose'
 });
 
+// 递归提取 React 节点内部的纯文本（解决 rehype-prism-plus 将代码拆为多层 span 导致 String(children) 变为 [object Object] 的缺陷）
+const extractTextFromReactNode = (node: any): string => {
+  if (node == null) return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractTextFromReactNode).join('');
+  if (node.props && node.props.children) return extractTextFromReactNode(node.props.children);
+  return '';
+};
+
 // Mermaid 动态渲染代码块组件
 const MermaidRenderer: React.FC<{ chart: string }> = ({ chart }) => {
   const [svgContent, setSvgContent] = useState<string>('');
@@ -36,8 +45,13 @@ const MermaidRenderer: React.FC<{ chart: string }> = ({ chart }) => {
     const renderChart = async () => {
       try {
         setHasError(null);
+        const trimmed = chart.trim();
+        if (!trimmed) {
+          setSvgContent('');
+          return;
+        }
         const id = `mermaid-${Math.random().toString(36).substring(2, 9)}`;
-        const { svg } = await mermaid.render(id, chart.trim());
+        const { svg } = await mermaid.render(id, trimmed);
         if (isMounted) {
           setSvgContent(svg);
         }
@@ -56,7 +70,7 @@ const MermaidRenderer: React.FC<{ chart: string }> = ({ chart }) => {
   if (hasError) {
     return (
       <div className="mermaid-render-error">
-        <div className="mermaid-error-title">⚠️ Mermaid 渲染失败</div>
+        <div className="mermaid-error-title">⚠️ Mermaid 渲染失败: {hasError}</div>
         <pre className="mermaid-raw-code">{chart}</pre>
       </div>
     );
@@ -562,7 +576,7 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
               code: ({ inline, className, children, ...props }: any) => {
                 const match = /language-(\w+)/.exec(className || '');
                 const language = match ? match[1] : '';
-                const codeText = String(children).replace(/\n$/, '');
+                const codeText = extractTextFromReactNode(children).replace(/\n$/, '');
 
                 if (!inline && language === 'mermaid') {
                   return <MermaidRenderer chart={codeText} />;
