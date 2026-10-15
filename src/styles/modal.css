@@ -92,6 +92,18 @@
   flex: 1;
 }
 
+.folder-picker-group .form-input-clickable {
+  cursor: pointer;
+}
+
+.folder-picker-group .form-input-clickable:hover {
+  border-color: var(--primary-500);
+}
+
+.folder-picker-group .btn:active:not(:disabled) {
+  transform: none; /* 禁用按压缩放，防止鼠标移出边界导致 WebKit 吞掉 click 事件 */
+}
+
 .modal-content.import-md-modal,
 .modal-content.delete-confirm-modal,
 .modal-content.update-modal {

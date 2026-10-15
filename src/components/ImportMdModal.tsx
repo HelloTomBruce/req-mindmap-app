@@ -18,26 +18,44 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
   const [targetPath, setTargetPath] = useState('');
   const [projectName, setProjectName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isPickingDoc, setIsPickingDoc] = useState(false);
+  const [isPickingFolder, setIsPickingFolder] = useState(false);
 
-  const handlePickMd = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const selected = await onSelectMd();
-    if (selected) {
-      setMdPath(selected);
-      const fileName = selected.split('/').pop()?.replace(/\.(md|markdown|docx?|docm?)$/i, '') || '从文档导入的项目';
-      if (!projectName) {
-        setProjectName(fileName);
+  const handlePickMd = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isPickingDoc) return;
+    setIsPickingDoc(true);
+    try {
+      const selected = await onSelectMd();
+      if (selected) {
+        setMdPath(selected);
+        const fileName = selected.split('/').pop()?.replace(/\.(md|markdown|docx?|docm?)$/i, '') || '从文档导入的项目';
+        if (!projectName) {
+          setProjectName(fileName);
+        }
       }
+    } finally {
+      setIsPickingDoc(false);
     }
   };
 
-  const handlePickFolder = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const selected = await onSelectFolder();
-    if (selected) {
-      setTargetPath(selected);
+  const handlePickFolder = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isPickingFolder) return;
+    setIsPickingFolder(true);
+    try {
+      const selected = await onSelectFolder();
+      if (selected) {
+        setTargetPath(selected);
+      }
+    } finally {
+      setIsPickingFolder(false);
     }
   };
 
@@ -69,13 +87,22 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
               <div className="folder-picker-group">
                 <input
                   type="text"
-                  className="form-input"
+                  className="form-input form-input-clickable"
                   readOnly
                   placeholder="点击选择 Markdown 或 Word (.docx/.doc) 文档..."
                   value={mdPath}
+                  onClick={handlePickMd}
+                  title="点击选择源文档"
                 />
-                <button type="button" className="btn outline" onClick={handlePickMd}>
-                  <FileText size={14} /> 浏览文档
+                <button
+                  type="button"
+                  className="btn outline"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handlePickMd}
+                  disabled={isPickingDoc}
+                  title="浏览文档"
+                >
+                  <FileText size={14} /> {isPickingDoc ? '选择中...' : '浏览文档'}
                 </button>
               </div>
             </div>
@@ -96,13 +123,22 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
               <div className="folder-picker-group">
                 <input
                   type="text"
-                  className="form-input"
+                  className="form-input form-input-clickable"
                   readOnly
                   placeholder="选择拆分解析后生成的项目保存路径..."
                   value={targetPath}
+                  onClick={handlePickFolder}
+                  title="点击选择存储目录"
                 />
-                <button type="button" className="btn outline" onClick={handlePickFolder}>
-                  <FolderOpen size={14} /> 浏览文件夹
+                <button
+                  type="button"
+                  className="btn outline"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handlePickFolder}
+                  disabled={isPickingFolder}
+                  title="浏览文件夹"
+                >
+                  <FolderOpen size={14} /> {isPickingFolder ? '选择中...' : '浏览文件夹'}
                 </button>
               </div>
             </div>

@@ -16,6 +16,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const [selectedPresetId, setSelectedPresetId] = useState<string>('prd');
   const [name, setName] = useState('智能新零售业务 PRD');
   const [path, setPath] = useState('');
+  const [isPicking, setIsPicking] = useState(false);
 
   const handleSelectPreset = (preset: ProjectPreset) => {
     setSelectedPresetId(preset.id);
@@ -40,12 +41,20 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     }
   };
 
-  const handlePickFolder = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const selected = await onSelectFolder();
-    if (selected) {
-      setPath(selected);
+  const handlePickFolder = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isPicking) return;
+    setIsPicking(true);
+    try {
+      const selected = await onSelectFolder();
+      if (selected) {
+        setPath(selected);
+      }
+    } finally {
+      setIsPicking(false);
     }
   };
 
@@ -114,14 +123,26 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               <div className="folder-picker-group">
                 <input
                   type="text"
-                  className="form-input"
+                  className="form-input form-input-clickable"
                   readOnly
-                  placeholder="请选择项目在本地磁盘的存放目录..."
+                  placeholder="点击选择项目在本地磁盘的存放目录..."
                   value={path}
+                  onClick={handlePickFolder}
+                  title="点击选择存放目录"
                   required
                 />
-                <button type="button" className="btn outline" onClick={handlePickFolder}>
-                  <FolderOpen size={14} /> 浏览文件夹
+                <button
+                  type="button"
+                  className="btn outline"
+                  onMouseDown={(e) => {
+                    // 阻止 mousedown 导致输入框焦点突变引起 WebKit 吞掉后续 click 事件
+                    e.preventDefault();
+                  }}
+                  onClick={handlePickFolder}
+                  disabled={isPicking}
+                  title="浏览文件夹"
+                >
+                  <FolderOpen size={14} /> {isPicking ? '选择中...' : '浏览文件夹'}
                 </button>
               </div>
             </div>
