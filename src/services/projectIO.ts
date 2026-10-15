@@ -1,8 +1,30 @@
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { ProjectData } from '../types';
-import { ProjectMeta } from '../components/ProjectManager';
-import { loadDocsForTree } from '../hooks/useMcpPolling';
+import { ProjectData, MindNode, ProjectMeta } from '../types';
+
+/**
+ * 递归读取节点树下所有 Markdown 文件
+ */
+export async function loadDocsForTree(
+  pPath: string,
+  node: MindNode,
+  docsMapAcc: Record<string, string>
+): Promise<void> {
+  if (node.docPath) {
+    try {
+      const fullMdPath = `${pPath}/${node.docPath}`;
+      const content = await invoke<string>('read_text_file_custom', { path: fullMdPath });
+      docsMapAcc[node.docPath] = content;
+    } catch (e) {
+      console.warn(`Doc not found on disk: ${node.docPath}`, e);
+    }
+  }
+  if (node.children) {
+    for (const child of node.children) {
+      await loadDocsForTree(pPath, child, docsMapAcc);
+    }
+  }
+}
 
 /**
  * 加载最近项目列表

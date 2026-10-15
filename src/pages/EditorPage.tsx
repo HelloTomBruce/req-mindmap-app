@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { countNodes } from '../services/treeOperations';
+import { normalizeStatus } from '../utils/statusUtils';
 import { useProjectContext } from '../context/ProjectContext';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { AppHeader } from '../components/layout/AppHeader';
@@ -85,7 +86,7 @@ export const EditorPage: React.FC = () => {
   // 快速轮转当前选中节点的状态
   const handleCycleCurrentNodeStatus = useCallback(() => {
     if (!currentNode || !selectedNodeId) return;
-    const currentIndex = STATUS_CYCLE_ORDER.indexOf(currentNode.status as any);
+    const currentIndex = STATUS_CYCLE_ORDER.indexOf(normalizeStatus(currentNode.status) as any);
     const nextStatus =
       currentIndex === -1
         ? 'todo'

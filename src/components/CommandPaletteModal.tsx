@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MindNode } from '../types';
+import { normalizePriority, normalizeStatus, getStatusLabel } from '../utils/statusUtils';
 import {
   Search,
   FileText,
@@ -126,9 +127,11 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       return nodes
         .filter((node) => {
           // 优先级过滤，如 #p0, #p1
-          if (node.priority.toLowerCase() === filterKey) return true;
+          const normPri = normalizePriority(node.priority).toLowerCase();
+          if (normPri === filterKey) return true;
           // 状态过滤，如 #todo, #in_progress, #completed, #draft
-          if (node.status.toLowerCase().includes(filterKey)) return true;
+          const normStatus = normalizeStatus(node.status).toLowerCase();
+          if (normStatus.includes(filterKey)) return true;
           // 标签过滤
           if (node.tags && node.tags.some((t) => t.toLowerCase().includes(filterKey))) return true;
           return false;
@@ -319,11 +322,14 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                     <div className="item-info">
                       <div className="item-title-row">
                         <span className="item-title">{node.title}</span>
-                        <span className={`priority-badge ${node.priority.toLowerCase()}`}>
-                          {node.priority}
+                        <span className={`priority-badge ${normalizePriority(node.priority).toLowerCase()}`}>
+                          {normalizePriority(node.priority)}
                         </span>
-                        <span className={`status-badge-pill ${node.status}`}>
-                          {node.status}
+                        <span
+                          className={`status-badge-pill ${normalizeStatus(node.status)}`}
+                          style={{ color: getStatusLabel(node.status).color }}
+                        >
+                          {getStatusLabel(node.status).label}
                         </span>
                         {matchType === 'tag' && (
                           <span className="match-tag-pill">

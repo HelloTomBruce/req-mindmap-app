@@ -1,6 +1,5 @@
 import React from 'react';
-import { MindNode } from '../../types';
-import { ProjectMeta } from '../ProjectManager';
+import { MindNode, ProjectMeta } from '../../types';
 import { NodeTemplate } from '../../templates';
 import { MCPLogItem } from '../../mcpServerManager';
 import { ExportDocModal } from '../ExportDocModal';

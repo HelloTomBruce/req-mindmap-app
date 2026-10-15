@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { ProjectData, MindNode } from '../types';
-import { ProjectMeta } from '../components/ProjectManager';
+import { ProjectData, MindNode, ProjectMeta } from '../types';
 import { INITIAL_PROJECT_DATA, INITIAL_DOC_CONTENTS } from '../mockData';
 import { PROJECT_PRESETS } from '../projectPresets';
 import { NodeTemplate, renderTemplateMarkdown } from '../templates';
-import { clearImageCache } from '../components/MarkdownDrawer';
 import { mcpServerManager } from '../mcpServerManager';
 import { invoke } from '@tauri-apps/api/core';
 import {
@@ -145,7 +143,7 @@ export const useProject = ({
   // 打开项目
   const handleOpenProject = useCallback(
     async (meta: ProjectMeta) => {
-      clearImageCache();
+      window.dispatchEvent(new CustomEvent('docmind:project-switched'));
       setCurrentProjectPath(meta.path);
       await loadFromDisk(meta);
 

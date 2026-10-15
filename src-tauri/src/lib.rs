@@ -113,6 +113,34 @@ fn save_recent_projects_custom(app: tauri::AppHandle, content: String) -> Result
     fs::write(index_path, content).map_err(|e| e.to_string())
 }
 
+fn get_custom_templates_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    use tauri::Manager;
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("获取 AppData 目录失败: {}", e))?;
+    if !app_dir.exists() {
+        fs::create_dir_all(&app_dir).map_err(|e| format!("创建 AppData 目录失败: {}", e))?;
+    }
+    Ok(app_dir.join("custom_templates.json"))
+}
+
+#[tauri::command]
+fn load_custom_templates_custom(app: tauri::AppHandle) -> Result<String, String> {
+    let path = get_custom_templates_path(&app)?;
+    if path.exists() {
+        fs::read_to_string(&path).map_err(|e| e.to_string())
+    } else {
+        Ok("[]".to_string())
+    }
+}
+
+#[tauri::command]
+fn save_custom_templates_custom(app: tauri::AppHandle, content: String) -> Result<(), String> {
+    let path = get_custom_templates_path(&app)?;
+    fs::write(path, content).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn read_image_data_url(project_path: String, relative_path: String) -> Result<String, String> {
     use base64::Engine;
@@ -183,6 +211,7 @@ fn convert_word_to_markdown(docx_path: String, assets_dir: String) -> Result<Str
     Ok(result.markdown)
 }
 
+pub mod models;
 mod mcp_server;
 use mcp_server::{get_mcp_status_rust, start_mcp_server_rust, stop_mcp_server_rust, AppState};
 
@@ -217,6 +246,8 @@ pub fn run() {
             save_image_binary,
             load_recent_projects_custom,
             save_recent_projects_custom,
+            load_custom_templates_custom,
+            save_custom_templates_custom,
             start_mcp_server_rust,
             stop_mcp_server_rust,
             get_mcp_status_rust,

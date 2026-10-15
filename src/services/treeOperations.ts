@@ -172,6 +172,11 @@ export const deleteNodeFromTree = (
   root: MindNode,
   nodeId: string
 ): { updatedRoot: MindNode; deletedDocPaths: string[] } => {
+  if (root.id === nodeId) {
+    console.warn('Cannot delete the root node of the requirement tree');
+    return { updatedRoot: root, deletedDocPaths: [] };
+  }
+
   const deletedDocPaths: string[] = [];
 
   const collectDeletedDocs = (node: MindNode) => {

@@ -8,6 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { WikiLinkAutocomplete } from './WikiLinkAutocomplete';
 import { processCustomMarkdownSyntax, parseColorQuery, createColorCommands } from '../utils/markdownColor';
 import { getNodeNavContext, flattenTreeWithDepth } from '../services/treeOperations';
+import { normalizePriority, normalizeStatus } from '../utils/statusUtils';
 
 // 初始化 Mermaid 图表渲染引擎（适配暗色水墨主题）
 mermaid.initialize({
@@ -91,6 +92,12 @@ export function clearImageCache() {
   imageCache.clear();
 }
 
+if (typeof window !== 'undefined') {
+  window.addEventListener('docmind:project-switched', () => {
+    clearImageCache();
+  });
+}
+
 // 独立组件：从 assets/ 加载本地图片并缓存为 DataURL
 const CachedImage: React.FC<{ src?: string; alt?: string; style?: React.CSSProperties; width?: any; height?: any; projectPath: string }> = ({
   src,
@@ -158,8 +165,6 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
   onNavigateToNode,
   onNavigateToNodeById
 }) => {
-  if (!node) return null;
-
   // 联想弹窗状态
   const [autocompleteState, setAutocompleteState] = useState<{
     isOpen: boolean;
@@ -214,12 +219,12 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
   const outline = useMemo(() => (rootNode ? flattenTreeWithDepth(rootNode) : []), [rootNode]);
 
   const navContext = useMemo(
-    () => (rootNode ? getNodeNavContext(rootNode, node.id) : null),
-    [rootNode, node.id]
+    () => (rootNode && node ? getNodeNavContext(rootNode, node.id) : null),
+    [rootNode, node?.id]
   );
 
   const gotoNodeById = (targetId: string | undefined) => {
-    if (targetId && targetId !== node.id) {
+    if (targetId && targetId !== node?.id) {
       onNavigateToNodeById?.(targetId);
     }
   };
@@ -290,7 +295,7 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
 
   // 计算反向链接（Backlinks）：遍历所有其他节点的文档内容，找出引用了 [[当前节点标题]] 的节点列表
   const backlinks = useMemo(() => {
-    if (!node.title || !docsMap) return [];
+    if (!node?.title || !docsMap) return [];
     const currentTitle = node.title;
     const targetTag = `[[${currentTitle}]]`;
     const referencingNodes: Array<{ id: string; title: string; docPath: string }> = [];
@@ -304,7 +309,7 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
     });
 
     return referencingNodes;
-  }, [node.id, node.title, allNodes, docsMap]);
+  }, [node?.id, node?.title, allNodes, docsMap]);
 
   // 处理文本改变，检测是否输入了 [[
   const handleEditorChange = (newVal: string | undefined) => {
@@ -413,6 +418,8 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
     }
   };
 
+  if (!node) return null;
+
   return (
     <div className={`markdown-drawer-panel ${isFullscreen ? 'fullscreen-active' : ''}`}>
       <div className="drawer-header">
@@ -464,7 +471,7 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
         <div className="meta-item">
           <label>优先级:</label>
           <select
-            value={node.priority}
+            value={normalizePriority(node.priority)}
             onChange={(e) => onUpdateMeta(node.id, { priority: e.target.value as Priority })}
           >
             <option value="P0">P0 (紧急关键)</option>
@@ -477,7 +484,7 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
         <div className="meta-item">
           <label>状态:</label>
           <select
-            value={node.status}
+            value={normalizeStatus(node.status)}
             onChange={(e) => onUpdateMeta(node.id, { status: e.target.value as Status })}
           >
             <option value="draft">草稿</option>

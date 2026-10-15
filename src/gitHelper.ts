@@ -62,13 +62,13 @@ export async function gitCommit(cwd: string, message: string): Promise<string> {
 // 获取提交历史
 export async function getGitHistory(cwd: string): Promise<GitCommitItem[]> {
   try {
-    // %h: hash, %s: subject, %an: author name, %cr: relative date
-    const out = await runGit(cwd, ['log', '-n', '20', '--pretty=format:%h|%s|%an|%cr']);
+    // 使用 \x1f (Unit Separator) 避免 commit message 中包含竖线时被错误切分
+    const out = await runGit(cwd, ['log', '-n', '20', '--pretty=format:%h\x1f%s\x1f%an\x1f%cr']);
     if (!out.trim()) return [];
     
     return out.split('\n').map(line => {
-      const [hash, message, author, date] = line.split('|');
-      return { hash, message, author, date };
+      const [hash, message, author, date] = line.split('\x1f');
+      return { hash: hash || '', message: message || '', author: author || '', date: date || '' };
     });
   } catch (err) {
     console.warn('getGitHistory error (maybe no commits yet):', err);
@@ -102,7 +102,6 @@ export async function gitDiff(cwd: string, path: string, commitHash?: string): P
   if (!diff.trim() && !commitHash) {
     // 可能是未追踪的新文件，或者是没有 HEAD 的首次提交，直接使用底层读取
     try {
-      const { invoke } = await import('@tauri-apps/api/core');
       const fullPath = `${cwd}/${path}`;
       const content = await invoke<string>('read_text_file_custom', { path: fullPath });
       // 模拟 git diff 输出格式

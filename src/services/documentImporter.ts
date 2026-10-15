@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { ProjectData, MindNode } from '../types';
-import { ProjectMeta } from '../components/ProjectManager';
+import { ProjectData, MindNode, ProjectMeta } from '../types';
 import { countNodes } from './treeOperations';
 import { syncToDisk } from './projectIO';
 
@@ -129,12 +128,12 @@ export const importDocumentToProject = async (
 
   for (let i = 0; i < rawLines.length; i++) {
     let line = rawLines[i];
-    if (line.match(/^(\#{1,6})\s+/)) {
+    if (line.match(/^(#{1,6})\s+/)) {
       inBody = true;
     }
 
     if (!isWordFile && inBody && !line.startsWith('#')) {
-      const singleNumMatch = line.match(/^\s*(\d+)[\.、\s]\s*([^\n:：;；。，,!\?？]{2,35})$/);
+      const singleNumMatch = line.match(/^\s*(\d+)[.、\s]\s*([^\n:：;；。，,!?？]{2,35})$/);
       if (singleNumMatch) {
         const title = singleNumMatch[2].trim();
         if (

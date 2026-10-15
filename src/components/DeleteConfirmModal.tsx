@@ -1,6 +1,7 @@
 import React from 'react';
-import { AlertTriangle, Trash2, X } from 'lucide-react';
-import { ProjectMeta } from './ProjectManager';
+import { AlertTriangle, Trash2 } from 'lucide-react';
+import { ProjectMeta } from '../types';
+import { Modal } from './ui/Modal';
 
 interface DeleteConfirmModalProps {
   project: ProjectMeta;
@@ -14,28 +15,16 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   onConfirm
 }) => {
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title text-danger">
-            <AlertTriangle size={18} color="#ef4444" /> 删除项目
-          </div>
-          <button className="close-btn" onClick={onClose}><X size={18} /></button>
+    <Modal
+      onClose={onClose}
+      className="delete-confirm-modal"
+      title={
+        <div className="modal-title text-danger">
+          <AlertTriangle size={18} color="#ef4444" /> 删除项目
         </div>
-
-        <div className="modal-body">
-          <p className="delete-warning-text">
-            您正在从列表移除项目 <strong>「{project.name}」</strong>。
-          </p>
-          <div className="path-display-box">
-            磁盘路径: <code>{project.path}</code>
-          </div>
-          <p className="delete-question">
-            是否同时从本地磁盘彻底删除该项目的源文件及文件夹？
-          </p>
-        </div>
-
-        <div className="modal-footer justify-between">
+      }
+      footer={
+        <div className="flex justify-between items-center w-full">
           <button className="btn outline" onClick={onClose}>
             取消
           </button>
@@ -56,7 +45,17 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             </button>
           </div>
         </div>
+      }
+    >
+      <p className="delete-warning-text">
+        您正在从列表移除项目 <strong>「{project.name}」</strong>。
+      </p>
+      <div className="path-display-box">
+        磁盘路径: <code>{project.path}</code>
       </div>
-    </div>
+      <p className="delete-question">
+        是否同时从本地磁盘彻底删除该项目的源文件及文件夹？
+      </p>
+    </Modal>
   );
 };

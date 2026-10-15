@@ -1,13 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { HardDrive, Plus, Folder, FileText, Trash2, ArrowRight, FileUp, RefreshCw, Server, Cpu, BookOpen, ShieldCheck } from 'lucide-react';
-
-export interface ProjectMeta {
-  id: string;
-  name: string;
-  path: string;
-  lastOpened: string;
-  nodeCount: number;
-}
+import { ProjectMeta } from '../types';
+export type { ProjectMeta };
 
 interface ProjectManagerProps {
   recentProjects: ProjectMeta[];

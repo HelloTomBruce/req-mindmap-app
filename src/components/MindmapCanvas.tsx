@@ -6,19 +6,18 @@ import {
   Handle,
   Position,
   Node,
-  Edge,
   NodeProps,
   EdgeProps,
   ReactFlowProvider,
   useReactFlow,
   getBezierPath,
   EdgeLabelRenderer,
-  Connection,
-  MarkerType
+  Connection
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import dagre from 'dagre';
-import { MindNode, MindEdge, Status, DependencyEdgeType } from '../types';
+import { MindNode, MindEdge, DependencyEdgeType } from '../types';
+import { useMindmapLayout, computeSubtreeStats, NODE_WIDTH, NODE_HEIGHT } from '../hooks/useMindmapLayout';
+import { getStatusLabel, normalizePriority } from '../utils/statusUtils';
 import { ChevronRight, ChevronDown, Plus, Trash2, FileText, Edit2, Link2, AlertTriangle, X } from 'lucide-react';
 
 interface MindmapCanvasProps {
@@ -35,57 +34,6 @@ interface MindmapCanvasProps {
   onDeleteEdge?: (edgeId: string) => void;
 }
 
-const STATUS_LABELS: Record<Status, { label: string; color: string }> = {
-  draft: { label: '草稿', color: '#9ca3af' },
-  todo: { label: '待办', color: '#f59e0b' },
-  in_progress: { label: '进行中', color: '#3b82f6' },
-  completed: { label: '已完成', color: '#10b981' },
-  deprecated: { label: '废弃', color: '#ef4444' }
-};
-
-const NODE_WIDTH = 240;
-const NODE_HEIGHT = 76;
-
-interface SubtreeStats {
-  completed: number;
-  total: number;
-  percent: number;
-  hasUnresolvedP0: boolean;
-}
-
-function computeSubtreeStats(node: MindNode): SubtreeStats {
-  if (!node.children || node.children.length === 0) {
-    const isDone = node.status === 'completed';
-    const isUnresolvedP0 = node.priority === 'P0' && !isDone;
-    return {
-      completed: isDone ? 1 : 0,
-      total: 1,
-      percent: isDone ? 100 : 0,
-      hasUnresolvedP0: isUnresolvedP0
-    };
-  }
-
-  let completed = 0;
-  let total = 0;
-  let hasUnresolvedP0 = false;
-
-  const traverse = (n: MindNode) => {
-    if (!n.children || n.children.length === 0) {
-      total += 1;
-      if (n.status === 'completed') {
-        completed += 1;
-      } else if (n.priority === 'P0') {
-        hasUnresolvedP0 = true;
-      }
-    } else {
-      n.children.forEach(traverse);
-    }
-  };
-
-  traverse(node);
-  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-  return { completed, total, percent, hasUnresolvedP0 };
-}
 
 // 自定义依赖边组件（带动画流动与阻塞警示）
 const CustomDependencyEdge: React.FC<EdgeProps> = ({
@@ -273,13 +221,21 @@ const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
 
       <div className="node-footer-meta">
         <div className="node-meta-left">
-          <span className={`priority-badge ${node.priority.toLowerCase()}`}>
-            {node.priority}
-          </span>
+          {(() => {
+            const priority = normalizePriority(node.priority);
+            const statusInfo = getStatusLabel(node.status);
+            return (
+              <>
+                <span className={`priority-badge ${priority.toLowerCase()}`}>
+                  {priority}
+                </span>
 
-          <span className="status-badge" style={{ color: STATUS_LABELS[node.status].color }}>
-            ● {STATUS_LABELS[node.status].label}
-          </span>
+                <span className="status-badge" style={{ color: statusInfo.color }}>
+                  ● {statusInfo.label}
+                </span>
+              </>
+            );
+          })()}
         </div>
 
         {hasChildren && (
@@ -345,46 +301,6 @@ const CustomMindNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
   );
 };
 
-// 使用 Dagre 自动计算水平从左至右布局（Rankdir: LR）
-const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-  dagreGraph.setGraph({
-    rankdir: 'LR',
-    nodesep: 28,
-    ranksep: 70
-  });
-
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
-  });
-
-  edges.forEach((edge) => {
-    // 仅基于层级树进行 Dagre 排版
-    if (edge.type === 'default' || !edge.type) {
-      dagreGraph.setEdge(edge.source, edge.target);
-    }
-  });
-
-  dagre.layout(dagreGraph);
-
-  const layoutedNodes = nodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    return {
-      ...node,
-      targetPosition: Position.Left,
-      sourcePosition: Position.Right,
-      position: {
-        x: nodeWithPosition.x - NODE_WIDTH / 2,
-        y: nodeWithPosition.y - NODE_HEIGHT / 2
-      }
-    };
-  });
-
-  return { nodes: layoutedNodes, edges };
-};
-
 const MindmapFlowInner: React.FC<MindmapCanvasProps> = ({
   rootNode,
   edgesData = [],
@@ -402,84 +318,8 @@ const MindmapFlowInner: React.FC<MindmapCanvasProps> = ({
   const edgeTypes = useMemo(() => ({ dependencyEdge: CustomDependencyEdge }), []);
   const reactFlowInstance = useReactFlow();
 
-  // 转换为 React Flow Nodes & Edges
-  const { initialNodes, initialEdges } = useMemo(() => {
-    const nodesAcc: Node[] = [];
-    const edgesAcc: Edge[] = [];
-    const nodeStatusMap: Record<string, Status> = {};
-
-    const traverse = (currentNode: MindNode, isRoot: boolean = false) => {
-      nodeStatusMap[currentNode.id] = currentNode.status;
-      nodesAcc.push({
-        id: currentNode.id,
-        type: 'mindNode',
-        data: {
-          node: currentNode,
-          isRoot,
-          onSelectNode,
-          onOpenDrawer,
-          onRenameNode,
-          onAddChildNode,
-          onDeleteNode,
-          onToggleCollapse
-        },
-        selected: selectedNodeId === currentNode.id,
-        position: { x: 0, y: 0 }
-      });
-
-      if (currentNode.children && currentNode.children.length > 0 && !currentNode.collapsed) {
-        currentNode.children.forEach((child) => {
-          edgesAcc.push({
-            id: `edge-${currentNode.id}-${child.id}`,
-            source: currentNode.id,
-            target: child.id,
-            sourceHandle: 'source-right',
-            targetHandle: 'target-left',
-            type: 'default',
-            style: { stroke: '#94a3b8', strokeWidth: 2 }
-          });
-          traverse(child, false);
-        });
-      }
-    };
-
-    traverse(rootNode, true);
-
-    // 追加跨分支依赖边
-    edgesData.forEach((depEdge) => {
-      const sourceStatus = nodeStatusMap[depEdge.source];
-      const targetStatus = nodeStatusMap[depEdge.target];
-      // 如果目标节点已经进入开发或已完成，而前置源节点未完成，则标记为阻塞 (Blocked)
-      const isBlocked =
-        sourceStatus !== 'completed' &&
-        (targetStatus === 'in_progress' || targetStatus === 'completed');
-
-      edgesAcc.push({
-        id: depEdge.id,
-        source: depEdge.source,
-        target: depEdge.target,
-        sourceHandle: 'source-right',
-        targetHandle: 'target-left',
-        type: 'dependencyEdge',
-        animated: true,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: isBlocked ? '#ef4444' : '#f59e0b',
-          width: 14,
-          height: 14
-        },
-        data: {
-          edgeId: depEdge.id,
-          type: depEdge.type,
-          isBlocked,
-          onDelete: onDeleteEdge
-        }
-      });
-    });
-
-    const layouted = getLayoutedElements(nodesAcc, edgesAcc);
-    return { initialNodes: layouted.nodes, initialEdges: layouted.edges };
-  }, [
+  // 通过自定义 Hook 纯粹解耦拓扑算法与排版
+  const { nodes: initialNodes, edges: initialEdges } = useMindmapLayout({
     rootNode,
     edgesData,
     selectedNodeId,
@@ -490,7 +330,7 @@ const MindmapFlowInner: React.FC<MindmapCanvasProps> = ({
     onDeleteNode,
     onToggleCollapse,
     onDeleteEdge
-  ]);
+  });
 
   // 当外部选中的节点改变时，平滑聚焦居中至该节点
   const prevSelectedIdRef = useRef<string | null>(null);

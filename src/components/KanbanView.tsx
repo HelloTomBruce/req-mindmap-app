@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { MindNode, Status, Priority } from '../types';
+import { normalizeStatus, normalizePriority, getStatusLabel } from '../utils/statusUtils';
 import {
   Kanban,
   FileText,
@@ -70,7 +71,7 @@ function buildBreadcrumbsMap(root: MindNode | null): Record<string, string[]> {
 // 计算节点及其子树的完成统计
 function calculateNodeProgress(node: MindNode): { completed: number; total: number; percent: number } {
   if (!node.children || node.children.length === 0) {
-    const isDone = node.status === 'completed';
+    const isDone = normalizeStatus(node.status) === 'completed';
     return { completed: isDone ? 1 : 0, total: 1, percent: isDone ? 100 : 0 };
   }
 
@@ -80,7 +81,7 @@ function calculateNodeProgress(node: MindNode): { completed: number; total: numb
   const countLeafs = (n: MindNode) => {
     if (!n.children || n.children.length === 0) {
       total += 1;
-      if (n.status === 'completed') completed += 1;
+      if (normalizeStatus(n.status) === 'completed') completed += 1;
     } else {
       n.children.forEach(countLeafs);
     }
@@ -251,7 +252,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       <div className="kanban-board-columns">
         {groupBy === 'status'
           ? STATUS_COLUMNS.map((col) => {
-              const colNodes = displayNodes.filter((n) => n.status === col.key);
+              const colNodes = displayNodes.filter((n) => normalizeStatus(n.status) === col.key);
               const isOver = dragOverColumn === col.key;
 
               return (
@@ -330,25 +331,33 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                             {/* 底部元数据与快捷流转 */}
                             <div className="card-footer-meta">
                               <div className="footer-left-pills">
-                                <span className={`priority-badge ${node.priority.toLowerCase()}`}>
-                                  {node.priority}
-                                </span>
+                                {(() => {
+                                  const cardPriority = normalizePriority(node.priority);
+                                  const cardStatus = normalizeStatus(node.status);
+                                  return (
+                                    <>
+                                      <span className={`priority-badge ${cardPriority.toLowerCase()}`}>
+                                        {cardPriority}
+                                      </span>
 
-                                {/* 快捷状态切换下拉 */}
-                                <select
-                                  className="card-quick-move-select"
-                                  value={node.status}
-                                  onChange={(e) => {
-                                    onUpdateNodeMeta(node.id, { status: e.target.value as Status });
-                                  }}
-                                  title="点击快捷流转状态"
-                                >
-                                  <option value="draft">草稿</option>
-                                  <option value="todo">待办</option>
-                                  <option value="in_progress">进行中</option>
-                                  <option value="completed">已完成</option>
-                                  <option value="deprecated">废弃</option>
-                                </select>
+                                      {/* 快捷状态切换下拉 */}
+                                      <select
+                                        className="card-quick-move-select"
+                                        value={cardStatus}
+                                        onChange={(e) => {
+                                          onUpdateNodeMeta(node.id, { status: e.target.value as Status });
+                                        }}
+                                        title="点击快捷流转状态"
+                                      >
+                                        <option value="draft">草稿</option>
+                                        <option value="todo">待办</option>
+                                        <option value="in_progress">进行中</option>
+                                        <option value="completed">已完成</option>
+                                        <option value="deprecated">废弃</option>
+                                      </select>
+                                    </>
+                                  );
+                                })()}
 
                                 {hasWikiLinks && (
                                   <span className="card-wikilink-pill" title="包含双向链接引用">
@@ -374,7 +383,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
               );
             })
           : PRIORITY_COLUMNS.map((col) => {
-              const colNodes = displayNodes.filter((n) => n.priority === col.key);
+              const colNodes = displayNodes.filter((n) => normalizePriority(n.priority) === col.key);
               const isOver = dragOverColumn === col.key;
 
               return (
@@ -448,14 +457,17 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
                             <div className="card-footer-meta">
                               <div className="footer-left-pills">
-                                <span className={`status-badge-pill ${node.status}`}>
-                                  {node.status}
+                                <span
+                                  className={`status-badge-pill ${normalizeStatus(node.status)}`}
+                                  style={{ color: getStatusLabel(node.status).color }}
+                                >
+                                  {getStatusLabel(node.status).label}
                                 </span>
 
                                 {/* 快捷优先级切换下拉 */}
                                 <select
                                   className="card-quick-move-select"
-                                  value={node.priority}
+                                  value={normalizePriority(node.priority)}
                                   onChange={(e) => {
                                     onUpdateNodeMeta(node.id, { priority: e.target.value as Priority });
                                   }}

@@ -1,30 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { ProjectData, MindNode } from '../types';
+import { ProjectData } from '../types';
 import { mcpServerManager, MCPLogItem } from '../mcpServerManager';
 
-// 递归读取节点树下所有 Markdown 文件
-export async function loadDocsForTree(
-  pPath: string,
-  node: MindNode,
-  docsMapAcc: Record<string, string>
-): Promise<void> {
-  if (node.docPath) {
-    try {
-      const fullMdPath = `${pPath}/${node.docPath}`;
-      const content = await invoke<string>('read_text_file_custom', { path: fullMdPath });
-      docsMapAcc[node.docPath] = content;
-    } catch (e) {
-      console.warn(`Doc not found on disk: ${node.docPath}`, e);
-    }
-  }
-  if (node.children) {
-    for (const child of node.children) {
-      await loadDocsForTree(pPath, child, docsMapAcc);
-    }
-  }
-}
+import { loadDocsForTree } from '../services/projectIO';
+export { loadDocsForTree };
 
 // 保持回调最新引用，避免 effect 频繁重建
 function useCallbackRef<T extends (...args: any[]) => any>(callback?: T): { current?: T } {

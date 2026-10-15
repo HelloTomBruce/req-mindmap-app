@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { MindNode, MindEdge } from '../types';
 import { X, FileDown, CheckCircle, FileText, Globe, Copy, Printer } from 'lucide-react';
 import { flattenTreeNodes } from '../services/treeOperations';
+import { normalizeStatus } from '../utils/statusUtils';
 
 interface ExportDocModalProps {
   rootNode: MindNode;
@@ -69,8 +70,8 @@ export const ExportDocModal: React.FC<ExportDocModalProps> = ({
         const tgtNode = nodeMap.get(edge.target);
         if (srcNode && tgtNode) {
           const isBlocked =
-            srcNode.status !== 'completed' &&
-            (tgtNode.status === 'in_progress' || tgtNode.status === 'completed');
+            normalizeStatus(srcNode.status) !== 'completed' &&
+            (normalizeStatus(tgtNode.status) === 'in_progress' || normalizeStatus(tgtNode.status) === 'completed');
           dependencySection += `| **${srcNode.title}** (\`${srcNode.status}\`) | **${tgtNode.title}** (\`${tgtNode.status}\`) | \`${edge.type}\` | ${isBlocked ? '⚠️ **阻塞中 (前置未完成)**' : '✅ 正常'} |\n`;
         }
       });
@@ -94,7 +95,7 @@ export const ExportDocModal: React.FC<ExportDocModalProps> = ({
   const fullHtmlContent = useMemo(() => {
     // 简单的 Markdown 转 HTML 渲染器 (支持基础标题、段落、代码块、列表、引用)
     const renderMarkdownToHtml = (md: string): string => {
-      let html = md
+      const html = md
         .replace(/^### (.*$)/gim, '<h3 id="$1">$1</h3>')
         .replace(/^## (.*$)/gim, '<h2 id="$1">$1</h2>')
         .replace(/^# (.*$)/gim, '<h1 id="$1">$1</h1>')

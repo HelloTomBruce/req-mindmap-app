@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { ProjectData, MindNode } from '../types';
-import { ProjectMeta } from '../components/ProjectManager';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import { ProjectData, MindNode, ProjectMeta } from '../types';
 import { NodeTemplate } from '../templates';
 import { useProject } from '../hooks/useProject';
 import { useTemplateEditor, EditingTemplateState } from '../hooks/useTemplateEditor';
@@ -10,8 +9,8 @@ import { importDocumentToProject } from '../services/documentImporter';
 import { selectDocumentFile, selectFolder } from '../services/projectIO';
 import { findNodeTitleById } from '../services/treeOperations';
 
-interface ProjectContextType {
-  // 项目核心数据
+// 1. 项目核心数据与操作
+export interface ProjectDataContextType {
   recentProjects: ProjectMeta[];
   currentProjectPath: string;
   projectData: ProjectData;
@@ -19,12 +18,6 @@ interface ProjectContextType {
   selectedNodeId: string | null;
   currentNode: MindNode | null;
   allProjectNodes: MindNode[];
-  canvasViewMode: 'mindmap' | 'kanban';
-  setCanvasViewMode: (mode: 'mindmap' | 'kanban') => void;
-  isDrawerOpen: boolean;
-  setIsDrawerOpen: (open: boolean) => void;
-
-  // 节点与操作
   setSelectedNodeId: (id: string | null) => void;
   handleSelectNode: (node: MindNode) => void;
   handleOpenNodeDrawer: (node: MindNode) => void;
@@ -35,8 +28,6 @@ interface ProjectContextType {
   handleNavigateToNodeByTitle: (title: string) => void;
   handleAddEdge: (sourceId: string, targetId: string, type?: 'depends_on' | 'blocks' | 'relates_to') => void;
   handleDeleteEdge: (edgeId: string) => void;
-
-  // 项目管理
   handleOpenProject: (meta: ProjectMeta) => Promise<void>;
   handleSelectFolder: () => Promise<boolean>;
   handleCreateProject: (name: string, targetPath: string, presetId?: string) => Promise<void>;
@@ -44,24 +35,14 @@ interface ProjectContextType {
   handleImportDocument: (mdPath: string, targetPath: string, name: string) => Promise<void>;
   selectFolderForCreate: () => Promise<string | null>;
   selectMdFileForImport: () => Promise<string | null>;
+}
 
-  // 模板操作
-  selectedEditingTemplate: EditingTemplateState | null;
-  setSelectedEditingTemplate: (state: EditingTemplateState | null) => void;
-  handleSelectTemplateForEdit: (tmpl: NodeTemplate, isCustom: boolean) => void;
-  handleTemplateContentChange: (newContent: string) => void;
-  handleTemplateMetaChange: (templateId: string, updates: Partial<NodeTemplate>) => void;
-  templateParentNode: { id: string; title: string } | null;
-  setTemplateParentNode: (node: { id: string; title: string } | null) => void;
-  handleAddChildNode: (parentId: string) => void;
-  handleConfirmCreateWithTemplate: (template: NodeTemplate) => Promise<void>;
-
-  // MCP AI
-  mcpStatus: { isRunning: boolean; port: number; projectPath: string; sseUrl: string };
-  mcpLogs: any[];
-  handleToggleMCPServer: (enable: boolean, customPort?: number) => Promise<void>;
-
-  // 弹窗状态
+// 2. 界面与弹窗状态
+export interface UIStateContextType {
+  canvasViewMode: 'mindmap' | 'kanban';
+  setCanvasViewMode: (mode: 'mindmap' | 'kanban') => void;
+  isDrawerOpen: boolean;
+  setIsDrawerOpen: (open: boolean) => void;
   isExportModalOpen: boolean;
   setIsExportModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isCreateModalOpen: boolean;
@@ -78,7 +59,34 @@ interface ProjectContextType {
   setTargetDeleteProject: (proj: ProjectMeta | null) => void;
 }
 
-const ProjectContext = createContext<ProjectContextType | null>(null);
+// 3. MCP AI 服务状态
+export interface MCPContextType {
+  mcpStatus: { isRunning: boolean; port: number; projectPath: string; sseUrl: string };
+  mcpLogs: any[];
+  handleToggleMCPServer: (enable: boolean, customPort?: number) => Promise<void>;
+}
+
+// 4. 需求模板状态
+export interface TemplateContextType {
+  selectedEditingTemplate: EditingTemplateState | null;
+  setSelectedEditingTemplate: (state: EditingTemplateState | null) => void;
+  handleSelectTemplateForEdit: (tmpl: NodeTemplate, isCustom: boolean) => void;
+  handleTemplateContentChange: (newContent: string) => void;
+  handleTemplateMetaChange: (templateId: string, updates: Partial<NodeTemplate>) => void;
+  templateParentNode: { id: string; title: string } | null;
+  setTemplateParentNode: (node: { id: string; title: string } | null) => void;
+  handleAddChildNode: (parentId: string) => void;
+  handleConfirmCreateWithTemplate: (template: NodeTemplate) => Promise<void>;
+}
+
+// 聚合类型（完全向下兼容现有 useProjectContext）
+export type ProjectContextType = ProjectDataContextType & UIStateContextType & MCPContextType & TemplateContextType;
+
+export const ProjectDataContext = createContext<ProjectDataContextType | null>(null);
+export const UIStateContext = createContext<UIStateContextType | null>(null);
+export const MCPContext = createContext<MCPContextType | null>(null);
+export const TemplateContext = createContext<TemplateContextType | null>(null);
+export const ProjectContext = createContext<ProjectContextType | null>(null);
 
 interface ProjectProviderProps {
   children: ReactNode;
@@ -236,68 +244,178 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     return selectDocumentFile();
   }, []);
 
+  const projectDataValue = useMemo<ProjectDataContextType>(() => ({
+    recentProjects,
+    currentProjectPath,
+    projectData,
+    docsMap,
+    selectedNodeId,
+    currentNode,
+    allProjectNodes,
+    setSelectedNodeId,
+    handleSelectNode,
+    handleOpenNodeDrawer,
+    handleUpdateMeta,
+    handleContentChange,
+    handleDeleteNode,
+    handleToggleCollapse,
+    handleNavigateToNodeByTitle,
+    handleAddEdge,
+    handleDeleteEdge,
+    handleOpenProject,
+    handleSelectFolder,
+    handleCreateProject,
+    handleDeleteProjectConfirm,
+    handleImportDocument,
+    selectFolderForCreate,
+    selectMdFileForImport
+  }), [
+    recentProjects,
+    currentProjectPath,
+    projectData,
+    docsMap,
+    selectedNodeId,
+    currentNode,
+    allProjectNodes,
+    setSelectedNodeId,
+    handleSelectNode,
+    handleOpenNodeDrawer,
+    handleUpdateMeta,
+    handleContentChange,
+    handleDeleteNode,
+    handleToggleCollapse,
+    handleNavigateToNodeByTitle,
+    handleAddEdge,
+    handleDeleteEdge,
+    handleOpenProject,
+    handleSelectFolder,
+    handleCreateProject,
+    handleDeleteProjectConfirm,
+    handleImportDocument,
+    selectFolderForCreate,
+    selectMdFileForImport
+  ]);
+
+  const uiStateValue = useMemo<UIStateContextType>(() => ({
+    canvasViewMode,
+    setCanvasViewMode,
+    isDrawerOpen,
+    setIsDrawerOpen,
+    isExportModalOpen,
+    setIsExportModalOpen,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    isImportModalOpen,
+    setIsImportModalOpen,
+    isMCPModalOpen,
+    setIsMCPModalOpen,
+    isUpdateModalOpen,
+    setIsUpdateModalOpen,
+    isCommandPaletteOpen,
+    setIsCommandPaletteOpen,
+    targetDeleteProject,
+    setTargetDeleteProject
+  }), [
+    canvasViewMode,
+    setCanvasViewMode,
+    isDrawerOpen,
+    setIsDrawerOpen,
+    isExportModalOpen,
+    setIsExportModalOpen,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    isImportModalOpen,
+    setIsImportModalOpen,
+    isMCPModalOpen,
+    setIsMCPModalOpen,
+    isUpdateModalOpen,
+    setIsUpdateModalOpen,
+    isCommandPaletteOpen,
+    setIsCommandPaletteOpen,
+    targetDeleteProject,
+    setTargetDeleteProject
+  ]);
+
+  const mcpValue = useMemo<MCPContextType>(() => ({
+    mcpStatus,
+    mcpLogs,
+    handleToggleMCPServer
+  }), [mcpStatus, mcpLogs, handleToggleMCPServer]);
+
+  const templateValue = useMemo<TemplateContextType>(() => ({
+    selectedEditingTemplate,
+    setSelectedEditingTemplate,
+    handleSelectTemplateForEdit,
+    handleTemplateContentChange,
+    handleTemplateMetaChange,
+    templateParentNode,
+    setTemplateParentNode,
+    handleAddChildNode,
+    handleConfirmCreateWithTemplate
+  }), [
+    selectedEditingTemplate,
+    setSelectedEditingTemplate,
+    handleSelectTemplateForEdit,
+    handleTemplateContentChange,
+    handleTemplateMetaChange,
+    templateParentNode,
+    setTemplateParentNode,
+    handleAddChildNode,
+    handleConfirmCreateWithTemplate
+  ]);
+
+  const combinedProjectContextValue = useMemo<ProjectContextType>(() => ({
+    ...projectDataValue,
+    ...uiStateValue,
+    ...mcpValue,
+    ...templateValue
+  }), [projectDataValue, uiStateValue, mcpValue, templateValue]);
+
   return (
-    <ProjectContext.Provider
-      value={{
-        recentProjects,
-        currentProjectPath,
-        projectData,
-        docsMap,
-        selectedNodeId,
-        currentNode,
-        allProjectNodes,
-        canvasViewMode,
-        setCanvasViewMode,
-        isDrawerOpen,
-        setIsDrawerOpen,
-        setSelectedNodeId,
-        handleSelectNode,
-        handleOpenNodeDrawer,
-        handleUpdateMeta,
-        handleContentChange,
-        handleDeleteNode,
-        handleToggleCollapse,
-        handleNavigateToNodeByTitle,
-        handleAddEdge,
-        handleDeleteEdge,
-        handleOpenProject,
-        handleSelectFolder,
-        handleCreateProject,
-        handleDeleteProjectConfirm,
-        handleImportDocument,
-        selectFolderForCreate,
-        selectMdFileForImport,
-        selectedEditingTemplate,
-        setSelectedEditingTemplate,
-        handleSelectTemplateForEdit,
-        handleTemplateContentChange,
-        handleTemplateMetaChange,
-        templateParentNode,
-        setTemplateParentNode,
-        handleAddChildNode,
-        handleConfirmCreateWithTemplate,
-        mcpStatus,
-        mcpLogs,
-        handleToggleMCPServer,
-        isExportModalOpen,
-        setIsExportModalOpen,
-        isCreateModalOpen,
-        setIsCreateModalOpen,
-        isImportModalOpen,
-        setIsImportModalOpen,
-        isMCPModalOpen,
-        setIsMCPModalOpen,
-        isUpdateModalOpen,
-        setIsUpdateModalOpen,
-        isCommandPaletteOpen,
-        setIsCommandPaletteOpen,
-        targetDeleteProject,
-        setTargetDeleteProject
-      }}
-    >
-      {children}
-    </ProjectContext.Provider>
+    <ProjectDataContext.Provider value={projectDataValue}>
+      <UIStateContext.Provider value={uiStateValue}>
+        <MCPContext.Provider value={mcpValue}>
+          <TemplateContext.Provider value={templateValue}>
+            <ProjectContext.Provider value={combinedProjectContextValue}>
+              {children}
+            </ProjectContext.Provider>
+          </TemplateContext.Provider>
+        </MCPContext.Provider>
+      </UIStateContext.Provider>
+    </ProjectDataContext.Provider>
   );
+};
+
+export const useProjectData = (): ProjectDataContextType => {
+  const context = useContext(ProjectDataContext);
+  if (!context) {
+    throw new Error('useProjectData must be used within a ProjectProvider');
+  }
+  return context;
+};
+
+export const useUIState = (): UIStateContextType => {
+  const context = useContext(UIStateContext);
+  if (!context) {
+    throw new Error('useUIState must be used within a ProjectProvider');
+  }
+  return context;
+};
+
+export const useMCPContext = (): MCPContextType => {
+  const context = useContext(MCPContext);
+  if (!context) {
+    throw new Error('useMCPContext must be used within a ProjectProvider');
+  }
+  return context;
+};
+
+export const useTemplateContext = (): TemplateContextType => {
+  const context = useContext(TemplateContext);
+  if (!context) {
+    throw new Error('useTemplateContext must be used within a ProjectProvider');
+  }
+  return context;
 };
 
 export const useProjectContext = (): ProjectContextType => {

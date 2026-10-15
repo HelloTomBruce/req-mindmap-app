@@ -29,3 +29,11 @@ export interface ProjectData {
   edges?: MindEdge[]; // 跨分支依赖关系
 }
 
+export interface ProjectMeta {
+  id: string;
+  name: string;
+  path: string;
+  lastOpened: string;
+  nodeCount: number;
+}
+
