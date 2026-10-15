@@ -1311,7 +1311,8 @@ pub fn start_mcp_server_rust(
 
     tauri::async_runtime::spawn(async move {
         let app = Router::new()
-            .route("/sse", get(sse_handler))
+            // /sse 同时支持 GET（旧版 SSE 长连接传输）与 POST（新版 Streamable HTTP 传输，客户端直接向配置 URL 发送 initialize 等 JSON-RPC）
+            .route("/sse", get(sse_handler).post(handle_mcp_rpc))
             .route("/messages", post(handle_mcp_rpc))
             .route("/rpc", post(handle_mcp_rpc))
             .route("/", post(handle_mcp_rpc))
