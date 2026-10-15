@@ -35,23 +35,33 @@ const extractTextFromReactNode = (node: any): string => {
   return '';
 };
 
-// Mermaid 动态渲染代码块组件
-const MermaidRenderer: React.FC<{ chart: string }> = ({ chart }) => {
-  const [svgContent, setSvgContent] = useState<string>('');
+// 缓存已渲染完成的 SVG 字符串，避免重新渲染时白屏闪烁
+const mermaidSvgCache = new Map<string, string>();
+
+// Mermaid 动态渲染代码块组件（使用 React.memo + 全局缓存防止重新渲染引起的闪烁）
+const MermaidRenderer: React.FC<{ chart: string }> = React.memo(({ chart }) => {
+  const trimmed = useMemo(() => chart.trim(), [chart]);
+  const [svgContent, setSvgContent] = useState<string>(() => mermaidSvgCache.get(trimmed) || '');
   const [hasError, setHasError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!trimmed) {
+      setSvgContent('');
+      return;
+    }
+    const cached = mermaidSvgCache.get(trimmed);
+    if (cached) {
+      setSvgContent(cached);
+      return;
+    }
+
     let isMounted = true;
     const renderChart = async () => {
       try {
         setHasError(null);
-        const trimmed = chart.trim();
-        if (!trimmed) {
-          setSvgContent('');
-          return;
-        }
         const id = `mermaid-${Math.random().toString(36).substring(2, 9)}`;
         const { svg } = await mermaid.render(id, trimmed);
+        mermaidSvgCache.set(trimmed, svg);
         if (isMounted) {
           setSvgContent(svg);
         }
@@ -65,7 +75,7 @@ const MermaidRenderer: React.FC<{ chart: string }> = ({ chart }) => {
     return () => {
       isMounted = false;
     };
-  }, [chart]);
+  }, [trimmed]);
 
   if (hasError) {
     return (
@@ -82,7 +92,7 @@ const MermaidRenderer: React.FC<{ chart: string }> = ({ chart }) => {
       dangerouslySetInnerHTML={{ __html: svgContent }}
     />
   );
-};
+});
 
 interface MarkdownDrawerProps {
   node: MindNode | null;
@@ -432,6 +442,70 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
     }
   };
 
+  // 缓存 previewOptions 配置，防止父级组件重绘时重复卸载/重建 Markdown 预览树引发 Mermaid 图表闪烁
+  const previewOptions = useMemo(() => ({
+    components: {
+      img: ({ src, alt, style, width, height, ...props }: any) => (
+        <CachedImage src={src} alt={alt} style={style} width={width} height={height} projectPath={projectPath} {...props} />
+      ),
+      a: ({ href, children, ...props }: any) => {
+        if (href && href.startsWith('#wikilink:')) {
+          const targetTitle = decodeURIComponent(href.replace('#wikilink:', ''));
+          return (
+            <span
+              className="wikilink-tag-badge"
+              title={`点击在脑图与右侧跳转至「${targetTitle}」`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onNavigateToNode) {
+                  onNavigateToNode(targetTitle);
+                }
+              }}
+            >
+              <Link2 size={12} className="wikilink-icon" />
+              {children}
+              <ArrowUpRight size={11} className="wikilink-arrow" />
+            </span>
+          );
+        }
+
+        if (href && href.startsWith('#color:')) {
+          const { textColor, bgColor, isHighlight } = parseColorQuery(href);
+          if (isHighlight) {
+            return <mark className="md-highlight-text">{children}</mark>;
+          }
+          return (
+            <span
+              className="md-custom-color-text"
+              style={{
+                color: textColor || 'inherit',
+                backgroundColor: bgColor || 'transparent',
+                fontWeight: textColor ? 600 : undefined,
+                borderRadius: bgColor ? '3px' : undefined,
+                padding: bgColor ? '1px 4px' : undefined
+              }}
+            >
+              {children}
+            </span>
+          );
+        }
+
+        return <a href={href} target="_blank" rel="noreferrer" {...props}>{children}</a>;
+      },
+      code: ({ inline, className, children, ...props }: any) => {
+        const match = /language-(\w+)/.exec(className || '');
+        const language = match ? match[1] : '';
+        const codeText = extractTextFromReactNode(children).replace(/\n$/, '');
+
+        if (!inline && language === 'mermaid') {
+          return <MermaidRenderer chart={codeText} />;
+        }
+        return <code className={className} {...props}>{children}</code>;
+      }
+    }
+  }), [projectPath, onNavigateToNode]);
+
   if (!node) return null;
 
   return (
@@ -523,68 +597,7 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
           fullscreen={isFullscreen}
           height="100%"
           preview="live"
-          previewOptions={{
-            components: {
-              img: ({ src, alt, style, width, height, ...props }: any) => (
-                <CachedImage src={src} alt={alt} style={style} width={width} height={height} projectPath={projectPath} {...props} />
-              ),
-              a: ({ href, children, ...props }: any) => {
-                if (href && href.startsWith('#wikilink:')) {
-                  const targetTitle = decodeURIComponent(href.replace('#wikilink:', ''));
-                  return (
-                    <span
-                      className="wikilink-tag-badge"
-                      title={`点击在脑图与右侧跳转至「${targetTitle}」`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (onNavigateToNode) {
-                          onNavigateToNode(targetTitle);
-                        }
-                      }}
-                    >
-                      <Link2 size={12} className="wikilink-icon" />
-                      {children}
-                      <ArrowUpRight size={11} className="wikilink-arrow" />
-                    </span>
-                  );
-                }
-
-                if (href && href.startsWith('#color:')) {
-                  const { textColor, bgColor, isHighlight } = parseColorQuery(href);
-                  if (isHighlight) {
-                    return <mark className="md-highlight-text">{children}</mark>;
-                  }
-                  return (
-                    <span
-                      className="md-custom-color-text"
-                      style={{
-                        color: textColor || 'inherit',
-                        backgroundColor: bgColor || 'transparent',
-                        fontWeight: textColor ? 600 : undefined,
-                        borderRadius: bgColor ? '3px' : undefined,
-                        padding: bgColor ? '1px 4px' : undefined
-                      }}
-                    >
-                      {children}
-                    </span>
-                  );
-                }
-
-                return <a href={href} target="_blank" rel="noreferrer" {...props}>{children}</a>;
-              },
-              code: ({ inline, className, children, ...props }: any) => {
-                const match = /language-(\w+)/.exec(className || '');
-                const language = match ? match[1] : '';
-                const codeText = extractTextFromReactNode(children).replace(/\n$/, '');
-
-                if (!inline && language === 'mermaid') {
-                  return <MermaidRenderer chart={codeText} />;
-                }
-                return <code className={className} {...props}>{children}</code>;
-              }
-            }
-          }}
+          previewOptions={previewOptions}
         />
 
         {/* 输入 [[ 联想浮窗 */}
