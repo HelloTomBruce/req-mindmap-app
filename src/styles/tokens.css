@@ -9,21 +9,21 @@
 
   --border-default: #e6e6e9;        /* 1px 细描边 */
   --border-strong: #d0d3d9;         /* 强调描边 */
-  --border-focus: #7170ff;          /* Linear accent violet */
+  --border-focus: #18181b;          /* 焦点环（高级黑） */
 
   --text-primary: #282a30;          /* 冷调近黑 */
   --text-secondary: #4d535c;
   --text-muted: #8a8f98;            /* Linear tertiary */
   --text-on-primary: #ffffff;
 
-  /* 单一品牌强调色：Linear indigo-violet */
-  --primary-50: #eef0fd;
-  --primary-100: #dfe2fa;
-  --primary-200: #c3c8f5;
-  --primary-400: #828fff;           /* accent hover */
-  --primary-500: #5e6ad2;           /* brand indigo */
-  --primary-600: #4e57b8;
-  --primary-700: #3d4494;
+  /* 单一品牌强调色：高级黑（zinc 阶梯，主操作黑底白字） */
+  --primary-50: #f4f4f5;
+  --primary-100: #e4e4e7;
+  --primary-200: #d4d4d8;
+  --primary-400: #3f3f46;           /* hover 描边 */
+  --primary-500: #18181b;           /* brand black */
+  --primary-600: #09090b;
+  --primary-700: #000000;
 
   /* 状态色（去饱和、冷调） */
   --success-bg: #ecf9f0;
@@ -37,10 +37,18 @@
   --manager-card-bg: rgba(255, 255, 255, 0.9);
   --manager-card-border: rgba(230, 230, 233, 0.9);
 
+  /* 首页 MCP 状态胶囊（online/offline） */
+  --mcp-online-bg: #ecfdf5;
+  --mcp-online-border: #a7f3d0;
+  --mcp-online-text: #047857;
+  --mcp-offline-bg: #fef2f2;
+  --mcp-offline-border: #fecaca;
+  --mcp-offline-text: #b91c1c;
+
   /* 画布网格与控制器 */
   --canvas-grid-color: #e8e9ec;
-  --node-root-bg: #eef0fd;
-  --node-root-border: #c3c8f5;
+  --node-root-bg: #f4f4f5;
+  --node-root-border: #d4d4d8;
 
   /* 阴影系统：扁平化，以 1px 描边为主、投影仅用于浮层 */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
@@ -72,21 +80,21 @@
 
     --border-default: rgba(255, 255, 255, 0.08);  /* 半透明白 1px 描边 */
     --border-strong: rgba(255, 255, 255, 0.14);
-    --border-focus: #7170ff;
+    --border-focus: #d4d4d8;
 
     --text-primary: #f7f8f8;        /* 非纯白，防刺眼 */
     --text-secondary: #d0d6e0;
     --text-muted: #8a8f98;
-    --text-on-primary: #ffffff;
+    --text-on-primary: #18181b;     /* 暗色下主操作为白底黑字 */
 
-    /* 暗色下的 indigo-violet 阶梯（亮度递增） */
-    --primary-50: rgba(113, 112, 255, 0.12);
-    --primary-100: rgba(113, 112, 255, 0.2);
-    --primary-200: rgba(113, 112, 255, 0.32);
-    --primary-400: #9ba3ff;
-    --primary-500: #7170ff;         /* accent */
-    --primary-600: #828fff;         /* accent hover / 高亮文字 */
-    --primary-700: #aab0ff;
+    /* 暗色下的高级黑表达：主强调反转为近白（白底黑字主按钮），亮度递增阶梯 */
+    --primary-50: rgba(255, 255, 255, 0.1);
+    --primary-100: rgba(255, 255, 255, 0.18);
+    --primary-200: rgba(255, 255, 255, 0.3);
+    --primary-400: #d4d4d8;         /* hover 描边 */
+    --primary-500: #ededed;         /* 主操作填充（近白） */
+    --primary-600: #ffffff;         /* hover / 高亮文字 */
+    --primary-700: #ffffff;
 
     --success-bg: rgba(39, 166, 68, 0.15);
     --success-text: #4ac26b;
@@ -98,9 +106,17 @@
     --manager-card-bg: rgba(25, 26, 27, 0.9);
     --manager-card-border: rgba(255, 255, 255, 0.08);
 
+    /* 暗色下的 MCP 状态胶囊：半透明色底 + 提亮文字 */
+    --mcp-online-bg: rgba(16, 185, 129, 0.12);
+    --mcp-online-border: rgba(16, 185, 129, 0.35);
+    --mcp-online-text: #34d399;
+    --mcp-offline-bg: rgba(239, 68, 68, 0.12);
+    --mcp-offline-border: rgba(239, 68, 68, 0.35);
+    --mcp-offline-text: #f87171;
+
     --canvas-grid-color: rgba(255, 255, 255, 0.05);
-    --node-root-bg: rgba(113, 112, 255, 0.12);
-    --node-root-border: rgba(113, 112, 255, 0.4);
+    --node-root-bg: rgba(255, 255, 255, 0.08);
+    --node-root-border: rgba(255, 255, 255, 0.32);
 
     /* 暗面阴影：投影几乎不可见，用 1px 半透明白环做层次 */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
@@ -135,13 +151,13 @@
 
 @keyframes inkPulseSubtle {
   0% {
-    box-shadow: 0 0 0 0 rgba(94, 106, 210, 0.3);
+    box-shadow: 0 0 0 0 rgba(24, 24, 27, 0.3);
   }
   70% {
-    box-shadow: 0 0 0 6px rgba(94, 106, 210, 0);
+    box-shadow: 0 0 0 6px rgba(24, 24, 27, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(94, 106, 210, 0);
+    box-shadow: 0 0 0 0 rgba(24, 24, 27, 0);
   }
 }
 

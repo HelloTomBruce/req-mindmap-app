@@ -9,6 +9,7 @@ import { WikiLinkAutocomplete } from './WikiLinkAutocomplete';
 import { processCustomMarkdownSyntax, parseColorQuery, createColorCommands } from '../utils/markdownColor';
 import { getNodeNavContext, flattenTreeWithDepth } from '../services/treeOperations';
 import { normalizePriority, normalizeStatus } from '../utils/statusUtils';
+import { safeDecodeURIComponent } from '../utils/url';
 
 // 初始化 Mermaid 图表渲染引擎（适配暗色水墨主题）
 mermaid.initialize({
@@ -449,8 +450,9 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
         <CachedImage src={src} alt={alt} style={style} width={width} height={height} projectPath={projectPath} {...props} />
       ),
       a: ({ href, children, ...props }: any) => {
+        // 1. [[WikiLink]] 双向链接协议
         if (href && href.startsWith('#wikilink:')) {
-          const targetTitle = decodeURIComponent(href.replace('#wikilink:', ''));
+          const targetTitle = safeDecodeURIComponent(href.replace('#wikilink:', ''));
           return (
             <span
               className="wikilink-tag-badge"
@@ -459,7 +461,8 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
                 e.preventDefault();
                 e.stopPropagation();
                 if (onNavigateToNode) {
-                  onNavigateToNode(targetTitle);
+                  // 传原始 href：解码统一收敛到 handleNavigateToNodeByTitle，避免双重解码
+                  onNavigateToNode(href);
                 }
               }}
             >
@@ -470,6 +473,7 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
           );
         }
 
+        // 2. 自定义文字高亮与颜色协议
         if (href && href.startsWith('#color:')) {
           const { textColor, bgColor, isHighlight } = parseColorQuery(href);
           if (isHighlight) {
@@ -491,7 +495,85 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
           );
         }
 
-        return <a href={href} target="_blank" rel="noreferrer" {...props}>{children}</a>;
+        // 3. 文档内锚点跳转（如 #overview、#11-业务背景 等，避免破坏 React HashRouter）
+        if (href && href.startsWith('#')) {
+          const rawId = safeDecodeURIComponent(href.replace(/^#/, ''));
+          return (
+            <a
+              href={href}
+              className="doc-anchor-link"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const container = editorContainerRef.current;
+                if (!container) return;
+                let targetEl =
+                  container.querySelector(`[id="${CSS.escape(rawId)}"]`) ||
+                  container.querySelector(`[id="${rawId}"]`) ||
+                  container.querySelector(`a[name="${rawId}"]`);
+                if (!targetEl) {
+                  const headings = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+                  targetEl =
+                    headings.find(
+                      (h) => h.textContent?.trim().toLowerCase() === rawId.toLowerCase()
+                    ) || null;
+                }
+                if (targetEl) {
+                  targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }}
+              {...props}
+            >
+              {children}
+            </a>
+          );
+        }
+
+        // 4. 外部超链接（以 http://、https://、mailto: 等开头）
+        const isExternal = /^([a-z]+:)?\/\//i.test(href || '') || href?.startsWith('mailto:');
+        if (isExternal) {
+          return (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => {
+                // 仅 Tauri 桌面端接管：preventDefault 必须同步执行，放在 await import
+                // 之后会因默认导航已派发而双开；Web 模式保留原生 _blank 行为
+                if (href && '__TAURI_INTERNALS__' in window) {
+                  e.preventDefault();
+                  import('@tauri-apps/plugin-opener')
+                    .then(({ openUrl }) => openUrl(href))
+                    .catch((err) => console.warn('[DocMind] 打开外部链接失败:', err));
+                }
+              }}
+              {...props}
+            >
+              {children}
+            </a>
+          );
+        }
+
+        // 5. 内部文档链接（相对路径 modules/*.md、index.md、节点 ID 或标题等）
+        // 在文档预览模式下点击，拦截并平滑跳转至对应需求文档
+        return (
+          <a
+            href={href}
+            className="doc-internal-link"
+            title={`点击跳转至对应文档: ${safeDecodeURIComponent(href || '')}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onNavigateToNode && href) {
+                onNavigateToNode(href);
+              }
+            }}
+            {...props}
+          >
+            <Link2 size={12} className="doc-link-inline-icon" />
+            {children}
+          </a>
+        );
       },
       code: ({ inline, className, children, ...props }: any) => {
         const match = /language-(\w+)/.exec(className || '');

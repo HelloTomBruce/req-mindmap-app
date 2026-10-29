@@ -98,7 +98,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   onNavigateToEditor
 }) => {
   const [canvasViewMode, setCanvasViewMode] = useState<'mindmap' | 'kanban'>('mindmap');
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(true);
+  // 默认收起：进入项目时先以纯导图概览，由用户主动打开节点文档抽屉
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   // 弹窗状态
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);

@@ -22,3 +22,6 @@ dist-ssr
 # Graphify
 graphify-out
 
+
+# Browser testing screenshots
+.dsh-browser/

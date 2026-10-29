@@ -12,7 +12,8 @@ import {
   addChildNodeToTree,
   updateNodeInTree,
   deleteNodeFromTree,
-  toggleNodeCollapseInTree
+  toggleNodeCollapseInTree,
+  getNodeNavContext
 } from '../services/treeOperations';
 import {
   loadRecentProjects,
@@ -24,6 +25,7 @@ import {
   selectFolder,
   initGitRepo
 } from '../services/projectIO';
+import { safeDecodeURIComponent } from '../utils/url';
 
 interface UseProjectOptions {
   onOpenDrawer?: () => void;
@@ -146,12 +148,14 @@ export const useProject = ({
       window.dispatchEvent(new CustomEvent('docmind:project-switched'));
       setCurrentProjectPath(meta.path);
       await loadFromDisk(meta);
+      // 进入项目先以纯导图概览，不自动弹出根节点文档抽屉
+      onCloseDrawer?.();
 
       const exists = recentProjects.some((p) => p.path === meta.path || p.id === meta.id);
       let updated: ProjectMeta[];
       if (exists) {
         updated = [
-          { ...meta, lastOpened: new Date().toLocaleDateString() },
+          { ...meta, lastOpened: new Date().toISOString() },
           ...recentProjects.filter((p) => p.path !== meta.path && p.id !== meta.id)
         ];
       } else {
@@ -161,7 +165,7 @@ export const useProject = ({
       await saveRecentProjects(updated);
       onNavigateToEditor?.();
     },
-    [recentProjects, loadFromDisk, saveRecentProjects, onNavigateToEditor]
+    [recentProjects, loadFromDisk, saveRecentProjects, onNavigateToEditor, onCloseDrawer]
   );
 
   // 通过路径直接打开项目（如 MCP 触发切换时）
@@ -174,7 +178,7 @@ export const useProject = ({
         id: `proj-${Date.now()}`,
         name: folderName,
         path: targetPath,
-        lastOpened: new Date().toLocaleDateString(),
+        lastOpened: new Date().toISOString(),
         nodeCount: 1
       };
       await handleOpenProject(meta);
@@ -191,7 +195,7 @@ export const useProject = ({
         id: `proj-${Date.now()}`,
         name: folderName,
         path: selected,
-        lastOpened: new Date().toLocaleDateString(),
+        lastOpened: new Date().toISOString(),
         nodeCount: 1
       };
       await handleOpenProject(meta);
@@ -230,7 +234,7 @@ export const useProject = ({
         id: `proj-${Date.now()}`,
         name,
         path: targetPath,
-        lastOpened: new Date().toLocaleDateString(),
+        lastOpened: new Date().toISOString(),
         nodeCount: countNodes(newRoot)
       };
 
@@ -474,19 +478,83 @@ export const useProject = ({
     return flattenTreeNodes(projectData?.root);
   }, [projectData?.root]);
 
-  // 双向链接跳转
+  // 双向链接与内部文档跳转：入参为原始 href（#wikilink: 编码串、相对路径或标题），
+  // 百分号解码统一在此处完成，调用方不得预先解码
   const handleNavigateToNodeByTitle = useCallback(
-    (title: string) => {
-      const target = allProjectNodes.find(
-        (n: MindNode) =>
-          n.title.trim() === title.trim() || n.title.toLowerCase().includes(title.toLowerCase())
-      );
+    (identifier: string) => {
+      if (!identifier || !allProjectNodes.length) return;
+      const raw = safeDecodeURIComponent(identifier).trim();
+      const clean = raw.replace(/^#wikilink:/, '').replace(/^#/, '').replace(/^\.\//, '').trim();
+
+      // 1. 按 ID 精确查找
+      let target = allProjectNodes.find((n: MindNode) => n.id === clean);
+
+      // 2. 按 docPath 精确查找（例如 "modules/user_story.md" 或 "index.md"）
+      if (!target) {
+        target = allProjectNodes.find(
+          (n: MindNode) => n.docPath === clean || n.docPath.endsWith(`/${clean}`)
+        );
+      }
+
+      // 3. 去除 .md 扩展名后再匹配 docPath 的主文件名（例如 "user_story" 匹配 "modules/user_story.md"）
+      if (!target) {
+        const withoutMd = clean.replace(/\.md$/i, '');
+        target = allProjectNodes.find(
+          (n: MindNode) =>
+            n.docPath.replace(/\.md$/i, '') === withoutMd ||
+            n.docPath.replace(/\.md$/i, '').endsWith(`/${withoutMd}`)
+        );
+      }
+
+      // 4. 按标题精确查找（忽略首尾空格和大小写，并支持去除可能写的 .md 后缀）
+      if (!target) {
+        const titleWithoutMd = clean.replace(/\.md$/i, '').trim().toLowerCase();
+        target = allProjectNodes.find(
+          (n: MindNode) => n.title.trim().toLowerCase() === titleWithoutMd
+        );
+      }
+
+      // 5. 按标题模糊包含查找
+      if (!target) {
+        const titleWithoutMd = clean.replace(/\.md$/i, '').trim().toLowerCase();
+        if (titleWithoutMd.length >= 2) {
+          target = allProjectNodes.find(
+            (n: MindNode) =>
+              n.title.toLowerCase().includes(titleWithoutMd) ||
+              titleWithoutMd.includes(n.title.toLowerCase())
+          );
+        }
+      }
+
       if (target) {
+        // 如果目标节点有处于折叠状态的祖先节点，则自动展开祖先链以确保导图视口能顺利定位与聚焦
+        if (projectData?.root) {
+          const navCtx = getNodeNavContext(projectData.root, target.id);
+          if (navCtx && navCtx.ancestors.some((a) => a.collapsed)) {
+            const ancestorIds = new Set(navCtx.ancestors.map((a) => a.id));
+            const expandAncestors = (n: MindNode): MindNode => {
+              const shouldExpand = ancestorIds.has(n.id) && n.collapsed;
+              const nextChildren = n.children ? n.children.map(expandAncestors) : undefined;
+              return {
+                ...n,
+                collapsed: shouldExpand ? false : n.collapsed,
+                children: nextChildren
+              };
+            };
+            setProjectData((prev) => ({
+              ...prev,
+              root: expandAncestors(prev.root)
+            }));
+          }
+        }
+
         setSelectedNodeId(target.id);
         onOpenDrawer?.();
+      } else {
+        console.warn(`[DocMind] 未找到对应文档节点: ${identifier}`);
       }
     },
-    [allProjectNodes, onOpenDrawer]
+    [allProjectNodes, projectData, setProjectData, onOpenDrawer]
   );
 
   return {

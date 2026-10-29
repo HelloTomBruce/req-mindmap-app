@@ -178,6 +178,50 @@
   opacity: 1;
 }
 
+/* 内部文档跳转链接样式 (普通 Markdown 链接指向内部模块时) */
+.doc-internal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--primary-600);
+  background-color: var(--primary-50);
+  border-bottom: 1.5px dashed var(--primary-400);
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.doc-internal-link:hover {
+  background-color: var(--primary-100);
+  color: var(--primary-700);
+  border-bottom-style: solid;
+}
+
+.doc-link-inline-icon {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.doc-internal-link:hover .doc-link-inline-icon {
+  opacity: 1;
+}
+
+/* 内部锚点平滑滚动链接样式 */
+.doc-anchor-link {
+  color: var(--primary-600);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.doc-anchor-link:hover {
+  color: var(--primary-700);
+}
+
 /* Markdown 自定义颜色与高亮样式 */
 .md-custom-color-text {
   display: inline;
@@ -194,12 +238,16 @@
 
 /* 暗色模式：硬编码徽标/状态色 → 暗色半透明调（Linear tinted pills） */
 @media (prefers-color-scheme: dark) {
+  .doc-internal-link { background-color: rgba(93, 160, 146, 0.15); color: #78c2b4; border-bottom-color: #5da092; }
+  .doc-internal-link:hover { background-color: rgba(93, 160, 146, 0.25); color: #a3ded3; }
+  .doc-anchor-link { color: #78c2b4; }
+  .doc-anchor-link:hover { color: #a3ded3; }
   .mcp-status-pill.online { background-color: rgba(39,166,68,0.15); border-color: rgba(39,166,68,0.35); color: #4ac26b; }
   .mcp-status-pill.offline { background-color: rgba(229,72,77,0.12); border-color: rgba(229,72,77,0.3); color: #ff6369; }
-  .feature-icon-wrapper.ai { background-color: rgba(113,112,255,0.14); color: #9ba3ff; }
+  .feature-icon-wrapper.ai { background-color: rgba(255, 255, 255, 0.1); color: #d4d4d8; }
   .feature-icon-wrapper.md { background-color: rgba(39,166,68,0.14); color: #4ac26b; }
-  .feature-icon-wrapper.security { background-color: rgba(122,127,173,0.18); color: #a7ade0; }
-  .match-tag-pill { background-color: rgba(113,112,255,0.14); color: #9ba3ff; }
+  .feature-icon-wrapper.security { background-color: rgba(255, 255, 255, 0.08); color: #c6c9d4; }
+  .match-tag-pill { background-color: rgba(255, 255, 255, 0.1); color: #d4d4d8; }
   .match-content-pill { background-color: rgba(187,128,9,0.15); color: #e3b341; }
   .btn.mcp-active { background-color: rgba(39,166,68,0.15); border-color: rgba(39,166,68,0.35); color: #4ac26b; }
   .update-error-box { background-color: rgba(229,72,77,0.1); border-color: rgba(229,72,77,0.3); }

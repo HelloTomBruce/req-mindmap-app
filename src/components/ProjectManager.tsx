@@ -1,6 +1,25 @@
-import React, { useEffect, useRef } from 'react';
-import { HardDrive, Plus, Folder, FileText, Trash2, ArrowRight, FileUp, RefreshCw, Server, Cpu, BookOpen, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  Layers,
+  Plus,
+  Folder,
+  FileText,
+  Trash2,
+  ArrowRight,
+  ArrowUpRight,
+  FileUp,
+  RefreshCw,
+  Zap,
+  Plug,
+  Download,
+  PenLine,
+  GitBranch,
+  Sun,
+  Moon
+} from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
 import { ProjectMeta } from '../types';
+import { getGitStatus } from '../gitHelper';
 export type { ProjectMeta };
 
 interface ProjectManagerProps {
@@ -20,6 +39,54 @@ interface ProjectManagerProps {
   onOpenMCPModal: () => void;
 }
 
+// 首页各项目的一次性探测快照：Git 未提交数 + 树完成度
+interface ProjectSnapshot {
+  dirty: number;
+  total: number; // -1 表示读取失败，展示回退到索引中的 nodeCount
+  completed: number;
+}
+
+async function probeCompletion(projectPath: string): Promise<{ total: number; completed: number }> {
+  try {
+    const json = await invoke<string>('read_text_file_custom', {
+      path: `${projectPath}/.requirements.json`
+    });
+    const root = JSON.parse(json)?.root;
+    if (!root) return { total: -1, completed: -1 };
+    let total = 0;
+    let completed = 0;
+    const walk = (node: { status?: string; children?: unknown[] }) => {
+      total += 1;
+      if (node.status === 'completed') completed += 1;
+      (node.children || []).forEach((c) => walk(c as never));
+    };
+    walk(root);
+    return { total, completed };
+  } catch {
+    return { total: -1, completed: -1 };
+  }
+}
+
+// lastOpened 历史上有两种格式：ISO 时间戳（新）与 toLocaleDateString 日期串（旧，可被 Date.parse 按当日零点解析）
+function formatRelativeTime(raw: string): string {
+  const t = Date.parse(raw);
+  if (Number.isNaN(t)) return raw;
+  const diff = Date.now() - t;
+  if (diff < 60_000) return '刚刚';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`;
+  if (diff < 7 * 86_400_000) return `${Math.floor(diff / 86_400_000)} 天前`;
+  return new Date(t).toLocaleDateString();
+}
+
+// 长路径中间省略：保留首段与末两级目录，title 中仍展示完整路径
+function shortenPath(p: string, max = 46): string {
+  if (p.length <= max) return p;
+  const parts = p.split('/');
+  if (parts.length < 3) return p;
+  return `${parts[0]}/…/${parts.slice(-2).join('/')}`;
+}
+
 export const ProjectManager: React.FC<ProjectManagerProps> = ({
   recentProjects,
   mcpStatus,
@@ -31,137 +98,79 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
   onOpenUpdateModal,
   onOpenMCPModal
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // 背景 Canvas 粒子 + 动态拓扑连线动画
+  // 窗口亮暗主题：切换走 Tauri setTheme（WebView 的 prefers-color-scheme 随之生效，全站 CSS/Canvas 自动跟随）
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('docmind-theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch { /* ignore */ }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+  const toggleTheme = async () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setThemeState(next);
+    try {
+      localStorage.setItem('docmind-theme', next);
+    } catch { /* ignore */ }
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().setTheme(next);
+    } catch {
+      /* 浏览器 dev 环境无此能力，静默降级 */
+    }
+  };
+
+  // 各最近项目的 Git 未提交数与完成度探测（目录已删除或非 Git 仓库时静默降级，不展示徽章）
+  const [snapshots, setSnapshots] = useState<Record<string, ProjectSnapshot>>({});
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animationFrameId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-
-    const handleResize = () => {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    };
-    window.addEventListener('resize', handleResize);
-
-    // 粒子节点数据模型
-    const PARTICLE_COUNT = 45;
-    const particles = Array.from({ length: PARTICLE_COUNT }).map(() => ({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.6,
-      vy: (Math.random() - 0.5) * 0.6,
-      radius: Math.random() * 2 + 1.5,
-      alpha: Math.random() * 0.5 + 0.3
-    }));
-
-    const render = () => {
-      ctx.clearRect(0, 0, width, height);
-
-      // 1. 渐变背景光晕
-      const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const gradient = ctx.createRadialGradient(
-        width / 2,
-        height / 2,
-        100,
-        width / 2,
-        height / 2,
-        Math.max(width, height)
+    let cancelled = false;
+    if (recentProjects.length === 0) {
+      setSnapshots({});
+      return;
+    }
+    (async () => {
+      const entries = await Promise.all(
+        recentProjects.map(async (p) => {
+          const [statusItems, completion] = await Promise.all([
+            getGitStatus(p.path),
+            probeCompletion(p.path)
+          ]);
+          return [p.id, { dirty: statusItems.length, ...completion }] as const;
+        })
       );
-
-      if (isDarkMode) {
-        // Linear dark：近黑画布的亮度阶梯
-        gradient.addColorStop(0, '#191a1b');
-        gradient.addColorStop(0.6, '#0f1011');
-        gradient.addColorStop(1, '#08090a');
-      } else {
-        // Linear light：中性冷灰
-        gradient.addColorStop(0, '#fbfbfc');
-        gradient.addColorStop(0.6, '#f7f8f8');
-        gradient.addColorStop(1, '#eff0f2');
-      }
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-
-      const dotColor = isDarkMode ? '113, 112, 255' : '94, 106, 210'; // Linear indigo-violet
-
-      // 2. 更新与绘制粒子节点
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // 碰撞反弹
-        if (p.x < 0 || p.x > width) p.vx *= -1;
-        if (p.y < 0 || p.y > height) p.vy *= -1;
-
-        // 绘制点
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${dotColor}, ${p.alpha * 0.7})`;
-        ctx.fill();
-
-        // 3. 粒子之间连线 (水墨经纬网格连线效果)
-        for (let j = i + 1; j < PARTICLE_COUNT; j++) {
-          const p2 = particles[j];
-          const dx = p.x - p2.x;
-          const dy = p.y - p2.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < 140) {
-            const lineAlpha = (1 - dist / 140) * 0.28;
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(${dotColor}, ${lineAlpha})`;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
-        }
-      }
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    render();
-
+      if (!cancelled) setSnapshots(Object.fromEntries(entries));
+    })();
     return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
+      cancelled = true;
     };
-  }, []);
+  }, [recentProjects]);
+
+
+  const lastProject = recentProjects[0];
 
   return (
     <div className="project-manager-container">
-      {/* 动态 Canvas 背景 */}
-      <canvas ref={canvasRef} className="bg-canvas-animation" />
 
-      <div className="project-manager-card">
-        {/* 顶栏 Header */}
-        <header className="manager-header">
+      <div className="manager-shell">
+        {/* 顶栏 */}
+        <header className="manager-topbar">
           <div className="brand">
-            <HardDrive size={32} className="brand-icon" />
+            <Layers size={26} className="brand-icon" />
             <div>
               <h1>DocMind 结构化文档工作台</h1>
               <p>以拓扑脑图把握宏观全局，以 Markdown 沉浸细节创作</p>
             </div>
           </div>
 
-          <div className="header-actions-right">
+          <div className="topbar-actions">
             {/* 首页 MCP 状态快速入口组件 */}
             <button
               className={`mcp-status-pill ${mcpStatus.isRunning ? 'online' : 'offline'}`}
               onClick={onOpenMCPModal}
               title="点击配置或查看 MCP AI 接入状态"
             >
-              <Server size={14} />
+              <Zap size={14} />
               <span>
                 MCP AI 接入: <strong>{mcpStatus.isRunning ? `🟢 端口 ${mcpStatus.port}` : '🔴 未启动'}</strong>
               </span>
@@ -171,55 +180,70 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               <RefreshCw size={14} />
               检查更新
             </button>
+
+            <button
+              className="btn outline theme-toggle-btn"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
           </div>
         </header>
 
-        {/* 快速功能入口 */}
-        <div className="manager-actions-bar">
-          <button className="btn primary large" onClick={onOpenCreateModal}>
-            <Plus size={16} /> 新建项目
+        {/* 继续上次编辑直达卡：留存用户的高频路径 */}
+        {lastProject && (
+          <div className="resume-card" onClick={() => onOpenProject(lastProject)}>
+            <div className="resume-main">
+              <div className="resume-icon">
+                <PenLine size={16} />
+              </div>
+              <div className="resume-info">
+                <span className="resume-label">继续上次编辑</span>
+                <span className="resume-name">
+                  {lastProject.name}
+                  <span className="resume-time">· {formatRelativeTime(lastProject.lastOpened)}</span>
+                </span>
+              </div>
+            </div>
+            <ArrowRight size={16} className="resume-arrow" />
+          </div>
+        )}
+
+        {/* 快速开始磁贴 */}
+        <div className="manager-tiles">
+          <button className="manager-tile primary" onClick={onOpenCreateModal}>
+            <div className="tile-icon">
+              <Plus size={20} />
+            </div>
+            <div className="tile-info">
+              <h3>新建项目</h3>
+              <p>从空白或预设模板开始一棵需求树</p>
+            </div>
+            <ArrowUpRight size={16} className="tile-arrow" />
           </button>
 
-          <button className="btn outline large" onClick={onOpenImportModal}>
-            <FileUp size={16} /> 从文档导入
+          <button className="manager-tile" onClick={onOpenImportModal}>
+            <div className="tile-icon">
+              <FileUp size={20} />
+            </div>
+            <div className="tile-info">
+              <h3>从文档导入</h3>
+              <p>长篇 Markdown / Word 逆向智能切分</p>
+            </div>
+            <ArrowUpRight size={16} className="tile-arrow" />
           </button>
 
-          <button className="btn outline large" onClick={onOpenFolder}>
-            <Folder size={16} /> 打开已有项目文件夹
+          <button className="manager-tile" onClick={onOpenFolder}>
+            <div className="tile-icon">
+              <Folder size={20} />
+            </div>
+            <div className="tile-info">
+              <h3>打开本地项目</h3>
+              <p>选择已有的需求项目文件夹</p>
+            </div>
+            <ArrowUpRight size={16} className="tile-arrow" />
           </button>
-        </div>
-
-        {/* 首页核心优势与 AI 特质扩展面板 */}
-        <div className="manager-features-grid">
-          <div className="feature-card" onClick={onOpenMCPModal}>
-            <div className="feature-icon-wrapper ai">
-              <Cpu size={20} />
-            </div>
-            <div className="feature-info">
-              <h3>MCP (Model Context Protocol) 协同</h3>
-              <p>提供原生 SSE Tools，支持 Antigravity / Cursor 等 AI 助手直接理解、检索与更新文档拓扑树。</p>
-            </div>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon-wrapper md">
-              <BookOpen size={20} />
-            </div>
-            <div className="feature-info">
-              <h3>Markdown 文件夹双向同步</h3>
-              <p>思维导图节点与本地 `.md` 文档 1:1 实时双向映射，纯本地存储，离线安全且易于版本管理。</p>
-            </div>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon-wrapper security">
-              <ShieldCheck size={20} />
-            </div>
-            <div className="feature-info">
-              <h3>结构化文档一键聚合导出</h3>
-              <p>智能聚合导出完整的 PRD 需求书、架构设计文档或技术手册，支持图片与模块资源一键打包。</p>
-            </div>
-          </div>
         </div>
 
         {/* 最近项目列表 */}
@@ -235,38 +259,72 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
             </div>
           ) : (
             <div className="projects-grid">
-              {recentProjects.map((p) => (
-                <div key={p.id} className="project-item-card" onClick={() => onOpenProject(p)}>
-                  <div className="project-item-header">
-                    <Folder className="folder-icon" size={20} />
-                    <span className="project-item-name">{p.name}</span>
-                    <button
-                      className="icon-action-btn delete"
-                      title="从最近列表中移除"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteProjectMeta(p);
-                      }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div className="project-item-body">
-                    <span className="project-item-path" title={p.path}>{p.path}</span>
-                    <div className="project-item-meta">
-                      <span>包含节点: {p.nodeCount} 个</span>
-                      <span>{p.lastOpened}</span>
+              {recentProjects.map((p) => {
+                const snap = snapshots[p.id];
+                const totalNodes = snap && snap.total >= 0 ? snap.total : p.nodeCount;
+                return (
+                  <div key={p.id} className="project-item-card" onClick={() => onOpenProject(p)}>
+                    <div className="project-item-header">
+                      <Folder className="folder-icon" size={20} />
+                      <span className="project-item-name">{p.name}</span>
+                      {snap && snap.dirty > 0 && (
+                        <span
+                          className="git-dirty-badge"
+                          title={`${snap.dirty} 个文件存在未提交的变更（修改 / 新增 / 已暂存）`}
+                        >
+                          <GitBranch size={11} />
+                          {snap.dirty}
+                        </span>
+                      )}
+                      <button
+                        className="icon-action-btn delete"
+                        title="从最近列表中移除"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteProjectMeta(p);
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <div className="project-item-body">
+                      <span className="project-item-path" title={p.path}>
+                        {shortenPath(p.path)}
+                      </span>
+                      <div className="project-item-meta">
+                        <span>
+                          {totalNodes} 个节点
+                          {snap && snap.total >= 0 ? ` · ${snap.completed} 已完成` : ''}
+                        </span>
+                        <span>{formatRelativeTime(p.lastOpened)}</span>
+                      </div>
+                    </div>
+                    <div className="project-item-footer">
+                      <span>打开工作台</span>
+                      <ArrowRight size={14} />
                     </div>
                   </div>
-                  <div className="project-item-footer">
-                    <span>打开工作台</span>
-                    <ArrowRight size={14} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
+
+        {/* 底部特性信息条：降级为紧凑低调的产品能力提示 */}
+        <footer className="manager-info-strip">
+          <button className="info-item" onClick={onOpenMCPModal}>
+            <Plug size={14} />
+            MCP AI 协同
+          </button>
+          <span className="info-item">
+            <FileText size={14} />
+            Markdown 本地双向同步
+          </span>
+          <span className="info-item">
+            <Download size={14} />
+            一键聚合导出
+          </span>
+        </footer>
       </div>
     </div>
   );

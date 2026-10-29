@@ -5,6 +5,7 @@
   "windows": ["*"],
   "permissions": [
     "core:default",
+    "core:window:allow-set-theme",
     "opener:default",
     "dialog:default",
     "updater:default",

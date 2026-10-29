@@ -30,8 +30,21 @@ export const PRESET_COLORS: Record<string, { label: string; text: string; bg?: s
 export function processCustomMarkdownSyntax(markdown: string): string {
   if (!markdown) return '';
 
-  // 1. 先处理 WikiLink：[[节点名称]] 转为 [节点名称](#wikilink:节点名称)
-  let res = markdown.replace(/\[\[(.*?)\]\]/g, '[$1](#wikilink:$1)');
+  // 1. 先处理 WikiLink：支持 [[目标节点]] 以及带别名的 [[目标节点|显示别名]]
+  // 注意：目标标识经过 encodeURIComponent 编码，避免 CommonMark 因 URL 内含空格而将其降级为纯文本
+  let res = markdown.replace(/\[\[([^\]\n]+)\]\]/g, (_, inner) => {
+    const pipeIdx = inner.indexOf('|');
+    let target = inner;
+    let label = inner;
+    if (pipeIdx !== -1) {
+      target = inner.substring(0, pipeIdx).trim();
+      label = inner.substring(pipeIdx + 1).trim() || target;
+    } else {
+      target = target.trim();
+      label = target;
+    }
+    return `[${label}](#wikilink:${encodeURIComponent(target)})`;
+  });
 
   // 2. 处理 ==高亮文字==
   res = res.replace(/==([^=\n]+)==/g, '[$1](#color:highlight=1)');

@@ -1,59 +1,83 @@
-/* ==================== 1. 首页项目管理样式 (Project Manager) ==================== */
+/* ==================== 1. 首页项目管理样式 (Project Manager) ====================
+   分层全屏工作台布局：页面级纵向滚动，内容列 1100px 居中；
+   顶栏 → 继续上次编辑直达卡 → 快速开始磁贴 → 最近项目网格 → 底部特性信息条 */
 .project-manager-container {
-  width: 100vw;
+  /* body 全局 overflow:hidden，首页容器自身作为纵向滚动容器 */
+  /* 静态径向渐变背景（原 Canvas 动画因性能原因移除，渐变与 Linear 主题同源） */
+  width: 100%;
   height: 100vh;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 28px 32px 40px;
+  box-sizing: border-box;
+  background: radial-gradient(circle at 50% 50%, #fbfbfc 0, #f7f8f8 60%, #eff0f2 100%);
 }
 
-.bg-canvas-animation {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  pointer-events: none;
+@media (prefers-color-scheme: dark) {
+  .project-manager-container {
+    background: radial-gradient(circle at 50% 50%, #191a1b 0, #0f1011 60%, #08090a 100%);
+  }
 }
 
-.project-manager-card {
+.manager-shell {
+  position: relative;
+  z-index: 2;
   width: 100%;
-  max-width: 880px;
-  background-color: var(--manager-card-bg);
-  backdrop-filter: blur(12px);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--manager-card-border);
-  padding: 24px 28px;
+  max-width: 1100px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  z-index: 2;
+  gap: 22px;
 }
 
-.manager-header {
+/* ==================== 顶栏 ==================== */
+.manager-topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.manager-header .brand {
+.manager-topbar .brand {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.header-actions-right {
+.brand-icon {
+  background: var(--primary-500);
+  color: var(--text-on-primary);
+  padding: 9px;
+  border-radius: var(--radius-lg);
+}
+
+.manager-topbar h1 {
+  font-size: 20px;
+  font-weight: 590;
+  color: var(--text-primary);
+  letter-spacing: -0.24px;
+}
+
+.manager-topbar p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.topbar-actions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-/* 首页 MCP 状态快照胶囊按钮 */
+/* 顶栏纯图标按钮（主题切换）：与文字按钮同高，宽度收窄为方形 */
+.theme-toggle-btn {
+  padding: 6px 9px;
+}
+
+/* 首页 MCP 状态快照胶囊按钮（配色走 token，明暗主题自适应） */
 .mcp-status-pill {
   display: inline-flex;
   align-items: center;
@@ -73,111 +97,204 @@
 }
 
 .mcp-status-pill.online {
-  background-color: #ecfdf5;
-  border-color: #a7f3d0;
-  color: #047857;
+  background-color: var(--mcp-online-bg);
+  border-color: var(--mcp-online-border);
+  color: var(--mcp-online-text);
 }
 
 .mcp-status-pill.offline {
-  background-color: #fef2f2;
-  border-color: #fecaca;
-  color: #b91c1c;
+  background-color: var(--mcp-offline-bg);
+  border-color: var(--mcp-offline-border);
+  color: var(--mcp-offline-text);
 }
 
-/* 首页特性卡片三列网格 */
-.manager-features-grid {
+/* ==================== 继续上次编辑直达卡 ==================== */
+.resume-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.resume-card:hover {
+  border-color: var(--primary-400);
+  box-shadow: var(--shadow-lg);
+}
+
+.resume-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.resume-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-lg);
+  background: var(--primary-500);
+  color: var(--text-on-primary);
+  flex-shrink: 0;
+}
+
+.resume-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resume-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.resume-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resume-time {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+.resume-arrow {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.resume-card:hover .resume-arrow {
+  color: var(--primary-600);
+  transform: translateX(4px);
+}
+
+/* ==================== 快速开始磁贴 ==================== */
+.manager-tiles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
-.feature-card {
-  background-color: var(--bg-app);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  padding: 12px 14px;
+.manager-tile {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  transition: all var(--transition-fast);
-  cursor: pointer;
-}
-
-.feature-card:hover {
+  gap: 14px;
+  text-align: left;
+  padding: 18px;
   background-color: var(--bg-surface);
-  border-color: var(--primary-500);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
 }
 
-.feature-icon-wrapper {
-  padding: 10px;
-  border-radius: var(--radius-md);
+.manager-tile:hover {
+  border-color: var(--primary-400);
+  background-color: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.manager-tile:hover .tile-arrow {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
+.manager-tile.primary {
+  background-color: var(--primary-500);
+  border-color: var(--primary-500);
+  color: var(--text-on-primary);
+}
+
+.manager-tile.primary:hover {
+  background-color: var(--primary-600);
+  border-color: var(--primary-600);
+  box-shadow: var(--shadow-lg);
+}
+
+.manager-tile.primary .tile-icon {
+  background-color: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: var(--text-on-primary);
+}
+
+.manager-tile.primary .tile-info h3 {
+  color: var(--text-on-primary);
+}
+
+/* 描述文字走 token + 透明度降档，明暗主题下均与主磁贴底色形成对比 */
+.manager-tile.primary .tile-info p {
+  color: var(--text-on-primary);
+  opacity: 0.75;
+}
+
+.manager-tile.primary .tile-arrow {
+  color: var(--text-on-primary);
+}
+
+.tile-icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--primary-50);
+  border: 1px solid var(--primary-100);
+  color: var(--primary-600);
   flex-shrink: 0;
 }
 
-.feature-icon-wrapper.ai {
-  background-color: #eff6ff;
-  color: #2563eb;
-}
-
-.feature-icon-wrapper.md {
-  background-color: #f0fdf4;
-  color: #16a34a;
-}
-
-.feature-icon-wrapper.security {
-  background-color: #faf5ff;
-  color: #9333ea;
-}
-
-.feature-info {
+.tile-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
 }
 
-.feature-info h3 {
-  font-size: 13px;
+.tile-info h3 {
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.feature-info p {
-  font-size: 11px;
+.tile-info p {
+  font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.4;
 }
 
-.brand-icon {
-  color: var(--primary-600);
-  background: var(--primary-50);
-  padding: 10px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--primary-100);
+.tile-arrow {
+  color: var(--text-muted);
+  opacity: 0;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
 }
 
-.manager-header h1 {
-  font-size: 20px;
-  font-weight: 590;
-  color: var(--text-primary);
-  letter-spacing: -0.24px;
-}
-
-.manager-header p {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-.manager-actions-bar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
+/* ==================== 最近项目网格 ==================== */
 .recent-projects-section h2 {
   font-size: 14px;
   font-weight: 600;
@@ -187,28 +304,10 @@
   margin-bottom: 12px;
 }
 
-.empty-projects {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  background-color: var(--bg-app);
-  border: 2px dashed var(--border-default);
-  border-radius: var(--radius-lg);
-  color: var(--text-muted);
-  font-size: 13px;
-  gap: 8px;
-}
-
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
-  max-height: 340px;
-  overflow-y: auto;
-  padding: 6px 6px 6px 6px;
-  margin: -6px -6px -6px -6px; /* offset padding so it aligns nicely with other elements */
 }
 
 .project-item-card {
@@ -262,8 +361,19 @@
 .project-item-meta {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   font-size: 11px;
   color: var(--text-secondary);
+}
+
+.project-item-meta > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-item-meta > span:last-child {
+  flex-shrink: 0;
 }
 
 .project-item-footer {
@@ -278,18 +388,63 @@
   margin-top: 4px;
 }
 
-.delete-btn-ghost {
+/* 项目卡片 Git 未提交变更徽章 */
+.git-dirty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+  flex-shrink: 0;
+  cursor: help;
+}
+
+.empty-projects {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background-color: var(--bg-surface);
+  border: 2px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  font-size: 13px;
+  gap: 8px;
+}
+
+/* ==================== 底部特性信息条 ==================== */
+.manager-info-strip {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-default);
+}
+
+.info-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+button.info-item {
   border: none;
   background: transparent;
-  color: var(--text-muted);
-  padding: 4px;
-  border-radius: var(--radius-sm);
+  padding: 4px 0;
   cursor: pointer;
+  font-family: inherit;
   transition: color var(--transition-fast);
 }
 
-.delete-btn-ghost:hover {
-  color: var(--danger-text);
-  background-color: var(--danger-bg);
+button.info-item:hover {
+  color: var(--primary-600);
 }
-

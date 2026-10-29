@@ -281,7 +281,7 @@ export const importDocumentToProject = async (
     id: `proj-${Date.now()}`,
     name,
     path: targetPath,
-    lastOpened: new Date().toLocaleDateString(),
+    lastOpened: new Date().toISOString(),
     nodeCount: countNodes(rootNode)
   };
 
