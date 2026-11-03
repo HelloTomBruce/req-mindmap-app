@@ -10,7 +10,15 @@ import { cn } from "@/lib/utils"
 type CardProps = PaperProps
 
 function Card({ className, stock = "card", rules = "none", ...props }: CardProps) {
-  return <Paper data-slot="card" stock={stock} rules={rules} className={cn("flex flex-col gap-6 py-6 text-card-foreground", className)} {...props} />
+  return (
+    <Paper
+      data-slot="card"
+      stock={stock}
+      rules={rules}
+      className={cn("flex flex-col gap-4 p-5 text-card-foreground", className)}
+      {...props}
+    />
+  )
 }
 
 type RuleProps = {
@@ -33,7 +41,7 @@ function CardHeader({ className, rule = "pencil", ref, children, ...props }: Rea
       ref={d.ref as React.Ref<HTMLDivElement>}
       {...d.hostProps}
       className={cn(
-        "@container/card-header relative isolate grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:border-transparent [.border-b]:pb-6",
+        "@container/card-header relative isolate grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:border-transparent [.border-b]:pb-3",
         className
       )}
       {...props}
@@ -45,11 +53,11 @@ function CardHeader({ className, rule = "pencil", ref, children, ...props }: Rea
 }
 
 function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="card-title" className={cn("font-script text-[1.7rem] leading-none font-semibold", className)} {...props} />
+  return <div data-slot="card-title" className={cn("font-hand text-lg leading-snug font-bold text-ink", className)} {...props} />
 }
 
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="card-description" className={cn("text-sm text-muted-foreground", className)} {...props} />
+  return <div data-slot="card-description" className={cn("text-xs text-ink opacity-70 leading-relaxed", className)} {...props} />
 }
 
 function CardAction({ className, ...props }: React.ComponentProps<"div">) {

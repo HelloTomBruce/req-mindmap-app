@@ -22,6 +22,7 @@ import { ProjectMeta } from '../types';
 import { getGitStatus } from '../gitHelper';
 import { Button } from '@/components/ui/button';
 import { Paper } from '@/components/ui/paper';
+import { Card } from '@/components/ui/card';
 export type { ProjectMeta };
 
 interface ProjectManagerProps {
@@ -221,13 +222,15 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           </Paper>
         )}
 
-        {/* 快速开始磁贴 */}
+        {/* 快速开始卡片组 */}
         <div className="manager-tiles">
-          <Paper
+          <Card
             as="button"
             stock="card"
-            tilt={-0.4}
-            className="manager-tile primary"
+            tape="top"
+            tapeKind="masking"
+            tilt={-0.6}
+            className="manager-tile primary cursor-pointer"
             onClick={onOpenCreateModal}
           >
             <div className="tile-icon">
@@ -238,13 +241,15 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               <p>从空白或预设模板开始一棵需求树</p>
             </div>
             <ArrowUpRight size={16} className="tile-arrow" />
-          </Paper>
+          </Card>
 
-          <Paper
+          <Card
             as="button"
             stock="card"
-            tilt={0.3}
-            className="manager-tile"
+            tape="top"
+            tapeKind="washi-dots"
+            tilt={0.4}
+            className="manager-tile cursor-pointer"
             onClick={onOpenImportModal}
           >
             <div className="tile-icon">
@@ -255,13 +260,15 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               <p>长篇 Markdown / Word 逆向智能切分</p>
             </div>
             <ArrowUpRight size={16} className="tile-arrow" />
-          </Paper>
+          </Card>
 
-          <Paper
+          <Card
             as="button"
             stock="card"
-            tilt={-0.3}
-            className="manager-tile"
+            tape="top"
+            tapeKind="kraft"
+            tilt={-0.4}
+            className="manager-tile cursor-pointer"
             onClick={onOpenFolder}
           >
             <div className="tile-icon">
@@ -272,7 +279,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               <p>选择已有的需求项目文件夹</p>
             </div>
             <ArrowUpRight size={16} className="tile-arrow" />
-          </Paper>
+          </Card>
         </div>
 
         {/* 最近项目列表 */}
@@ -293,11 +300,11 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                 const totalNodes = snap && snap.total >= 0 ? snap.total : p.nodeCount;
                 const tiltAngle = ((idx % 3) - 1) * 0.35;
                 return (
-                  <Paper
+                  <Card
                     key={p.id}
                     stock="card"
+                    fastener="clip"
                     tilt={tiltAngle}
-                    shadow="stock"
                     className="project-item-card"
                     onClick={() => onOpenProject(p)}
                   >
@@ -340,7 +347,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                       <span>打开工作台</span>
                       <ArrowRight size={14} />
                     </div>
-                  </Paper>
+                  </Card>
                 );
               })}
             </div>

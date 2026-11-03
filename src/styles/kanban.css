@@ -341,10 +341,11 @@ body.kanban-dragging-active * {
 }
 
 .card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.4;
+  font-family: var(--font-hand), cursive;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ll-ink, #2a2420);
+  line-height: 1.35;
 }
 
 .card-progress-section {

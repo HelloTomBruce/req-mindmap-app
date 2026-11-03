@@ -132,8 +132,9 @@
 }
 
 .template-item-name {
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-hand), cursive;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
