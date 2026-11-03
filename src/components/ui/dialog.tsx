@@ -36,25 +36,12 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
       data-slot="dialog-overlay"
       {...scope}
       className={cn(
-        "fixed inset-0 z-(--ll-z-overlay) flex overflow-y-auto overscroll-contain p-4 [background:var(--ll-overlay-dim)] [scrollbar-gutter:stable_both-edges] max-sm:p-0",
+        "fixed inset-0 z-[10000] [background:var(--ll-overlay-dim)] backdrop-blur-[4px]",
         "duration-(--ll-dur-sheet) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0",
         className
       )}
       {...props}
     />
-  )
-}
-
-function DialogFrame({ children }: { children: React.ReactNode }) {
-  const scope = useInkScope()
-  return (
-    <div
-      data-slot="dialog-frame"
-      {...scope}
-      className="pointer-events-none fixed inset-0 z-(--ll-z-overlay) flex overflow-y-auto overscroll-contain p-4 [scrollbar-gutter:stable_both-edges] *:pointer-events-auto max-sm:p-0"
-    >
-      {children}
-    </div>
   )
 }
 
@@ -66,10 +53,10 @@ function DialogCloseMark({ className, seed }: { className?: string; seed?: strin
       data-part="x"
       ref={hostRef}
       {...hostProps}
-      className={cn("absolute end-3 top-3 z-(--ll-z-raised) grid size-8 place-items-center text-ink", className)}
+      className={cn("absolute end-4 top-4 z-(--ll-z-raised) grid size-8 place-items-center text-ink cursor-pointer hover:opacity-75 transition-opacity", className)}
     >
       {node}
-      <span aria-hidden="true" className="hidden font-hand text-xl leading-none forced-colors:block">
+      <span aria-hidden="true" className="font-hand text-xl leading-none">
         ×
       </span>
       <span className="sr-only">Close</span>
@@ -100,17 +87,21 @@ function DialogContent({
     showCloseButton?: boolean
   }) {
   const scope = useInkScope()
-  const Frame = React.useContext(ModalContext) ? DialogOverlay : DialogFrame
   return (
     <DialogPortal data-slot="dialog-portal">
-      <Frame>
+      <DialogOverlay />
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 overflow-y-auto pointer-events-none">
         <DialogPrimitive.Content
-          asChild
           {...props}
           onInteractOutside={(e) => {
             onInteractOutside?.(e)
             if ((e.target as Element | null)?.closest?.("[data-sonner-toaster]")) e.preventDefault()
           }}
+          className={cn(
+            "pointer-events-auto relative w-full max-w-lg m-auto outline-none focus:outline-none",
+            "data-[state=open]:animate-sheet-drop duration-(--ll-dur-fade) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            className
+          )}
         >
           <Paper
             data-slot="dialog-content"
@@ -125,20 +116,13 @@ function DialogContent({
             shadow={shadow}
             seed={seed}
             {...scope}
-            className={cn(
-              "group/dialog m-auto grid w-full max-w-lg gap-4 p-6 text-foreground outline-hidden compact:p-5 calm:p-4",
-              "max-sm:[&>svg[data-slot=tape]]:hidden",
-              "max-sm:mb-0 max-sm:max-w-none max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] max-sm:compact:pb-[max(1.25rem,env(safe-area-inset-bottom))] max-sm:calm:pb-[max(1rem,env(safe-area-inset-bottom))] max-sm:[--ll-tilt:0deg]!",
-              "data-[state=open]:animate-sheet-drop max-sm:data-[state=open]:animate-in max-sm:data-[state=open]:slide-in-from-bottom-16 max-sm:data-[state=open]:fade-in-0",
-              "duration-(--ll-dur-fade) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 max-sm:data-[state=closed]:slide-out-to-bottom-8",
-              className
-            )}
+            className="group/dialog relative grid w-full gap-4 p-6 text-foreground outline-hidden compact:p-5 calm:p-4"
           >
             {children}
             {showCloseButton && <DialogCloseMark seed={seed === undefined ? undefined : `${seed}|x`} />}
           </Paper>
         </DialogPrimitive.Content>
-      </Frame>
+      </div>
     </DialogPortal>
   )
 }
