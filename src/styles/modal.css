@@ -605,8 +605,8 @@ select.form-input {
 }
 
 [data-slot="dialog-content"] .form-input:focus {
-  border-color: #2c4f9e;
-  box-shadow: 0 0 0 2px rgba(44, 79, 158, 0.15);
+  border-color: var(--ll-ink, #2a2420);
+  box-shadow: 0 0 0 1.5px rgba(42, 36, 32, 0.15);
 }
 
 [data-slot="dialog-content"] .preset-card {
@@ -617,13 +617,13 @@ select.form-input {
 
 [data-slot="dialog-content"] .preset-card:hover {
   background-color: #f3f0e6;
-  border-color: #2c4f9e;
+  border-color: rgba(42, 36, 32, 0.4);
 }
 
 [data-slot="dialog-content"] .preset-card.active {
-  background-color: #eef3ff;
-  border-color: #2c4f9e;
-  box-shadow: 0 0 0 1.5px #2c4f9e;
+  background-color: #f0ebe0;
+  border-color: var(--ll-ink, #2a2420);
+  box-shadow: 0 0 0 1.5px var(--ll-ink, #2a2420);
 }
 
 [data-slot="dialog-content"] .preset-card-title {
