@@ -132,13 +132,15 @@
 
 /* 卡片通用 */
 .mcp-config-card {
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  background-color: var(--bg-surface);
+  border: 1px solid rgba(42, 36, 32, 0.16);
+  border-radius: var(--ll-sheet-radius, 8px);
+  background-color: var(--ll-paper, #fbf9f4);
+  color: var(--ll-ink, #2a2420);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .card-header {
@@ -148,9 +150,10 @@
 }
 
 .card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-family: var(--font-hand), cursive;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ll-ink, #2a2420);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -217,19 +220,21 @@
 }
 
 .tool-card {
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  background-color: var(--bg-surface);
+  border: 1px solid rgba(42, 36, 32, 0.16);
+  border-radius: var(--ll-sheet-radius, 8px);
+  background-color: var(--ll-paper, #fbf9f4);
+  color: var(--ll-ink, #2a2420);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   transition: all var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .tool-card:hover {
-  border-color: var(--border-strong);
-  background-color: var(--bg-subtle);
+  border-color: rgba(42, 36, 32, 0.35);
+  background-color: #ffffff;
 }
 
 .tool-card-header {
