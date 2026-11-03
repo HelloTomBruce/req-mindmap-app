@@ -1,5 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import React from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 export interface ModalProps {
   isOpen?: boolean;
@@ -22,42 +29,34 @@ export const Modal: React.FC<ModalProps> = ({
   closeOnOverlayClick = true,
   closeOnEsc = true
 }) => {
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen || !closeOnEsc) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, closeOnEsc, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="modal-overlay"
-      onClick={closeOnOverlayClick ? onClose : undefined}
-      role="dialog"
-      aria-modal="true"
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <div
-        ref={contentRef}
-        className={`modal-content ${className}`.trim()}
-        onClick={(e) => e.stopPropagation()}
+      <DialogContent
+        className={cn('sm:max-w-[580px] max-h-[90vh] overflow-y-auto', className)}
+        onInteractOutside={(e) => {
+          if (!closeOnOverlayClick) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (!closeOnEsc) e.preventDefault();
+        }}
       >
-        <div className="modal-header">
-          <div className="modal-title">{title}</div>
-          <button className="close-btn" onClick={onClose} aria-label="关闭">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="modal-body">{children}</div>
-        {footer && <div className="modal-footer">{footer}</div>}
-      </div>
-    </div>
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold flex items-center gap-2 text-[var(--text-primary)]">
+            {title}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-2 text-sm leading-relaxed text-[var(--text-primary)]">{children}</div>
+        {footer && (
+          <DialogFooter className="mt-4 pt-3 flex items-center justify-between gap-3 border-t border-[var(--border-default)]">
+            {footer}
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };

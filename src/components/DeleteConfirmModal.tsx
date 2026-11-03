@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import { ProjectMeta } from '../types';
 import { Modal } from './ui/Modal';
+import { Button } from '@/components/ui/button';
 
 interface DeleteConfirmModalProps {
   project: ProjectMeta;
@@ -20,29 +21,31 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       className="delete-confirm-modal"
       title={
         <div className="modal-title text-danger">
-          <AlertTriangle size={18} color="#ef4444" /> 删除项目
+          <AlertTriangle size={18} color="#c2412d" /> 删除项目
         </div>
       }
       footer={
         <div className="flex justify-between items-center w-full">
-          <button className="btn outline" onClick={onClose}>
+          <Button variant="outline" size="sm" onClick={onClose}>
             取消
-          </button>
-          <div className="btn-group">
-            <button
-              className="btn outline"
+          </Button>
+          <div className="btn-group flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
               title="仅从最近项目记录中移除，保留本地磁盘文件"
               onClick={() => onConfirm(false)}
             >
               仅移除历史记录
-            </button>
-            <button
-              className="btn danger"
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
               title="将物理删除磁盘上的该项目文件夹及所有 Markdown 文件"
               onClick={() => onConfirm(true)}
             >
               <Trash2 size={14} /> 彻底删除项目文件夹
-            </button>
+            </Button>
           </div>
         </div>
       }

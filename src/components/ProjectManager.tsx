@@ -20,6 +20,8 @@ import {
 import { invoke } from '@tauri-apps/api/core';
 import { ProjectMeta } from '../types';
 import { getGitStatus } from '../gitHelper';
+import { Button } from '@/components/ui/button';
+import { Paper } from '@/components/ui/paper';
 export type { ProjectMeta };
 
 interface ProjectManagerProps {
@@ -176,24 +178,33 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               </span>
             </button>
 
-            <button className="btn outline" onClick={onOpenUpdateModal}>
+            <Button variant="outline" size="sm" onClick={onOpenUpdateModal}>
               <RefreshCw size={14} />
               检查更新
-            </button>
+            </Button>
 
-            <button
-              className="btn outline theme-toggle-btn"
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="theme-toggle-btn"
               onClick={toggleTheme}
               title={theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
             >
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
+            </Button>
           </div>
         </header>
 
         {/* 继续上次编辑直达卡：留存用户的高频路径 */}
         {lastProject && (
-          <div className="resume-card" onClick={() => onOpenProject(lastProject)}>
+          <Paper
+            stock="slip"
+            fastener="clip"
+            tilt={-0.3}
+            shadow="stock"
+            className="resume-card"
+            onClick={() => onOpenProject(lastProject)}
+          >
             <div className="resume-main">
               <div className="resume-icon">
                 <PenLine size={16} />
@@ -207,7 +218,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               </div>
             </div>
             <ArrowRight size={16} className="resume-arrow" />
-          </div>
+          </Paper>
         )}
 
         {/* 快速开始磁贴 */}
@@ -259,11 +270,19 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
             </div>
           ) : (
             <div className="projects-grid">
-              {recentProjects.map((p) => {
+              {recentProjects.map((p, idx) => {
                 const snap = snapshots[p.id];
                 const totalNodes = snap && snap.total >= 0 ? snap.total : p.nodeCount;
+                const tiltAngle = ((idx % 3) - 1) * 0.35;
                 return (
-                  <div key={p.id} className="project-item-card" onClick={() => onOpenProject(p)}>
+                  <Paper
+                    key={p.id}
+                    stock="card"
+                    tilt={tiltAngle}
+                    shadow="stock"
+                    className="project-item-card"
+                    onClick={() => onOpenProject(p)}
+                  >
                     <div className="project-item-header">
                       <Folder className="folder-icon" size={20} />
                       <span className="project-item-name">{p.name}</span>
@@ -303,7 +322,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                       <span>打开工作台</span>
                       <ArrowRight size={14} />
                     </div>
-                  </div>
+                  </Paper>
                 );
               })}
             </div>

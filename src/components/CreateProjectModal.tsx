@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, FolderOpen, Plus, Sparkles, Code2, Database, BookOpen, FileText, Check } from 'lucide-react';
+import { FolderOpen, Plus, Sparkles, Code2, Database, BookOpen, FileText, Check } from 'lucide-react';
 import { PROJECT_PRESETS, ProjectPreset } from '../projectPresets';
+import { Modal } from './ui/Modal';
+import { Button } from '@/components/ui/button';
 
 interface CreateProjectModalProps {
   onClose: () => void;
@@ -58,106 +60,110 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!name.trim() || !path) return;
     onCreate(name.trim(), path, selectedPresetId);
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content create-project-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">
-            <Plus size={18} /> 新建 DocMind 文档项目
+    <Modal
+      onClose={onClose}
+      className="create-project-modal max-w-2xl"
+      title={
+        <div className="flex items-center gap-2">
+          <Plus size={18} /> 新建 DocMind 文档项目
+        </div>
+      }
+      footer={
+        <div className="flex items-center justify-end gap-3 w-full">
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            取消
+          </Button>
+          <Button type="button" variant="default" size="sm" disabled={!name.trim() || !path} onClick={handleSubmit}>
+            立即创建项目
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="form-group">
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-[var(--text-secondary)]">
+            选择项目场景预设
+          </label>
+          <div className="preset-cards-grid">
+            {PROJECT_PRESETS.map((preset) => {
+              const isSelected = preset.id === selectedPresetId;
+              return (
+                <div
+                  key={preset.id}
+                  className={`preset-card ${isSelected ? 'active' : ''}`}
+                  onClick={() => handleSelectPreset(preset)}
+                >
+                  <div className="preset-card-header">
+                    <div className="preset-card-icon-wrapper">
+                      {renderIcon(preset.iconName)}
+                    </div>
+                    <div className="preset-card-title">{preset.name}</div>
+                    {isSelected && (
+                      <div className="preset-selected-badge">
+                        <Check size={12} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="preset-card-desc">{preset.description}</div>
+                </div>
+              );
+            })}
           </div>
-          <button className="close-btn" onClick={onClose}><X size={18} /></button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body create-project-body">
-            <div className="form-group">
-              <label>选择项目场景预设</label>
-              <div className="preset-cards-grid">
-                {PROJECT_PRESETS.map((preset) => {
-                  const isSelected = preset.id === selectedPresetId;
-                  return (
-                    <div
-                      key={preset.id}
-                      className={`preset-card ${isSelected ? 'active' : ''}`}
-                      onClick={() => handleSelectPreset(preset)}
-                    >
-                      <div className="preset-card-header">
-                        <div className="preset-card-icon-wrapper">
-                          {renderIcon(preset.iconName)}
-                        </div>
-                        <div className="preset-card-title">{preset.name}</div>
-                        {isSelected && (
-                          <div className="preset-selected-badge">
-                            <Check size={12} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="preset-card-desc">{preset.description}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+        <div className="form-group">
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-[var(--text-secondary)]">
+            项目名称 <span className="text-danger">*</span>
+          </label>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="例如: 智能商城需求规格说明书"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+            required
+          />
+        </div>
 
-            <div className="form-group">
-              <label>项目名称 <span className="text-danger">*</span></label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="例如: 智能商城需求规格说明书"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoFocus
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>存储目录 (本地文件夹) <span className="text-danger">*</span></label>
-              <div className="folder-picker-group">
-                <input
-                  type="text"
-                  className="form-input form-input-clickable"
-                  readOnly
-                  placeholder="点击选择项目在本地磁盘的存放目录..."
-                  value={path}
-                  onClick={handlePickFolder}
-                  title="点击选择存放目录"
-                  required
-                />
-                <button
-                  type="button"
-                  className="btn outline"
-                  onMouseDown={(e) => {
-                    // 阻止 mousedown 导致输入框焦点突变引起 WebKit 吞掉后续 click 事件
-                    e.preventDefault();
-                  }}
-                  onClick={handlePickFolder}
-                  disabled={isPicking}
-                  title="浏览文件夹"
-                >
-                  <FolderOpen size={14} /> {isPicking ? '选择中...' : '浏览文件夹'}
-                </button>
-              </div>
-            </div>
+        <div className="form-group">
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-[var(--text-secondary)]">
+            存储目录 (本地文件夹) <span className="text-danger">*</span>
+          </label>
+          <div className="folder-picker-group">
+            <input
+              type="text"
+              className="form-input form-input-clickable"
+              readOnly
+              placeholder="点击选择项目在本地磁盘的存放目录..."
+              value={path}
+              onClick={handlePickFolder}
+              title="点击选择存放目录"
+              required
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={handlePickFolder}
+              disabled={isPicking}
+              title="浏览文件夹"
+            >
+              <FolderOpen size={14} /> {isPicking ? '选择中...' : '浏览文件夹'}
+            </Button>
           </div>
-
-          <div className="modal-footer">
-            <button type="button" className="btn outline" onClick={onClose}>
-              取消
-            </button>
-            <button type="submit" className="btn primary" disabled={!name.trim() || !path}>
-              立即创建项目
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </Modal>
   );
 };

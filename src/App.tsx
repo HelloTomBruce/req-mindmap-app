@@ -1,7 +1,9 @@
 import React from 'react';
 import { HashRouter } from 'react-router-dom';
 import { AppRoutes } from './routes/AppRoutes';
+import { InkProvider } from '@/lib/ink/react';
 // 样式按模块拆分于 src/styles/，引入顺序与原 App.css 行序一致（保持级联）
+import './styles/looseleaf.css';
 import './styles/tokens.css';
 // 霞鹜文楷 Screen（GB 屏幕版，unicode-range 分包按需加载）
 import 'lxgw-wenkai-screen-webfont/lxgwwenkaigbscreen.css';
@@ -21,9 +23,11 @@ import './styles/misc.css';
 
 const App: React.FC = () => {
   return (
-    <HashRouter>
-      <AppRoutes />
-    </HashRouter>
+    <InkProvider>
+      <HashRouter>
+        <AppRoutes />
+      </HashRouter>
+    </InkProvider>
   );
 };
 

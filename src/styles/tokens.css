@@ -1,54 +1,54 @@
-/* ==================== 设计 token（Linear 风格 Design System Tokens） ==================== */
+/* ==================== 设计 token（Looseleaf 纸墨手绘风格 Design Tokens） ==================== */
 :root {
-  /* 中性冷灰底（Linear light neutrals） */
-  --bg-app: #f7f8f8;                /* 页面底 */
-  --bg-surface: #ffffff;            /* 卡片表面 */
+  /* 暖意纸张底色与表面（Looseleaf paper & ink） */
+  --bg-app: #f5f2ea;                /* 页面纸质暖底 */
+  --bg-surface: #fcfbf8;            /* 便签卡片表面 */
   --bg-surface-elevated: #ffffff;
-  --bg-subtle: #f0f1f2;             /* hover 底 */
-  --bg-subtle-hover: #e8eaec;
+  --bg-subtle: #ede7da;             /* 浅纸阴影/hover 底 */
+  --bg-subtle-hover: #e3dcce;
 
-  --border-default: #e6e6e9;        /* 1px 细描边 */
-  --border-strong: #d0d3d9;         /* 强调描边 */
-  --border-focus: #18181b;          /* 焦点环（高级黑） */
+  --border-default: #dcd4c5;        /* 铅笔微描边 */
+  --border-strong: #2a2420;         /* 墨水实线描边 */
+  --border-focus: #2c4f9e;          /* 钢笔蓝焦点环 */
 
-  --text-primary: #282a30;          /* 冷调近黑 */
-  --text-secondary: #4d535c;
-  --text-muted: #8a8f98;            /* Linear tertiary */
-  --text-on-primary: #ffffff;
+  --text-primary: #2a2420;          /* 温暖墨水近黑 */
+  --text-secondary: #4a423b;        /* 柔墨次级文本 */
+  --text-muted: #8e887f;            /* 铅笔字迹/浅字 */
+  --text-on-primary: #fcfbf8;
 
-  /* 单一品牌强调色：高级黑（zinc 阶梯，主操作黑底白字） */
-  --primary-50: #f4f4f5;
-  --primary-100: #e4e4e7;
-  --primary-200: #d4d4d8;
-  --primary-400: #3f3f46;           /* hover 描边 */
-  --primary-500: #18181b;           /* brand black */
-  --primary-600: #09090b;
+  /* 墨水品牌强调阶梯 */
+  --primary-50: #f7f4ed;
+  --primary-100: #eae4d7;
+  --primary-200: #dcd4c5;
+  --primary-400: #544b44;
+  --primary-500: #2a2420;           /* brand ink */
+  --primary-600: #1a1614;
   --primary-700: #000000;
 
-  /* 状态色（去饱和、冷调） */
-  --success-bg: #ecf9f0;
-  --success-text: #27a644;
-  --warning-bg: #fdf6e8;
-  --warning-text: #96660f;
-  --danger-bg: #fdeded;
-  --danger-text: #c2252c;
+  /* 手绘状态色（Looseleaf 墨水/马克笔） */
+  --success-bg: #edf8ef;
+  --success-text: #3b7a4b;
+  --warning-bg: #fff8e8;
+  --warning-text: #a87f0c;
+  --danger-bg: #fdf2f0;
+  --danger-text: #c2412d;
 
   /* 首页卡片半透表面 */
-  --manager-card-bg: rgba(255, 255, 255, 0.9);
-  --manager-card-border: rgba(230, 230, 233, 0.9);
+  --manager-card-bg: rgba(252, 251, 248, 0.94);
+  --manager-card-border: rgba(220, 212, 197, 0.9);
 
   /* 首页 MCP 状态胶囊（online/offline） */
-  --mcp-online-bg: #ecfdf5;
-  --mcp-online-border: #a7f3d0;
-  --mcp-online-text: #047857;
-  --mcp-offline-bg: #fef2f2;
-  --mcp-offline-border: #fecaca;
-  --mcp-offline-text: #b91c1c;
+  --mcp-online-bg: #edf8ef;
+  --mcp-online-border: #b8e0bf;
+  --mcp-online-text: #2f693e;
+  --mcp-offline-bg: #fdf2f0;
+  --mcp-offline-border: #f8cfc8;
+  --mcp-offline-text: #c2412d;
 
   /* 画布网格与控制器 */
-  --canvas-grid-color: #e8e9ec;
-  --node-root-bg: #f4f4f5;
-  --node-root-border: #d4d4d8;
+  --canvas-grid-color: #dfd7c8;
+  --node-root-bg: #efe8dc;
+  --node-root-border: #cdc4b3;
 
   /* 阴影系统：扁平化，以 1px 描边为主、投影仅用于浮层 */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);

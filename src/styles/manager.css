@@ -11,7 +11,7 @@
   overflow-x: hidden;
   padding: 28px 32px 40px;
   box-sizing: border-box;
-  background: radial-gradient(circle at 50% 50%, #fbfbfc 0, #f7f8f8 60%, #eff0f2 100%);
+  background: radial-gradient(circle at 50% 50%, #fcfbf8 0, #f6f2ea 60%, #eee7db 100%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -115,17 +115,13 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px 20px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .resume-card:hover {
-  border-color: var(--primary-400);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
 }
 
 .resume-main {
@@ -311,21 +307,18 @@
 }
 
 .project-item-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  padding: 12px 14px;
+  padding: 14px 16px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: all var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   position: relative;
 }
 
 .project-item-card:hover {
-  border-color: var(--primary-500);
-  background-color: var(--bg-subtle);
+  transform: translateY(-2px);
 }
 
 .project-item-header {

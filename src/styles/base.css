@@ -6,8 +6,8 @@
 }
 
 body {
-  /* 霞鹜文楷 Screen（GB 屏幕版）为主，回退系统楷体，最终回退无衬线 */
-  font-family: 'LXGW WenKai Screen', 'Kaiti SC', 'STKaiti', 'KaiTi', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  /* Kevin Sans（英数手绘）+ 霞鹜文楷 Screen（中文楷体） */
+  font-family: 'Kevin Sans Hand', 'LXGW WenKai Screen', 'Kaiti SC', 'STKaiti', 'KaiTi', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--bg-app);
   color: var(--text-primary);
   overflow: hidden;
