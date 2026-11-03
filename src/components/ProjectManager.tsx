@@ -223,7 +223,13 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
 
         {/* 快速开始磁贴 */}
         <div className="manager-tiles">
-          <button className="manager-tile primary" onClick={onOpenCreateModal}>
+          <Paper
+            as="button"
+            stock="card"
+            tilt={-0.4}
+            className="manager-tile primary"
+            onClick={onOpenCreateModal}
+          >
             <div className="tile-icon">
               <Plus size={20} />
             </div>
@@ -232,9 +238,15 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               <p>从空白或预设模板开始一棵需求树</p>
             </div>
             <ArrowUpRight size={16} className="tile-arrow" />
-          </button>
+          </Paper>
 
-          <button className="manager-tile" onClick={onOpenImportModal}>
+          <Paper
+            as="button"
+            stock="card"
+            tilt={0.3}
+            className="manager-tile"
+            onClick={onOpenImportModal}
+          >
             <div className="tile-icon">
               <FileUp size={20} />
             </div>
@@ -243,9 +255,15 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               <p>长篇 Markdown / Word 逆向智能切分</p>
             </div>
             <ArrowUpRight size={16} className="tile-arrow" />
-          </button>
+          </Paper>
 
-          <button className="manager-tile" onClick={onOpenFolder}>
+          <Paper
+            as="button"
+            stock="card"
+            tilt={-0.3}
+            className="manager-tile"
+            onClick={onOpenFolder}
+          >
             <div className="tile-icon">
               <Folder size={20} />
             </div>
@@ -254,7 +272,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               <p>选择已有的需求项目文件夹</p>
             </div>
             <ArrowUpRight size={16} className="tile-arrow" />
-          </button>
+          </Paper>
         </div>
 
         {/* 最近项目列表 */}

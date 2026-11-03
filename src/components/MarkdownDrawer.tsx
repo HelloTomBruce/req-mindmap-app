@@ -10,6 +10,7 @@ import { processCustomMarkdownSyntax, parseColorQuery, createColorCommands } fro
 import { getNodeNavContext, flattenTreeWithDepth } from '../services/treeOperations';
 import { normalizePriority, normalizeStatus } from '../utils/statusUtils';
 import { safeDecodeURIComponent } from '../utils/url';
+import { Button } from '@/components/ui/button';
 
 // 初始化 Mermaid 图表渲染引擎（适配暗色水墨主题）
 mermaid.initialize({
@@ -603,9 +604,10 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
           />
         </div>
 
-        <div className="drawer-header-actions">
-          <button
-            className="btn outline small"
+        <div className="drawer-header-actions flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
             title="插入本地图片"
             onClick={async () => {
               try {
@@ -630,10 +632,16 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
             }}
           >
             <ImageIcon size={14} /> 插入图片
-          </button>
-          <button className="close-btn" onClick={onClose}>
-            <X size={18} />
-          </button>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={onClose}
+            title="关闭抽屉"
+          >
+            <X size={16} />
+          </Button>
         </div>
       </div>
 

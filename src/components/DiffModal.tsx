@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { gitDiff } from '../gitHelper';
-import { X, GitCompare } from 'lucide-react';
+import { GitCompare } from 'lucide-react';
+import { Modal } from './ui/Modal';
+import { Button } from '@/components/ui/button';
 
 interface DiffModalProps {
   projectPath: string;
@@ -49,27 +51,31 @@ export const DiffModal: React.FC<DiffModalProps> = ({ projectPath, filePath, com
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content diff-modal">
-        <div className="modal-header">
-          <div className="modal-title">
-            <GitCompare size={18} /> 版本差异对比 ({filePath})
+    <Modal
+      onClose={onClose}
+      className="diff-modal max-w-4xl"
+      title={
+        <div className="flex items-center gap-2">
+          <GitCompare size={18} /> 版本差异对比 ({filePath})
+        </div>
+      }
+      footer={
+        <div className="flex justify-end items-center w-full">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            关闭
+          </Button>
+        </div>
+      }
+    >
+      <div className="diff-viewer max-h-[60vh] overflow-y-auto">
+        {diffText.startsWith('加载中') || diffText.startsWith('无差异') || diffText.startsWith('加载差异') ? (
+          <div className="diff-empty p-8 text-center text-sm text-[var(--ll-ink)] opacity-70">{diffText}</div>
+        ) : (
+          <div className="diff-lines-container font-mono text-xs">
+            {renderDiffLines()}
           </div>
-          <button className="close-btn" onClick={onClose} title="关闭">
-            <X size={18} />
-          </button>
-        </div>
-        
-        <div className="modal-body diff-viewer">
-          {diffText.startsWith('加载中') || diffText.startsWith('无差异') || diffText.startsWith('加载差异') ? (
-            <div className="diff-empty">{diffText}</div>
-          ) : (
-            <div className="diff-lines-container">
-              {renderDiffLines()}
-            </div>
-          )}
-        </div>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 };

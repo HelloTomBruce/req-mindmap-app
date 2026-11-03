@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { MindNode, MindEdge } from '../types';
-import { X, FileDown, CheckCircle, FileText, Globe, Copy, Printer } from 'lucide-react';
+import { FileDown, CheckCircle, FileText, Globe, Copy, Printer } from 'lucide-react';
 import { flattenTreeNodes } from '../services/treeOperations';
 import { normalizeStatus } from '../utils/statusUtils';
+import { Modal } from './ui/Modal';
+import { Button } from '@/components/ui/button';
 
 interface ExportDocModalProps {
   rootNode: MindNode;
@@ -226,80 +228,88 @@ export const ExportDocModal: React.FC<ExportDocModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content export-doc-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">
-            <FileDown size={18} color="#2563eb" /> 聚合导出完整文档
-          </div>
-          <button className="close-btn" onClick={onClose}><X size={18} /></button>
+    <Modal
+      onClose={onClose}
+      className="export-doc-modal max-w-3xl"
+      title={
+        <div className="flex items-center gap-2">
+          <FileDown size={18} color="#2563eb" /> 聚合导出完整文档
         </div>
+      }
+      footer={
+        <div className="flex justify-between items-center w-full">
+          <Button variant="outline" size="sm" onClick={handleCopy}>
+            {copied ? <CheckCircle size={14} color="#10b981" /> : <Copy size={14} />}
+            {copied ? '已复制到剪贴板' : '复制全量 Markdown'}
+          </Button>
 
+          <div className="btn-group flex items-center gap-2">
+            {activeTab === 'markdown' ? (
+              <Button variant="default" size="sm" onClick={handleDownloadMarkdown}>
+                <FileDown size={14} /> 下载聚合 .md 文件
+              </Button>
+            ) : (
+              <Button variant="default" size="sm" onClick={handleDownloadHtml}>
+                <Printer size={14} /> 下载 .html 网页 (可打印为 PDF)
+              </Button>
+            )}
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-3">
         {/* 导出格式切换 Tab */}
-        <div className="export-modal-tabs">
-          <button
-            className={`tab-btn ${activeTab === 'markdown' ? 'active' : ''}`}
+        <div className="flex items-center gap-2 p-1 bg-[var(--ll-slip,#fbf8f1)] rounded-md border border-[var(--ll-line-soft,rgba(42,36,32,0.15))]">
+          <Button
+            type="button"
+            variant={activeTab === 'markdown' ? 'default' : 'ghost'}
+            size="sm"
+            className="flex-1"
             onClick={() => setActiveTab('markdown')}
           >
             <FileText size={15} />
             聚合长篇 Markdown (.md)
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'html' ? 'active' : ''}`}
+          </Button>
+          <Button
+            type="button"
+            variant={activeTab === 'html' ? 'default' : 'ghost'}
+            size="sm"
+            className="flex-1"
             onClick={() => setActiveTab('html')}
           >
             <Globe size={15} />
             独立离线网页 / 打印 PDF (.html)
-          </button>
+          </Button>
         </div>
 
-        <div className="modal-body export-doc-body">
+        <div className="export-doc-body">
           {activeTab === 'markdown' ? (
             <>
-              <p className="export-hint">
+              <p className="text-xs text-[var(--ll-ink)] opacity-75 mb-2">
                 系统已按拓扑结构树层级，自动为您拼装了包含 <strong>TOC 目录索引</strong> 与 <strong>{tocList.length} 个节点</strong> 的完整 Markdown 长文档：
               </p>
               <textarea
-                className="prd-preview-textarea"
+                className="w-full h-80 p-3 text-xs font-mono rounded border border-[var(--ll-line-soft,rgba(42,36,32,0.2))] bg-white text-[var(--ll-ink,#2a2420)] outline-none resize-none leading-relaxed"
                 readOnly
                 value={fullMarkdownText}
               />
             </>
           ) : (
             <>
-              <p className="export-hint">
+              <p className="text-xs text-[var(--ll-ink)] opacity-75 mb-2">
                 已自动生成内嵌排版样式的自包含单文件 HTML，可在浏览器中离线阅读，或直接通过浏览器 <strong>「打印 &rarr; 另存为 PDF」</strong>：
               </p>
-              <div className="export-html-preview-box">
+              <div className="w-full h-80 border border-[var(--ll-line-soft,rgba(42,36,32,0.2))] rounded overflow-hidden bg-white">
                 <iframe
                   title="HTML Preview"
                   srcDoc={fullHtmlContent}
-                  className="export-html-iframe"
+                  className="w-full h-full border-none"
                 />
               </div>
             </>
           )}
         </div>
-
-        <div className="modal-footer justify-between">
-          <button className="btn outline" onClick={handleCopy}>
-            {copied ? <CheckCircle size={14} color="#10b981" /> : <Copy size={14} />}
-            {copied ? '已复制到剪贴板' : '复制全量 Markdown'}
-          </button>
-
-          <div className="btn-group">
-            {activeTab === 'markdown' ? (
-              <button className="btn primary" onClick={handleDownloadMarkdown}>
-                <FileDown size={14} /> 下载聚合 .md 文件
-              </button>
-            ) : (
-              <button className="btn primary" onClick={handleDownloadHtml}>
-                <Printer size={14} /> 下载 .html 网页 (可打印为 PDF)
-              </button>
-            )}
-          </div>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 };

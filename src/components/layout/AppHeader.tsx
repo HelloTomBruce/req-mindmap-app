@@ -1,5 +1,7 @@
 import React from 'react';
 import { Layout, Home, Search, Download, Kanban, Network } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
 
 interface AppHeaderProps {
   projectName: string;
@@ -21,50 +23,56 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <header className="app-header">
       <div className="header-left">
-        <button
-          className="btn outline icon-only"
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 w-8 p-0"
           title="返回项目管理首页"
           onClick={onReturnToManager}
         >
           <Home size={16} />
-        </button>
+        </Button>
         <Layout className="app-logo" size={20} />
         <span className="app-name">{projectName}</span>
       </div>
 
       <div className="header-actions">
         <div className="view-mode-toggle-group">
-          <button
-            className={`toggle-btn ${canvasViewMode === 'mindmap' ? 'active' : ''}`}
+          <Button
+            variant={canvasViewMode === 'mindmap' ? 'default' : 'ghost'}
+            size="sm"
             onClick={() => onSetCanvasViewMode('mindmap')}
             title="切换至思维导图视图"
           >
             <Network size={14} />
             <span>脑图</span>
-          </button>
-          <button
-            className={`toggle-btn ${canvasViewMode === 'kanban' ? 'active' : ''}`}
+          </Button>
+          <Button
+            variant={canvasViewMode === 'kanban' ? 'default' : 'ghost'}
+            size="sm"
             onClick={() => onSetCanvasViewMode('kanban')}
             title="切换至任务看板视图"
           >
             <Kanban size={14} />
             <span>看板</span>
-          </button>
+          </Button>
         </div>
 
-        <button
-          className="btn outline header-search-btn"
+        <Button
+          variant="outline"
+          size="sm"
+          className="header-search-btn"
           title="全局搜索节点与正文 (Cmd + K)"
           onClick={onOpenCommandPalette}
         >
           <Search size={14} />
           <span>搜索...</span>
-          <kbd className="header-kbd">⌘K</kbd>
-        </button>
+          <Kbd className="ml-1 text-[11px]">⌘K</Kbd>
+        </Button>
 
-        <button className="btn primary" onClick={onOpenExportModal}>
+        <Button variant="default" size="sm" onClick={onOpenExportModal}>
           <Download size={14} /> 聚合导出文档
-        </button>
+        </Button>
       </div>
     </header>
   );

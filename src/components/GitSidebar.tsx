@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getGitStatus, gitAdd, gitCommit, gitCheckout, gitUnstage, getGitHistory, GitStatusItem, GitCommitItem } from '../gitHelper';
 import { RotateCcw, Plus, Minus, Check, RefreshCw, ChevronDown, ChevronRight, GitCommit } from 'lucide-react';
 import { DiffModal } from './DiffModal';
+import { Button } from '@/components/ui/button';
 
 interface GitSidebarProps {
   projectPath: string;
@@ -132,9 +133,9 @@ export const GitSidebar: React.FC<GitSidebarProps> = ({ projectPath }) => {
       <aside className="app-sidebar git-sidebar">
         <div className="sidebar-header">
           <span className="project-title">源代码管理 (Git)</span>
-          <button className="btn icon-only outline" onClick={fetchStatus} title="刷新状态">
-            <RefreshCw size={14} className={isRefreshing ? 'spinning' : ''} />
-          </button>
+          <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={fetchStatus} title="刷新状态">
+            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+          </Button>
         </div>
 
         <div className="git-commit-box">
@@ -145,8 +146,10 @@ export const GitSidebar: React.FC<GitSidebarProps> = ({ projectPath }) => {
             rows={3}
           />
           <div className="commit-actions">
-            <button
-              className="btn small primary"
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full"
               onClick={handleCommit}
               disabled={!commitMessage.trim() || !hasCommittableChanges || isCommitting}
               title={
@@ -159,9 +162,9 @@ export const GitSidebar: React.FC<GitSidebarProps> = ({ projectPath }) => {
                       : '提交已暂存的更改'
               }
             >
-              {isCommitting ? <RefreshCw size={14} className="spinning" /> : <Check size={14} />}
+              {isCommitting ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
               {isCommitting ? ' 提交中...' : ' 提交 (Commit)'}
-            </button>
+            </Button>
           </div>
         </div>
 

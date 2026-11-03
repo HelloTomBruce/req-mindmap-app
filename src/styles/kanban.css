@@ -256,14 +256,27 @@
   margin: auto 0;
 }
 
+.kanban-column {
+  background-color: var(--ll-slip, #fbf8f1);
+  border: 1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15));
+  border-radius: var(--ll-sheet-radius, 8px);
+  width: 290px;
+  min-width: 260px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
 /* 看板卡片 */
 .kanban-card {
-  background-color: var(--bg-surface-elevated);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  background-color: var(--ll-paper, #f8f5ee);
+  border: 1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15));
+  border-radius: var(--ll-sheet-radius, 6px);
   padding: 12px;
   cursor: grab;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--ll-sheet-shadow, var(--ll-shadow-paper));
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
   display: flex;
   flex-direction: column;
@@ -271,6 +284,7 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
+  color: var(--ll-ink, #2a2420);
 }
 
 body.kanban-dragging-active,
@@ -281,14 +295,16 @@ body.kanban-dragging-active * {
 }
 
 .kanban-card:hover {
-  border-color: var(--primary-500);
-  background-color: var(--bg-subtle);
+  border-color: #2c4f9e;
+  background-color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(42, 36, 32, 0.12);
 }
 
 .kanban-card.selected {
-  border-color: var(--primary-600);
-  box-shadow: 0 0 0 2px var(--primary-500);
-  background-color: var(--primary-50);
+  border-color: #2c4f9e;
+  box-shadow: 0 0 0 2px #2c4f9e;
+  background-color: #eef3ff;
 }
 
 .kanban-card.dragging {

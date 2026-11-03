@@ -3,6 +3,7 @@ import { Sparkles, Code2, Database, Layout, Wrench, FileText, Check } from 'luci
 import { NodeTemplate } from '../templates';
 import { getAllTemplates } from '../templateStore';
 import { Modal } from './ui/Modal';
+import { Button } from '@/components/ui/button';
 
 interface TemplatePickerModalProps {
   parentNodeTitle: string;
@@ -48,17 +49,18 @@ export const TemplatePickerModal: React.FC<TemplatePickerModalProps> = ({
         </div>
       }
       footer={
-        <>
-          <button className="btn outline" onClick={onClose}>
+        <div className="flex justify-end items-center gap-3 w-full">
+          <Button variant="outline" size="sm" onClick={onClose}>
             取消
-          </button>
-          <button
-            className="btn primary"
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
             onClick={() => onSelectTemplate(currentTemplate)}
           >
             使用此模板创建
-          </button>
-        </>
+          </Button>
+        </div>
       }
     >
       <div className="template-picker-tip">

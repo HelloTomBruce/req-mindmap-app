@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, Server, Check, Copy, Activity, Terminal, Wrench, Settings, Code2 } from 'lucide-react';
+import { Server, Check, Copy, Activity, Terminal, Wrench, Settings, Code2 } from 'lucide-react';
 import { MCPLogItem } from '../mcpServerManager';
+import { Modal } from './ui/Modal';
+import { Button } from '@/components/ui/button';
 
 interface MCPManagerModalProps {
   status: {
@@ -138,39 +140,56 @@ export const MCPManagerModal: React.FC<MCPManagerModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content mcp-manager-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">
-            <Server size={18} color="#2563eb" /> AI 接入服务管理 (MCP Server over SSE)
-          </div>
-          <button className="close-btn" onClick={onClose}><X size={18} /></button>
+    <Modal
+      onClose={onClose}
+      className="mcp-manager-modal max-w-4xl"
+      title={
+        <div className="flex items-center gap-2">
+          <Server size={18} color="#2563eb" /> AI 接入服务管理 (MCP Server over SSE)
         </div>
-
+      }
+      footer={
+        <div className="flex justify-end items-center w-full">
+          <Button variant="default" size="sm" onClick={onClose}>
+            关闭面板
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
         {/* Tab 导航头 */}
-        <div className="mcp-modal-tabs">
-          <button
-            className={`tab-btn ${activeTab === 'config' ? 'active' : ''}`}
+        <div className="flex items-center gap-2 p-1 bg-[var(--ll-slip,#fbf8f1)] rounded-md border border-[var(--ll-line-soft,rgba(42,36,32,0.15))]">
+          <Button
+            type="button"
+            variant={activeTab === 'config' ? 'default' : 'ghost'}
+            size="sm"
+            className="flex-1"
             onClick={() => setActiveTab('config')}
           >
             <Settings size={15} />
             服务状态与配置
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'tools' ? 'active' : ''}`}
+          </Button>
+          <Button
+            type="button"
+            variant={activeTab === 'tools' ? 'default' : 'ghost'}
+            size="sm"
+            className="flex-1"
             onClick={() => setActiveTab('tools')}
           >
             <Wrench size={15} />
-            已暴露 Tools 目录 ({MCP_TOOLS_CATALOG.length})
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`}
+            已暴露 Tools ({MCP_TOOLS_CATALOG.length})
+          </Button>
+          <Button
+            type="button"
+            variant={activeTab === 'logs' ? 'default' : 'ghost'}
+            size="sm"
+            className="flex-1"
             onClick={() => setActiveTab('logs')}
           >
             <Activity size={15} />
-            AI 实时调用日志
-            {logs.length > 0 && <span className="tab-badge">{logs.length}</span>}
-          </button>
+            调用日志
+            {logs.length > 0 && <span className="tab-badge ml-1 px-1.5 py-0.5 rounded text-[10px] bg-red-100 text-red-700">{logs.length}</span>}
+          </Button>
         </div>
 
         <div className="modal-body">
@@ -199,20 +218,21 @@ export const MCPManagerModal: React.FC<MCPManagerModalProps> = ({
 
                   {status.isRunning ? (
                     <>
-                      <button
-                        className="btn outline small"
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => onToggleServer(true, inputPort)}
                       >
                         重启/应用端口
-                      </button>
-                      <button className="btn outline small" onClick={() => onToggleServer(false)}>
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => onToggleServer(false)}>
                         停止服务
-                      </button>
+                      </Button>
                     </>
                   ) : (
-                    <button className="btn primary small" onClick={() => onToggleServer(true, inputPort)}>
+                    <Button variant="default" size="sm" onClick={() => onToggleServer(true, inputPort)}>
                       启动 SSE 服务
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -307,13 +327,7 @@ export const MCPManagerModal: React.FC<MCPManagerModalProps> = ({
             </div>
           )}
         </div>
-
-        <div className="modal-footer">
-          <button className="btn primary" onClick={onClose}>
-            关闭面板
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 };

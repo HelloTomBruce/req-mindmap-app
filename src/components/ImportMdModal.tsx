@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { X, FileText, FolderOpen, FileUp, Loader2 } from 'lucide-react';
+import { FileText, FolderOpen, FileUp, Loader2 } from 'lucide-react';
+import { Modal } from './ui/Modal';
+import { Button } from '@/components/ui/button';
 
 interface ImportMdModalProps {
   onClose: () => void;
@@ -59,8 +61,8 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!mdPath || !targetPath || !projectName.trim()) return;
     setLoading(true);
     try {
@@ -71,99 +73,107 @@ export const ImportMdModal: React.FC<ImportMdModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content create-project-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">
-            <FileUp size={18} /> 从文档导入转换项目
+    <Modal
+      onClose={onClose}
+      className="import-md-modal max-w-xl"
+      title={
+        <div className="flex items-center gap-2">
+          <FileUp size={18} /> 从文档导入转换项目
+        </div>
+      }
+      footer={
+        <div className="flex items-center justify-end gap-3 w-full">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={loading}>
+            取消
+          </Button>
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            disabled={!mdPath || !targetPath || !projectName.trim() || loading}
+            onClick={handleSubmit}
+          >
+            {loading ? (
+              <>
+                <Loader2 size={14} className="animate-spin" /> 转换中...
+              </>
+            ) : (
+              '解析并转换项目'
+            )}
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="form-group">
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-[var(--ll-ink)] opacity-80">
+            选择源文档 (Markdown / Word) <span className="text-danger">*</span>
+          </label>
+          <div className="folder-picker-group">
+            <input
+              type="text"
+              className="form-input form-input-clickable"
+              readOnly
+              placeholder="点击选择 Markdown 或 Word (.docx/.doc) 文档..."
+              value={mdPath}
+              onClick={handlePickMd}
+              title="点击选择源文档"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handlePickMd}
+              disabled={isPickingDoc}
+              title="浏览文档"
+            >
+              <FileText size={14} /> {isPickingDoc ? '选择中...' : '浏览文档'}
+            </Button>
           </div>
-          <button className="close-btn" onClick={onClose}><X size={18} /></button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-group">
-              <label>选择源文档 (Markdown / Word)</label>
-              <div className="folder-picker-group">
-                <input
-                  type="text"
-                  className="form-input form-input-clickable"
-                  readOnly
-                  placeholder="点击选择 Markdown 或 Word (.docx/.doc) 文档..."
-                  value={mdPath}
-                  onClick={handlePickMd}
-                  title="点击选择源文档"
-                />
-                <button
-                  type="button"
-                  className="btn outline"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={handlePickMd}
-                  disabled={isPickingDoc}
-                  title="浏览文档"
-                >
-                  <FileText size={14} /> {isPickingDoc ? '选择中...' : '浏览文档'}
-                </button>
-              </div>
-            </div>
+        <div className="form-group">
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-[var(--ll-ink)] opacity-80">
+            生成项目名称 <span className="text-danger">*</span>
+          </label>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="例如: 导入的需求规范"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+          />
+        </div>
 
-            <div className="form-group">
-              <label>生成项目名称</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="例如: 导入的需求规范"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>新项目存储目录</label>
-              <div className="folder-picker-group">
-                <input
-                  type="text"
-                  className="form-input form-input-clickable"
-                  readOnly
-                  placeholder="选择拆分解析后生成的项目保存路径..."
-                  value={targetPath}
-                  onClick={handlePickFolder}
-                  title="点击选择存储目录"
-                />
-                <button
-                  type="button"
-                  className="btn outline"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={handlePickFolder}
-                  disabled={isPickingFolder}
-                  title="浏览文件夹"
-                >
-                  <FolderOpen size={14} /> {isPickingFolder ? '选择中...' : '浏览文件夹'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="modal-footer">
-            <button type="button" className="btn outline" onClick={onClose} disabled={loading}>
-              取消
-            </button>
-            <button
-              type="submit"
-              className="btn primary"
-              disabled={!mdPath || !targetPath || !projectName.trim() || loading}
+        <div className="form-group">
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-[var(--ll-ink)] opacity-80">
+            新项目存储目录 <span className="text-danger">*</span>
+          </label>
+          <div className="folder-picker-group">
+            <input
+              type="text"
+              className="form-input form-input-clickable"
+              readOnly
+              placeholder="选择拆分解析后生成的项目保存路径..."
+              value={targetPath}
+              onClick={handlePickFolder}
+              title="点击选择存储目录"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handlePickFolder}
+              disabled={isPickingFolder}
+              title="浏览文件夹"
             >
-              {loading ? (
-                <>
-                  <Loader2 size={14} className="spin" /> 转换中...
-                </>
-              ) : (
-                '解析并转换项目'
-              )}
-            </button>
+              <FolderOpen size={14} /> {isPickingFolder ? '选择中...' : '浏览文件夹'}
+            </Button>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </Modal>
   );
 };

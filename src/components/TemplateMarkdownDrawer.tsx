@@ -4,6 +4,7 @@ import { NodeTemplate } from '../templates';
 import { Priority, Status } from '../types';
 import { X, Save, Sparkles, Code2, Database, Layout, Wrench, FileText } from 'lucide-react';
 import { processCustomMarkdownSyntax, parseColorQuery, createColorCommands } from '../utils/markdownColor';
+import { Button } from '@/components/ui/button';
 
 interface TemplateMarkdownDrawerProps {
   template: NodeTemplate | null;
@@ -120,9 +121,15 @@ export const TemplateMarkdownDrawer: React.FC<TemplateMarkdownDrawerProps> = ({
         </div>
 
         <div className="drawer-header-actions">
-          <button className="close-btn" onClick={onClose} title="关闭抽屉">
-            <X size={18} />
-          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={onClose}
+            title="关闭抽屉"
+          >
+            <X size={16} />
+          </Button>
         </div>
       </div>
 

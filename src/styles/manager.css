@@ -198,18 +198,19 @@
   gap: 14px;
   text-align: left;
   padding: 18px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
+  background-color: var(--ll-paper, #f8f5ee) !important;
+  color: var(--ll-ink, #2a2420) !important;
+  border: 1px solid rgba(42, 36, 32, 0.15) !important;
+  border-radius: var(--ll-sheet-radius, 8px);
   cursor: pointer;
   transition: all var(--transition-fast);
   font-family: inherit;
 }
 
 .manager-tile:hover {
-  border-color: var(--primary-400);
-  background-color: var(--bg-surface);
-  box-shadow: var(--shadow-lg);
+  border-color: #2c4f9e !important;
+  transform: translateY(-2px);
+  box-shadow: var(--ll-shadow-loose, 0 6px 16px rgba(42, 36, 32, 0.12));
 }
 
 .manager-tile:hover .tile-arrow {
@@ -218,35 +219,33 @@
 }
 
 .manager-tile.primary {
-  background-color: var(--primary-500);
-  border-color: var(--primary-500);
-  color: var(--text-on-primary);
+  background-color: #f5f8ff !important;
+  border-color: #2c4f9e !important;
+  box-shadow: 0 0 0 1.5px #2c4f9e, var(--ll-sheet-shadow, var(--ll-shadow-paper)) !important;
 }
 
 .manager-tile.primary:hover {
-  background-color: var(--primary-600);
-  border-color: var(--primary-600);
-  box-shadow: var(--shadow-lg);
+  background-color: #edf3ff !important;
+  border-color: #1e3a7a !important;
+  box-shadow: 0 0 0 2px #1e3a7a, var(--ll-shadow-loose, 0 6px 16px rgba(42, 36, 32, 0.12)) !important;
 }
 
 .manager-tile.primary .tile-icon {
-  background-color: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  color: var(--text-on-primary);
+  background-color: #2c4f9e;
+  border: 1px solid #2c4f9e;
+  color: #ffffff;
 }
 
 .manager-tile.primary .tile-info h3 {
-  color: var(--text-on-primary);
+  color: #1e3a7a;
 }
 
-/* 描述文字走 token + 透明度降档，明暗主题下均与主磁贴底色形成对比 */
 .manager-tile.primary .tile-info p {
-  color: var(--text-on-primary);
-  opacity: 0.75;
+  color: rgba(30, 58, 122, 0.75);
 }
 
 .manager-tile.primary .tile-arrow {
-  color: var(--text-on-primary);
+  color: #2c4f9e;
 }
 
 .tile-icon {
@@ -257,9 +256,9 @@
   height: 40px;
   padding: 0;
   border-radius: var(--radius-md);
-  background-color: var(--primary-50);
-  border: 1px solid var(--primary-100);
-  color: var(--primary-600);
+  background-color: var(--ll-slip, #fbf8f1);
+  border: 1px solid rgba(42, 36, 32, 0.15);
+  color: #2c4f9e;
   flex-shrink: 0;
 }
 
@@ -274,17 +273,17 @@
 .tile-info h3 {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ll-ink, #2a2420);
 }
 
 .tile-info p {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: rgba(42, 36, 32, 0.68);
   line-height: 1.4;
 }
 
 .tile-arrow {
-  color: var(--text-muted);
+  color: rgba(42, 36, 32, 0.5);
   opacity: 0;
   flex-shrink: 0;
   transition: all var(--transition-fast);

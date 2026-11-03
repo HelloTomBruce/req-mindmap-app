@@ -14,6 +14,7 @@ import {
   Filter,
   Plus
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface KanbanViewProps {
   rootNode: MindNode | null;
@@ -236,14 +237,16 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           />
 
           {rootNode && onAddChildNode && (
-            <button
-              className="btn outline small kanban-add-btn"
+            <Button
+              variant="outline"
+              size="sm"
+              className="kanban-add-btn"
               onClick={() => onAddChildNode(rootNode.id)}
               title="在根模块下快速添加任务"
             >
               <Plus size={13} />
               <span className="add-btn-text">添加任务</span>
-            </button>
+            </Button>
           )}
         </div>
       </div>

@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Sparkles, Code2, Database, Layout, Wrench, FileTex
 import { NodeTemplate, NODE_TEMPLATES } from '../templates';
 import { getCustomTemplates, saveCustomTemplates } from '../templateStore';
 import { TemplateEditModal } from './TemplateEditModal';
+import { Button } from '@/components/ui/button';
 
 interface TemplateSidebarProps {
   selectedTemplateId?: string | null;
@@ -118,13 +119,15 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
           <Bookmark size={16} />
           <span className="sidebar-title">模板库</span>
         </div>
-        <button
-          className="btn outline icon-only"
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 w-7 p-0"
           title="创建自定义需求模板"
           onClick={handleOpenCreate}
         >
           <Plus size={14} />
-        </button>
+        </Button>
       </div>
 
       {/* 搜索与 Tab 筛选 */}
@@ -168,9 +171,9 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
             <Bookmark size={28} color="#94a3b8" />
             <p>暂无符合条件的模板</p>
             {activeTab === 'custom' && (
-              <button className="btn outline" onClick={handleOpenCreate}>
+              <Button variant="outline" size="sm" onClick={handleOpenCreate}>
                 <Plus size={12} /> 新建首个模板
-              </button>
+              </Button>
             )}
           </div>
         ) : (

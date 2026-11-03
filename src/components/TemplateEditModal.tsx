@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { NodeTemplate } from '../templates';
 import { Priority, Status } from '../types';
+import { Modal } from './ui/Modal';
+import { Button } from '@/components/ui/button';
 
 interface TemplateEditModalProps {
   initialTemplate?: NodeTemplate | null;
@@ -62,18 +64,27 @@ export const TemplateEditModal: React.FC<TemplateEditModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content template-edit-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">
-            <Sparkles size={18} color="#2563eb" /> {isEditMode ? '编辑模板元信息' : '创建自定义需求模板'}
-          </div>
-          <button className="close-btn" onClick={onClose}><X size={18} /></button>
+    <Modal
+      onClose={onClose}
+      className="template-edit-modal max-w-xl"
+      title={
+        <div className="flex items-center gap-2">
+          <Sparkles size={18} color="#2563eb" /> {isEditMode ? '编辑模板元信息' : '创建自定义需求模板'}
         </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body template-edit-body">
-            <div className="form-row">
+      }
+      footer={
+        <div className="flex justify-end items-center gap-3 w-full">
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            取消
+          </Button>
+          <Button type="button" variant="default" size="sm" disabled={!name.trim()} onClick={handleSubmit}>
+            {isEditMode ? '保存' : '创建并开始编辑骨架'}
+          </Button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="form-row">
               <div className="form-group flex-1">
                 <label>模板名称 <span className="text-danger">*</span></label>
                 <input
@@ -167,22 +178,11 @@ export const TemplateEditModal: React.FC<TemplateEditModalProps> = ({
             </div>
 
             {!isEditMode && (
-              <div className="template-create-hint">
+              <div className="template-create-hint text-xs p-2.5 rounded bg-[var(--ll-slip,#fbf8f1)] border border-[var(--ll-line-soft,rgba(42,36,32,0.15))] text-[var(--ll-ink)] opacity-85">
                 💡 创建后将自动在右侧抽屉打开该模板的 <strong>Markdown 文档骨架编辑器</strong>，方便直接编写内容骨架。
               </div>
             )}
-          </div>
-
-          <div className="modal-footer">
-            <button type="button" className="btn outline" onClick={onClose}>
-              取消
-            </button>
-            <button type="submit" className="btn primary" disabled={!name.trim()}>
-              {isEditMode ? '保存' : '创建并开始编辑骨架'}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };

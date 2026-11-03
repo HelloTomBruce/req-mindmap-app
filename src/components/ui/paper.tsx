@@ -15,7 +15,7 @@ import { Tape } from "@/components/ui/tape"
 
 type FastenerKind = "clip" | "pin" | "staple" | "binder-clip"
 type TapePlacement = "corner" | "top" | "both"
-type PaperElement = "div" | "section" | "article" | "aside" | "header" | "footer" | "main" | "nav" | "li" | "ul" | "ol" | "form" | "fieldset" | "figure"
+type PaperElement = "div" | "section" | "article" | "aside" | "header" | "footer" | "main" | "nav" | "li" | "ul" | "ol" | "form" | "fieldset" | "figure" | "button"
 
 type PaperProps = Omit<React.ComponentProps<"div">, "ref"> & {
   ref?: React.Ref<HTMLElement>
