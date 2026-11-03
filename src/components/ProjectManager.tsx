@@ -303,7 +303,6 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                   <Card
                     key={p.id}
                     stock="card"
-                    fastener="clip"
                     tilt={tiltAngle}
                     className="project-item-card"
                     onClick={() => onOpenProject(p)}
