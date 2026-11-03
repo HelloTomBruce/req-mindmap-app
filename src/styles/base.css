@@ -1,8 +1,13 @@
 /* Base resets */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  *, ::before, ::after {
+    box-sizing: border-box;
+  }
+
+  body, h1, h2, h3, h4, h5, h6, p, ul, ol, dl, dd, figure, blockquote {
+    margin: 0;
+    padding: 0;
+  }
 }
 
 body {

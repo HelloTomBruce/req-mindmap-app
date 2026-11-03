@@ -101,8 +101,7 @@ function DialogContent({
             if ((e.target as Element | null)?.closest?.("[data-sonner-toaster]")) e.preventDefault()
           }}
           className={cn(
-            "pointer-events-auto relative w-full max-w-lg m-auto outline-none focus:outline-none",
-            "data-[state=open]:animate-sheet-drop duration-(--ll-dur-fade) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            "pointer-events-auto relative w-full max-w-lg m-auto outline-none focus:outline-none opacity-100",
             className
           )}
         >
@@ -119,7 +118,14 @@ function DialogContent({
             shadow={shadow}
             seed={seed}
             {...scope}
-            className="group/dialog relative flex flex-col w-full p-6 sm:p-7 text-foreground outline-hidden"
+            className="group/dialog relative flex flex-col w-full text-[var(--ll-ink)] outline-hidden"
+            style={{
+              padding: '24px 28px',
+              backgroundColor: 'var(--ll-paper, #f8f5ee)',
+              borderRadius: 'var(--ll-sheet-radius, 6px)',
+              boxShadow: 'var(--ll-sheet-shadow, var(--ll-shadow-paper))',
+              color: 'var(--ll-ink, #2a2420)',
+            }}
           >
             {children}
             {showCloseButton && <DialogCloseMark seed={seed === undefined ? undefined : `${seed}|x`} />}
@@ -130,22 +136,32 @@ function DialogContent({
   )
 }
 
-function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+function DialogHeader({ className, style, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-1.5 pb-3.5 mb-3 border-b border-[var(--border-default)] pr-10 text-start", className)}
+      className={cn("flex flex-col gap-1.5 pr-10 text-start", className)}
+      style={{
+        paddingBottom: '14px',
+        marginBottom: '16px',
+        borderBottom: '1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15))',
+        ...style,
+      }}
       {...props}
     />
   )
 }
 
-function DialogBody({ className, tabIndex = 0, ...props }: React.ComponentProps<"div">) {
+function DialogBody({ className, tabIndex = 0, style, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-body"
       tabIndex={tabIndex}
       className={cn("-mx-2 max-h-[min(65dvh,36rem)] min-h-0 overflow-y-auto px-2 py-1 text-[15px] outline-hidden focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring", className)}
+      style={{
+        color: 'var(--ll-ink, #2a2420)',
+        ...style,
+      }}
       {...props}
     />
   )
@@ -155,6 +171,7 @@ function DialogFooter({
   className,
   showCloseButton = false,
   children,
+  style,
   ...props
 }: React.ComponentProps<"div"> & {
   showCloseButton?: boolean
@@ -162,7 +179,17 @@ function DialogFooter({
   return (
     <div
       data-slot="dialog-footer"
-      className={cn("mt-5 pt-3.5 border-t border-[var(--border-default)] flex flex-row items-center justify-end gap-3", className)}
+      className={cn("flex flex-row items-center justify-end gap-3", className)}
+      style={{
+        marginTop: '20px',
+        paddingTop: '16px',
+        borderTop: '1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15))',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: '12px',
+        ...style,
+      }}
       {...props}
     >
       {children}
@@ -175,11 +202,20 @@ function DialogFooter({
   )
 }
 
-function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+function DialogTitle({ className, style, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg font-semibold tracking-tight text-[var(--text-primary)] flex items-center gap-2", className)}
+      className={cn("text-lg font-semibold tracking-tight text-[var(--ll-ink)] flex items-center gap-2", className)}
+      style={{
+        color: 'var(--ll-ink, #2a2420)',
+        fontSize: '18px',
+        fontWeight: 600,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        ...style,
+      }}
       {...props}
     />
   )

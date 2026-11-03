@@ -1,5 +1,6 @@
 @import url("https://kevintngo.github.io/looseleaf/fonts/kevin-sans.css");
 @import "tailwindcss";
+@source "../";
 @import "tw-animate-css";
 @import "@fontsource/ibm-plex-mono/500.css";
 @import "@fontsource/ibm-plex-mono";
@@ -282,6 +283,7 @@
     transform: translateY(1px) rotate(0.15deg) scale(0.998);
         }
   100% {
+    opacity: 1;
     transform: none;
         }
     }
@@ -951,6 +953,9 @@
   svg[data-ink="sheet"] {
     rotate: clamp(calc(var(--ll-tilt-max) * -1), var(--ll-tilt, 0deg), var(--ll-tilt-max));
     }
+  .ll-paper {
+    background-color: var(--ll-stock, var(--ll-paper));
+  }
   .ll-paper::before, .ll-face {
     background-color: var(--ll-stock, var(--ll-paper));
     background-image: linear-gradient(color-mix(in srgb, var(--ll-stock, var(--ll-paper)) var(--ll-veil, 0%), transparent), color-mix(in srgb, var(--ll-stock, var(--ll-paper)) var(--ll-veil, 0%), transparent)),

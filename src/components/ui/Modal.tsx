@@ -49,11 +49,29 @@ export const Modal: React.FC<ModalProps> = ({
             {title}
           </DialogTitle>
         </DialogHeader>
-        <div className="py-1 text-sm leading-relaxed text-[var(--text-primary)] max-h-[70vh] overflow-y-auto">
+        <div
+          className="py-1 text-sm leading-relaxed max-h-[70vh] overflow-y-auto"
+          style={{
+            padding: '4px 0 8px 0',
+            color: 'var(--ll-ink, #2a2420)',
+          }}
+        >
           {children}
         </div>
         {footer && (
-          <div className="mt-5 pt-3.5 border-t border-[var(--border-default)] flex items-center justify-between gap-3 w-full">
+          <div
+            className="flex items-center justify-between gap-3 w-full"
+            style={{
+              marginTop: '18px',
+              paddingTop: '16px',
+              borderTop: '1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              width: '100%',
+            }}
+          >
             {footer}
           </div>
         )}

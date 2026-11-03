@@ -350,7 +350,7 @@
 }
 
 .update-error-msg {
-  color: var(--text-secondary);
+  color: #7f1d1d;
   font-size: 12px;
   word-break: break-all;
 }
@@ -591,4 +591,77 @@ select.form-input {
   height: 100%;
   border: none;
 }
+
+/* ==================== Looseleaf Paper Dialog 统一纸张手绘质感适配 ==================== */
+[data-slot="dialog-content"] {
+  background-color: var(--ll-paper, #f8f5ee) !important;
+  color: var(--ll-ink, #2a2420) !important;
+}
+
+[data-slot="dialog-content"] .form-input {
+  background-color: #ffffff;
+  color: #2a2420;
+  border-color: rgba(42, 36, 32, 0.2);
+}
+
+[data-slot="dialog-content"] .form-input:focus {
+  border-color: #2c4f9e;
+  box-shadow: 0 0 0 2px rgba(44, 79, 158, 0.15);
+}
+
+[data-slot="dialog-content"] .preset-card {
+  background-color: var(--ll-slip, #fbf8f1);
+  border-color: rgba(42, 36, 32, 0.15);
+  color: #2a2420;
+}
+
+[data-slot="dialog-content"] .preset-card:hover {
+  background-color: #f3f0e6;
+  border-color: #2c4f9e;
+}
+
+[data-slot="dialog-content"] .preset-card.active {
+  background-color: #eef3ff;
+  border-color: #2c4f9e;
+  box-shadow: 0 0 0 1.5px #2c4f9e;
+}
+
+[data-slot="dialog-content"] .preset-card-title {
+  color: #2a2420;
+}
+
+[data-slot="dialog-content"] .preset-card-desc {
+  color: rgba(42, 36, 32, 0.68);
+}
+
+[data-slot="dialog-content"] .preset-card-icon-wrapper {
+  background-color: #ffffff;
+  border-color: rgba(42, 36, 32, 0.15);
+}
+
+[data-slot="dialog-content"] label {
+  color: rgba(42, 36, 32, 0.8) !important;
+}
+
+[data-slot="dialog-content"] .delete-warning-text {
+  color: #2a2420;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+[data-slot="dialog-content"] .path-display-box {
+  background-color: var(--ll-slip, #fbf8f1);
+  border: 1px dashed rgba(42, 36, 32, 0.25);
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin: 12px 0;
+  color: #2a2420;
+  font-size: 12px;
+}
+
+[data-slot="dialog-content"] .delete-question {
+  color: rgba(42, 36, 32, 0.7);
+  font-size: 13px;
+}
+
 
