@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
@@ -37,7 +36,7 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <DialogContent
-        className={cn('sm:max-w-[580px] max-h-[90vh] overflow-y-auto', className)}
+        className={cn('sm:max-w-[620px]', className)}
         onInteractOutside={(e) => {
           if (!closeOnOverlayClick) e.preventDefault();
         }}
@@ -46,15 +45,17 @@ export const Modal: React.FC<ModalProps> = ({
         }}
       >
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold flex items-center gap-2 text-[var(--text-primary)]">
+          <DialogTitle>
             {title}
           </DialogTitle>
         </DialogHeader>
-        <div className="py-2 text-sm leading-relaxed text-[var(--text-primary)]">{children}</div>
+        <div className="py-1 text-sm leading-relaxed text-[var(--text-primary)] max-h-[70vh] overflow-y-auto">
+          {children}
+        </div>
         {footer && (
-          <DialogFooter className="mt-4 pt-3 flex items-center justify-between gap-3 border-t border-[var(--border-default)]">
+          <div className="mt-5 pt-3.5 border-t border-[var(--border-default)] flex items-center justify-between gap-3 w-full">
             {footer}
-          </DialogFooter>
+          </div>
         )}
       </DialogContent>
     </Dialog>

@@ -53,7 +53,10 @@ function DialogCloseMark({ className, seed }: { className?: string; seed?: strin
       data-part="x"
       ref={hostRef}
       {...hostProps}
-      className={cn("absolute end-4 top-4 z-(--ll-z-raised) grid size-8 place-items-center text-ink cursor-pointer hover:opacity-75 transition-opacity", className)}
+      className={cn(
+        "absolute end-4 top-4 z-[20] grid size-8 place-items-center rounded text-ink cursor-pointer hover:opacity-75 transition-opacity",
+        className
+      )}
     >
       {node}
       <span aria-hidden="true" className="font-hand text-xl leading-none">
@@ -90,7 +93,7 @@ function DialogContent({
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 overflow-y-auto pointer-events-none">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 overflow-y-auto pointer-events-none">
         <DialogPrimitive.Content
           {...props}
           onInteractOutside={(e) => {
@@ -116,7 +119,7 @@ function DialogContent({
             shadow={shadow}
             seed={seed}
             {...scope}
-            className="group/dialog relative grid w-full gap-4 p-6 text-foreground outline-hidden compact:p-5 calm:p-4"
+            className="group/dialog relative flex flex-col w-full p-6 sm:p-7 text-foreground outline-hidden"
           >
             {children}
             {showCloseButton && <DialogCloseMark seed={seed === undefined ? undefined : `${seed}|x`} />}
@@ -131,7 +134,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2 text-center group-has-[[data-part=x]]/dialog:sm:pe-8 sm:text-start", className)}
+      className={cn("flex flex-col gap-1.5 pb-3.5 mb-3 border-b border-[var(--border-default)] pr-10 text-start", className)}
       {...props}
     />
   )
@@ -142,7 +145,7 @@ function DialogBody({ className, tabIndex = 0, ...props }: React.ComponentProps<
     <div
       data-slot="dialog-body"
       tabIndex={tabIndex}
-      className={cn("-mx-2 max-h-[min(60dvh,32rem)] min-h-0 overflow-y-auto px-2 py-1 text-[15px] outline-hidden focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring", className)}
+      className={cn("-mx-2 max-h-[min(65dvh,36rem)] min-h-0 overflow-y-auto px-2 py-1 text-[15px] outline-hidden focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring", className)}
       {...props}
     />
   )
@@ -157,7 +160,11 @@ function DialogFooter({
   showCloseButton?: boolean
 }) {
   return (
-    <div data-slot="dialog-footer" className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)} {...props}>
+    <div
+      data-slot="dialog-footer"
+      className={cn("mt-5 pt-3.5 border-t border-[var(--border-default)] flex flex-row items-center justify-end gap-3", className)}
+      {...props}
+    >
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
@@ -169,11 +176,17 @@ function DialogFooter({
 }
 
 function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
-  return <DialogPrimitive.Title data-slot="dialog-title" className={cn("font-script text-[1.7rem] leading-none font-semibold", className)} {...props} />
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn("text-lg font-semibold tracking-tight text-[var(--text-primary)] flex items-center gap-2", className)}
+      {...props}
+    />
+  )
 }
 
 function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
-  return <DialogPrimitive.Description data-slot="dialog-description" className={cn("text-sm text-muted-foreground", className)} {...props} />
+  return <DialogPrimitive.Description data-slot="dialog-description" className={cn("text-xs text-[var(--text-muted)]", className)} {...props} />
 }
 
 export {
