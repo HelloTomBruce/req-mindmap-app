@@ -1,9 +1,9 @@
-/* ==================== 3. 主画布 (Mindmap Canvas) ==================== */
+/* ==================== 3. 主画布 (Mindmap Canvas) 纸张底台与墨水连接 ==================== */
 .app-main-canvas {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-app);
+  background-color: var(--ll-paper-contrast, #f4efe4);
   overflow: hidden;
   position: relative;
 }
@@ -14,45 +14,47 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-default);
-  background-color: var(--bg-surface);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(42, 36, 32, 0.14);
+  background-color: var(--ll-paper, #fbf9f4);
+  font-family: var(--font-hand), cursive;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ll-ink, #2a2420);
 }
 
 .react-flow-mindmap-container {
   flex: 1;
   width: 100%;
   height: 100%;
-  background-color: var(--bg-app);
+  background-color: var(--ll-paper-contrast, #f4efe4);
   position: relative;
 }
 
 .react-flow-mindmap-container .react-flow__background-pattern {
-  stroke: var(--canvas-grid-color);
+  stroke: rgba(42, 36, 32, 0.16) !important;
 }
 
 .react-flow-mindmap-container .react-flow__controls {
-  box-shadow: var(--shadow-md);
-  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 8px rgba(42, 36, 32, 0.12);
+  border-radius: var(--ll-sheet-radius, 8px);
   overflow: hidden;
-  border: 1px solid var(--border-default);
+  border: 1px solid rgba(42, 36, 32, 0.2);
+  background-color: var(--ll-paper, #fbf9f4);
 }
 
 .react-flow-mindmap-container .react-flow__controls-button {
-  background-color: var(--bg-surface);
-  border-bottom: 1px solid var(--border-default);
-  color: var(--text-primary);
-  fill: var(--text-primary);
+  background-color: var(--ll-paper, #fbf9f4);
+  border-bottom: 1px solid rgba(42, 36, 32, 0.12);
+  color: var(--ll-ink, #2a2420);
+  fill: var(--ll-ink, #2a2420);
 }
 
 .react-flow-mindmap-container .react-flow__controls-button:hover {
-  background-color: var(--bg-subtle-hover);
+  background-color: rgba(42, 36, 32, 0.08);
 }
 
 .react-flow-mindmap-container .react-flow__edge-path {
-  stroke: var(--border-strong);
+  stroke: rgba(42, 36, 32, 0.4);
 }
 
 /* SVG 连接线通用绝对定位图层 */
@@ -81,36 +83,40 @@
   gap: 48px; /* 节点层级间距 */
 }
 
-/* 节点卡片 Horizontal Node Card */
+/* 节点卡片 Horizontal Node Card - 采用手绘质感纸张卡片 */
 .mindmap-node-card {
   position: relative;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  padding: 8px 12px;
+  background-color: var(--ll-paper, #fbf9f4);
+  color: var(--ll-ink, #2a2420);
+  border: 1.5px solid rgba(42, 36, 32, 0.22);
+  border-radius: var(--ll-sheet-radius, 8px);
+  padding: 10px 14px;
   min-width: 180px;
   max-width: 260px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: all var(--transition-fast);
+  gap: 8px;
+  box-shadow: 0 2px 5px rgba(42, 36, 32, 0.06), 0 1px 2px rgba(42, 36, 32, 0.04);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
 .mindmap-node-card:hover {
-  border-color: var(--border-strong);
-  background-color: var(--bg-subtle);
+  border-color: rgba(42, 36, 32, 0.48);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(42, 36, 32, 0.1);
 }
 
 .mindmap-node-card.selected {
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 2px var(--primary-100);
+  border: 2px solid var(--ll-ink, #2a2420);
+  box-shadow: 0 4px 12px rgba(42, 36, 32, 0.18);
 }
 
 .mindmap-node-card.root-node {
   border-width: 2px;
-  border-color: var(--primary-500);
-  background-color: var(--primary-50);
+  border-color: var(--ll-ink, #2a2420);
+  background-color: #fffdfa;
+  box-shadow: 0 3px 8px rgba(42, 36, 32, 0.12);
 }
 
 .node-main-row {
@@ -120,14 +126,16 @@
 }
 
 .node-type-icon {
-  color: var(--primary-600);
+  color: var(--ll-ink, #2a2420);
+  opacity: 0.7;
   flex-shrink: 0;
 }
 
 .node-title-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-family: var(--font-hand), cursive;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ll-ink, #2a2420);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -135,22 +143,23 @@
 }
 
 .node-title-input {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-family: var(--font-hand), cursive;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ll-ink, #2a2420);
   flex: 1;
   padding: 2px 6px;
-  border: 1px solid var(--primary-500);
-  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--ll-ink, #2a2420);
+  border-radius: 4px;
   outline: none;
-  background-color: var(--bg-surface);
+  background-color: #ffffff;
 }
 
 .node-collapse-toggle {
   border: none;
   background: transparent;
   cursor: pointer;
-  color: var(--text-muted);
+  color: rgba(42, 36, 32, 0.5);
   display: flex;
   align-items: center;
   padding: 2px;
@@ -158,29 +167,64 @@
 }
 
 .node-collapse-toggle:hover {
-  background-color: var(--bg-subtle-hover);
-  color: var(--text-primary);
+  background-color: rgba(42, 36, 32, 0.08);
+  color: var(--ll-ink, #2a2420);
 }
 
 .node-footer-meta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   font-size: 11px;
 }
 
-/* 节点悬浮操作栏 */
+.node-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.node-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.node-progress-pill {
+  font-family: var(--font-hand), cursive;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: rgba(42, 36, 32, 0.07);
+  color: var(--ll-ink, #2a2420);
+  border: 1px dashed rgba(42, 36, 32, 0.2);
+}
+
+.node-p0-alert-badge {
+  font-family: var(--font-hand), cursive;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+/* 节点悬浮操作栏 - 便签微型栏 */
 .node-hover-actions {
   position: absolute;
   top: -12px;
   right: 8px;
   display: flex;
   gap: 4px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-  box-shadow: var(--shadow-sm);
+  background-color: var(--ll-paper, #fbf9f4);
+  border: 1px solid rgba(42, 36, 32, 0.2);
+  border-radius: 6px;
+  padding: 2px 4px;
+  box-shadow: 0 2px 6px rgba(42, 36, 32, 0.12);
   opacity: 0;
   transition: opacity var(--transition-fast);
 }
@@ -195,19 +239,19 @@
   padding: 3px;
   border-radius: 4px;
   cursor: pointer;
-  color: var(--text-secondary);
+  color: var(--ll-ink, #2a2420);
   display: flex;
   align-items: center;
 }
 
 .action-btn.add:hover {
-  background-color: var(--primary-50);
-  color: var(--primary-600);
+  background-color: rgba(42, 36, 32, 0.1);
+  color: var(--ll-ink, #2a2420);
 }
 
 .action-btn.delete:hover {
-  background-color: var(--danger-bg);
-  color: var(--danger-text);
+  background-color: #fee2e2;
+  color: #dc2626;
 }
 
 /* 子节点垂直列 */

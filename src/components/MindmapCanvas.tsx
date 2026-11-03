@@ -418,7 +418,7 @@ const MindmapFlowInner: React.FC<MindmapCanvasProps> = ({
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background gap={20} size={1} className="react-flow-background" />
+        <Background gap={22} size={1.2} color="rgba(42, 36, 32, 0.16)" className="react-flow-background" />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>

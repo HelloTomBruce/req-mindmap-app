@@ -1,12 +1,13 @@
-/* ==================== 4. 右侧 Markdown 编辑器面板 ==================== */
+/* ==================== 4. 右侧 Markdown 编辑器面板 (活页稿纸质感) ==================== */
 .markdown-drawer-panel {
   width: 50vw;
   min-width: 480px;
-  background-color: var(--bg-surface);
-  border-left: 1px solid var(--border-default);
+  background-color: var(--ll-paper, #fbf9f4);
+  color: var(--ll-ink, #2a2420);
+  border-left: 1.5px solid rgba(42, 36, 32, 0.18);
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-xl);
+  box-shadow: -4px 0 24px rgba(42, 36, 32, 0.12);
   transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 10;
   animation: inkSlideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -28,6 +29,7 @@
   filter: none !important;
   contain: none !important;
   z-index: 999999 !important;
+  background-color: var(--ll-paper, #fbf9f4) !important;
 }
 
 .markdown-drawer-panel.fullscreen-active .drawer-header,
@@ -47,12 +49,13 @@
 }
 
 .drawer-header {
-  height: 48px;
+  height: 50px;
   padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-default);
+  border-bottom: 1px solid rgba(42, 36, 32, 0.14);
+  background-color: rgba(42, 36, 32, 0.02);
 }
 
 .drawer-title-group {
@@ -62,23 +65,29 @@
   flex: 1;
 }
 
+.drawer-title-icon {
+  color: var(--ll-ink, #2a2420);
+  opacity: 0.75;
+}
+
 .drawer-title-input {
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-hand), cursive;
+  font-size: 17px;
+  font-weight: 700;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--ll-sheet-radius, 6px);
   padding: 4px 8px;
   width: 85%;
   background-color: transparent;
-  color: var(--text-primary);
+  color: var(--ll-ink, #2a2420);
   transition: all var(--transition-fast);
 }
 
 .drawer-title-input:hover, .drawer-title-input:focus {
-  border-color: var(--border-strong);
+  border-color: rgba(42, 36, 32, 0.3);
   outline: none;
-  background-color: var(--bg-subtle);
-  color: var(--text-primary);
+  background-color: #ffffff;
+  color: var(--ll-ink, #2a2420);
 }
 
 .drawer-header-actions {
@@ -88,21 +97,26 @@
 }
 
 .drawer-meta-bar {
-  padding: 6px 12px;
-  background-color: var(--bg-app);
-  border-bottom: 1px solid var(--border-default);
+  padding: 6px 14px;
+  background-color: rgba(42, 36, 32, 0.03);
+  border-bottom: 1px solid rgba(42, 36, 32, 0.12);
   display: flex;
   gap: 16px;
   font-size: 12px;
   align-items: center;
+  color: var(--ll-ink, #2a2420);
 }
 
 .drawer-meta-bar select {
+  font-family: var(--font-hand), cursive;
+  font-size: 13px;
+  font-weight: 600;
   padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-default);
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
+  border-radius: var(--ll-sheet-radius, 6px);
+  border: 1px solid rgba(42, 36, 32, 0.2);
+  background-color: #ffffff;
+  color: var(--ll-ink, #2a2420);
+  outline: none;
 }
 
 .meta-item {
@@ -112,21 +126,24 @@
 }
 
 .meta-item label {
-  color: var(--text-secondary);
+  font-family: var(--font-hand), cursive;
+  font-weight: 700;
+  color: rgba(42, 36, 32, 0.7);
 }
 
 .path-info span {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: var(--text-secondary);
-  background-color: var(--bg-subtle);
+  color: var(--ll-ink, #2a2420);
+  background-color: rgba(42, 36, 32, 0.06);
   padding: 2px 6px;
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
 }
 
 .drawer-editor-container {
   flex: 1;
   overflow: hidden;
   position: relative;
+  background-color: var(--ll-paper, #fbf9f4);
 }
 
 .drawer-editor-container:has(.w-md-editor-fullscreen) {
@@ -138,6 +155,93 @@
   height: 100% !important;
   border: none;
   box-shadow: none;
+  background-color: var(--ll-paper, #fbf9f4) !important;
+  color: var(--ll-ink, #2a2420) !important;
+}
+
+.drawer-editor-container .w-md-editor-toolbar {
+  background-color: rgba(42, 36, 32, 0.03) !important;
+  border-bottom: 1px solid rgba(42, 36, 32, 0.12) !important;
+  color: var(--ll-ink, #2a2420) !important;
+}
+
+.drawer-editor-container .w-md-editor-toolbar li > button {
+  color: var(--ll-ink, #2a2420) !important;
+  border-radius: 4px;
+}
+
+.drawer-editor-container .w-md-editor-toolbar li > button:hover {
+  background-color: rgba(42, 36, 32, 0.08) !important;
+}
+
+.drawer-editor-container .w-md-editor-text {
+  background-color: transparent !important;
+  color: var(--ll-ink, #2a2420) !important;
+}
+
+.drawer-editor-container .w-md-editor-text-pre,
+.drawer-editor-container .w-md-editor-text-input {
+  color: var(--ll-ink, #2a2420) !important;
+}
+
+/* Markdown 预览区 (Markdown Preview) 泛黄书卷排版 */
+.drawer-editor-container .w-md-editor-preview,
+.drawer-editor-container .wmde-markdown {
+  background-color: var(--ll-paper, #fbf9f4) !important;
+  color: var(--ll-ink, #2a2420) !important;
+  border-left: 1px solid rgba(42, 36, 32, 0.14) !important;
+  line-height: 1.7;
+}
+
+.drawer-editor-container .wmde-markdown h1,
+.drawer-editor-container .wmde-markdown h2,
+.drawer-editor-container .wmde-markdown h3,
+.drawer-editor-container .wmde-markdown h4 {
+  font-family: var(--font-hand), cursive !important;
+  font-weight: 700 !important;
+  color: var(--ll-ink, #2a2420) !important;
+  border-bottom: 1px dashed rgba(42, 36, 32, 0.2) !important;
+  padding-bottom: 4px;
+}
+
+.drawer-editor-container .wmde-markdown blockquote {
+  border-left: 3px solid var(--ll-ink, #2a2420) !important;
+  background-color: rgba(42, 36, 32, 0.04) !important;
+  color: var(--ll-ink, #2a2420) !important;
+  padding: 8px 14px !important;
+  border-radius: 0 4px 4px 0 !important;
+  margin: 12px 0 !important;
+}
+
+.drawer-editor-container .wmde-markdown pre,
+.drawer-editor-container .wmde-markdown code {
+  background-color: rgba(42, 36, 32, 0.06) !important;
+  color: var(--ll-ink, #2a2420) !important;
+}
+
+.drawer-editor-container .wmde-markdown pre {
+  border: 1px solid rgba(42, 36, 32, 0.12) !important;
+  border-radius: 6px !important;
+  padding: 12px !important;
+}
+
+.drawer-editor-container .wmde-markdown table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 12px 0 !important;
+}
+
+.drawer-editor-container .wmde-markdown th,
+.drawer-editor-container .wmde-markdown td {
+  border: 1px solid rgba(42, 36, 32, 0.18) !important;
+  padding: 6px 12px !important;
+  color: var(--ll-ink, #2a2420) !important;
+}
+
+.drawer-editor-container .wmde-markdown th {
+  background-color: rgba(42, 36, 32, 0.06) !important;
+  font-family: var(--font-hand), cursive !important;
+  font-weight: 700 !important;
 }
 
 /* [[WikiLink]] 双向引用标签徽章样式 */
@@ -470,20 +574,21 @@
   border-radius: var(--radius-sm);
 }
 
-/* 反向链接面板 (Backlinks) */
+/* 反向链接面板 (Backlinks) 纸质标签 */
 .drawer-backlinks-panel {
   padding: 8px 16px;
-  background-color: var(--bg-app);
-  border-top: 1px solid var(--border-default);
+  background-color: rgba(42, 36, 32, 0.03);
+  border-top: 1px solid rgba(42, 36, 32, 0.12);
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .backlinks-header {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-family: var(--font-hand), cursive;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ll-ink, #2a2420);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -496,12 +601,14 @@
 }
 
 .backlink-pill {
-  border: 1px solid var(--border-default);
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
+  border: 1px solid rgba(42, 36, 32, 0.18);
+  background-color: var(--ll-paper, #fbf9f4);
+  color: var(--ll-ink, #2a2420);
   padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
+  border-radius: var(--ll-sheet-radius, 6px);
+  font-family: var(--font-hand), cursive;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -510,9 +617,8 @@
 }
 
 .backlink-pill:hover {
-  border-color: var(--primary-400);
-  background-color: var(--primary-50);
-  color: var(--primary-600);
+  border-color: rgba(42, 36, 32, 0.4);
+  background-color: #ffffff;
   transform: translateY(-1px);
 }
 
@@ -529,9 +635,10 @@
 
 .drawer-footer {
   padding: 8px 16px;
-  border-top: 1px solid var(--border-default);
+  border-top: 1px solid rgba(42, 36, 32, 0.12);
   font-size: 11px;
-  color: var(--text-muted);
+  color: rgba(42, 36, 32, 0.6);
+  background-color: rgba(42, 36, 32, 0.02);
   display: flex;
   align-items: center;
 }

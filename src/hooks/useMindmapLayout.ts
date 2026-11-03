@@ -145,7 +145,7 @@ export function useMindmapLayout({
             sourceHandle: 'source-right',
             targetHandle: 'target-left',
             type: 'default',
-            style: { stroke: '#94a3b8', strokeWidth: 2 }
+            style: { stroke: 'rgba(42, 36, 32, 0.45)', strokeWidth: 2 }
           });
           traverse(child, false);
         });

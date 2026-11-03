@@ -293,38 +293,46 @@
   position: relative;
 }
 
-/* 侧边栏 (Sidebar) */
+/* 侧边栏 (Sidebar) 纸质便签风格 */
 .app-sidebar {
   width: 260px;
-  background-color: var(--bg-surface);
-  border-right: 1px solid var(--border-default);
+  background-color: var(--ll-paper, #fbf9f4);
+  color: var(--ll-ink, #2a2420);
+  border-right: 1px solid rgba(42, 36, 32, 0.16);
   display: flex;
   flex-direction: column;
   user-select: none;
 }
 
 .sidebar-header {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-default);
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(42, 36, 32, 0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background-color: rgba(42, 36, 32, 0.03);
+  font-family: var(--font-hand), cursive;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ll-ink, #2a2420);
 }
 
 .sidebar-title {
-  font-size: 12px;
-  font-weight: 590;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-hand), cursive;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ll-ink, #2a2420);
+  letter-spacing: 0.02em;
 }
 
-/* 侧栏标题组：图标 + 文案水平对齐（参照源代码管理侧栏） */
+/* 侧栏标题组：图标 + 文案水平对齐 */
 .sidebar-title-group {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--text-muted);
+  gap: 8px;
+  color: var(--ll-ink, #2a2420);
+  font-family: var(--font-hand), cursive;
+  font-weight: 700;
 }
 
 .sidebar-title-group svg {
@@ -339,10 +347,10 @@
 }
 
 .sidebar-section-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
+  font-family: var(--font-hand), cursive;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(42, 36, 32, 0.6);
   margin-bottom: 6px;
   padding: 0 8px;
 }
@@ -351,28 +359,36 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  border-radius: var(--ll-sheet-radius, 6px);
   font-size: 13px;
   cursor: pointer;
-  color: var(--text-secondary);
+  color: var(--ll-ink, #2a2420);
   transition: all var(--transition-fast);
 }
 
+.sidebar-item-title {
+  font-family: var(--font-hand), cursive;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ll-ink, #2a2420);
+}
+
 .sidebar-item:hover {
-  background-color: var(--bg-subtle);
-  color: var(--text-primary);
+  background-color: rgba(42, 36, 32, 0.06);
+  color: var(--ll-ink, #2a2420);
 }
 
 .sidebar-item.active {
-  background-color: var(--primary-50);
-  color: var(--primary-600);
-  font-weight: 590;
+  background-color: rgba(42, 36, 32, 0.12);
+  color: var(--ll-ink, #2a2420);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(42, 36, 32, 0.05);
 }
 
 .sidebar-sub-tree {
   margin-left: 12px;
-  border-left: 1px dashed var(--border-strong);
-  padding-left: 6px;
+  border-left: 1.5px dashed rgba(42, 36, 32, 0.22);
+  padding-left: 8px;
 }
 
