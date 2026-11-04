@@ -112,8 +112,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 20px;
-  border-radius: var(--radius-xl);
+  padding: 10px 18px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   background-color: var(--ll-paper, #fbf9f4) !important;
   color: var(--ll-ink, #2a2420) !important;
@@ -131,7 +131,7 @@
 .resume-main {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -139,9 +139,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-lg);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
   background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.08);
   border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18);
   color: var(--ll-ink, #2a2420);
@@ -156,9 +156,10 @@
 
 .resume-info {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .resume-label {
@@ -166,11 +167,11 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.6);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.55);
 }
 
 .resume-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--ll-ink, #2a2420);
   overflow: hidden;
@@ -182,133 +183,63 @@
   font-size: 12px;
   font-weight: 400;
   color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.55);
-  margin-left: 6px;
 }
 
-.resume-arrow {
-  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.6);
-  flex-shrink: 0;
-  transition: all var(--transition-fast);
-}
-
-.resume-card:hover .resume-arrow {
-  color: var(--ll-ink, #2a2420);
-  transform: translateX(4px);
-}
-
-/* ==================== 快速开始磁贴 ==================== */
-.manager-tiles {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.manager-tile {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  text-align: left;
-  padding: 20px 18px 16px 18px;
-  background-color: var(--ll-paper, #fbf9f4) !important;
-  color: var(--ll-ink, #2a2420) !important;
-  border: 1.5px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18) !important;
-  border-radius: var(--ll-sheet-radius, 8px);
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.05);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
-  font-family: inherit;
-}
-
-.manager-tile:hover {
-  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.45) !important;
-  background-color: var(--ll-paper-card-bg, #ffffff) !important;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
-}
-
-.manager-tile:hover .tile-arrow {
-  opacity: 1;
-  transform: translate(2px, -2px);
-}
-
-.manager-tile.primary {
-  background-color: var(--ll-paper, #fbf9f4) !important;
-  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.28) !important;
-}
-
-.manager-tile.primary:hover {
-  background-color: var(--ll-paper-card-bg, #ffffff) !important;
-  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.5) !important;
-}
-
-.tile-icon {
+.resume-action {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border-radius: var(--radius-md);
-  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.06);
-  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.16);
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--ll-ink, #2a2420);
-  flex-shrink: 0;
+  opacity: 0.75;
   transition: all var(--transition-fast);
 }
 
-.manager-tile:hover .tile-icon {
-  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
-  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.35);
+.resume-card:hover .resume-action {
+  opacity: 1;
+  transform: translateX(2px);
 }
 
-.manager-tile.primary .tile-icon {
-  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.1);
-  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.28);
-  color: var(--ll-ink, #2a2420);
-}
-
-.manager-tile.primary:hover .tile-icon {
-  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18);
-  border-color: var(--ll-ink, #2a2420);
-}
-
-.tile-info {
+/* ==================== 最近项目网格与操作栏 ==================== */
+.recent-section-header {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
-.tile-info h3 {
-  font-family: var(--font-hand), cursive;
+.recent-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recent-section-header h2 {
   font-size: 16px;
   font-weight: 700;
   color: var(--ll-ink, #2a2420);
-}
-
-.tile-info p {
-  font-size: 12px;
-  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.68);
-  line-height: 1.4;
-}
-
-.tile-arrow {
-  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.5);
-  opacity: 0;
-  flex-shrink: 0;
-  transition: all var(--transition-fast);
-}
-
-/* ==================== 最近项目网格 ==================== */
-.recent-projects-section h2 {
-  font-size: 14px;
-  font-weight: 700;
-  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.65);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 12px;
   font-family: var(--font-hand), cursive;
+  margin: 0;
+}
+
+.recent-count-pill {
+  font-family: var(--font-hand), cursive;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 12px;
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.08);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.16);
+  color: var(--ll-ink, #2a2420);
+}
+
+.recent-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .projects-grid {
@@ -427,13 +358,49 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 48px 32px;
   background-color: var(--ll-paper, #fbf9f4);
   border: 1.5px dashed rgba(var(--ll-ink-rgb, 42, 36, 32), 0.2);
   border-radius: var(--ll-sheet-radius, 8px);
-  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.6);
+  text-align: center;
+  gap: 10px;
+}
+
+.empty-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.05);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ll-ink, #2a2420);
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+.empty-projects h3 {
+  font-family: var(--font-hand), cursive;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ll-ink, #2a2420);
+  margin: 0;
+}
+
+.empty-projects p {
   font-size: 13px;
-  gap: 8px;
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.6);
+  margin: 0;
+  max-width: 380px;
+  line-height: 1.5;
+}
+
+.empty-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
 }
 
 /* ==================== 底部特性信息条 ==================== */

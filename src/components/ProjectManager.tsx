@@ -6,7 +6,6 @@ import {
   FileText,
   Trash2,
   ArrowRight,
-  ArrowUpRight,
   FileUp,
   RefreshCw,
   Zap,
@@ -21,7 +20,6 @@ import { invoke } from '@tauri-apps/api/core';
 import { ProjectMeta } from '../types';
 import { getGitStatus } from '../gitHelper';
 import { Button } from '@/components/ui/button';
-import { Paper } from '@/components/ui/paper';
 import { Card } from '@/components/ui/card';
 import { useTheme } from '../context/ThemeContext';
 export type { ProjectMeta };
@@ -180,93 +178,71 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
 
         {/* 继续上次编辑直达卡：留存用户的高频路径 */}
         {lastProject && (
-          <Paper
-            stock="slip"
-            tilt={false}
-            shadow="stock"
+          <div
             className="resume-card"
             onClick={() => onOpenProject(lastProject)}
           >
             <div className="resume-main">
               <div className="resume-icon">
-                <PenLine size={16} />
+                <PenLine size={15} />
               </div>
               <div className="resume-info">
-                <span className="resume-label">继续上次编辑</span>
-                <span className="resume-name">
-                  {lastProject.name}
-                  <span className="resume-time">· {formatRelativeTime(lastProject.lastOpened)}</span>
-                </span>
+                <span className="resume-label">继续编辑</span>
+                <span className="resume-name">{lastProject.name}</span>
+                <span className="resume-time">· {formatRelativeTime(lastProject.lastOpened)}</span>
               </div>
             </div>
-            <ArrowRight size={16} className="resume-arrow" />
-          </Paper>
+            <div className="resume-action">
+              <span>打开项目</span>
+              <ArrowRight size={14} />
+            </div>
+          </div>
         )}
-
-        {/* 快速开始卡片组 */}
-        <div className="manager-tiles">
-          <Card
-            as="button"
-            stock="card"
-            tilt={false}
-            className="manager-tile primary cursor-pointer"
-            onClick={onOpenCreateModal}
-          >
-            <div className="tile-icon">
-              <Plus size={20} />
-            </div>
-            <div className="tile-info">
-              <h3>新建项目</h3>
-              <p>从空白或预设模板开始一棵需求树</p>
-            </div>
-            <ArrowUpRight size={16} className="tile-arrow" />
-          </Card>
-
-          <Card
-            as="button"
-            stock="card"
-            tilt={false}
-            className="manager-tile cursor-pointer"
-            onClick={onOpenImportModal}
-          >
-            <div className="tile-icon">
-              <FileUp size={20} />
-            </div>
-            <div className="tile-info">
-              <h3>从文档导入</h3>
-              <p>长篇 Markdown / Word 逆向智能切分</p>
-            </div>
-            <ArrowUpRight size={16} className="tile-arrow" />
-          </Card>
-
-          <Card
-            as="button"
-            stock="card"
-            tilt={false}
-            className="manager-tile cursor-pointer"
-            onClick={onOpenFolder}
-          >
-            <div className="tile-icon">
-              <Folder size={20} />
-            </div>
-            <div className="tile-info">
-              <h3>打开本地项目</h3>
-              <p>选择已有的需求项目文件夹</p>
-            </div>
-            <ArrowUpRight size={16} className="tile-arrow" />
-          </Card>
-        </div>
 
         {/* 最近项目列表 */}
         <div className="recent-projects-section">
           <div className="recent-section-header">
-            <h2>最近打开的文档项目 ({recentProjects.length})</h2>
+            <div className="recent-title-group">
+              <h2>最近打开的项目</h2>
+              <span className="recent-count-pill">{recentProjects.length}</span>
+            </div>
+            <div className="recent-header-actions">
+              <Button variant="outline" size="sm" onClick={onOpenFolder}>
+                <Folder size={14} />
+                打开本地
+              </Button>
+              <Button variant="outline" size="sm" onClick={onOpenImportModal}>
+                <FileUp size={14} />
+                从文档导入
+              </Button>
+              <Button variant="default" size="sm" onClick={onOpenCreateModal}>
+                <Plus size={14} />
+                新建项目
+              </Button>
+            </div>
           </div>
 
           {recentProjects.length === 0 ? (
             <div className="empty-projects">
-              <FileText size={36} color="#cbd5e1" />
-              <p>暂无最近打开的项目记录，点击上方按钮新建或打开本地目录</p>
+              <div className="empty-icon-wrap">
+                <Folder size={32} />
+              </div>
+              <h3>暂无最近打开的项目</h3>
+              <p>您可以新建一个结构化需求树，或直接打开本地已有项目目录</p>
+              <div className="empty-actions">
+                <Button variant="default" size="sm" onClick={onOpenCreateModal}>
+                  <Plus size={14} />
+                  新建项目
+                </Button>
+                <Button variant="outline" size="sm" onClick={onOpenImportModal}>
+                  <FileUp size={14} />
+                  从文档导入
+                </Button>
+                <Button variant="outline" size="sm" onClick={onOpenFolder}>
+                  <Folder size={14} />
+                  打开本地项目
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="projects-grid">
