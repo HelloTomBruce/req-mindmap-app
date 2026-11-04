@@ -632,6 +632,8 @@
     --ll-tape-edge: rgba(255, 255, 255, 0.22);
     --ll-shade: 0 0 0;
     --ll-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --ll-paper-light: linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 45%, rgba(0, 0, 0, 0.25));
+    --ll-tex-paper: none;
 
     --background: var(--ll-desk);
     --foreground: var(--ll-ink);
@@ -683,6 +685,8 @@
     --ll-tape-edge: rgba(255, 255, 255, 0.22);
     --ll-shade: 0 0 0;
     --ll-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --ll-paper-light: linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 45%, rgba(0, 0, 0, 0.25));
+    --ll-tex-paper: none;
 
     --background: var(--ll-desk);
     --foreground: var(--ll-ink);

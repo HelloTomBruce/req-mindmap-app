@@ -2,8 +2,6 @@
    分层全屏工作台布局：页面级纵向滚动，内容列 1100px 居中；
    顶栏 → 继续上次编辑直达卡 → 快速开始磁贴 → 最近项目网格 → 底部特性信息条 */
 .project-manager-container {
-  /* body 全局 overflow:hidden，首页容器自身作为纵向滚动容器 */
-  /* 静态径向渐变背景（原 Canvas 动画因性能原因移除，渐变与 Linear 主题同源） */
   width: 100%;
   height: 100vh;
   position: relative;
@@ -11,12 +9,18 @@
   overflow-x: hidden;
   padding: 28px 32px 40px;
   box-sizing: border-box;
-  background: radial-gradient(circle at 50% 50%, #fcfbf8 0, #f6f2ea 60%, #eee7db 100%);
+  background: radial-gradient(circle at 50% 40%, #fcfbf8 0%, #f5efe4 65%, #ece4d4 100%);
+}
+
+:root.dark .project-manager-container,
+[data-theme="dark"] .project-manager-container,
+.dark .project-manager-container {
+  background: radial-gradient(circle at 50% 35%, #181a1f 0%, #121316 70%, #0d0e10 100%);
 }
 
 @media (prefers-color-scheme: dark) {
-  .project-manager-container {
-    background: radial-gradient(circle at 50% 50%, #191a1b 0, #0f1011 60%, #08090a 100%);
+  :root:not(.light) .project-manager-container {
+    background: radial-gradient(circle at 50% 35%, #181a1f 0%, #121316 70%, #0d0e10 100%);
   }
 }
 
@@ -47,22 +51,27 @@
 }
 
 .brand-icon {
-  background: var(--primary-500);
-  color: var(--text-on-primary);
-  padding: 9px;
+  background: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.08);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18);
+  color: var(--ll-ink, #2a2420);
+  padding: 8px;
   border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .manager-topbar h1 {
-  font-size: 20px;
-  font-weight: 590;
-  color: var(--text-primary);
-  letter-spacing: -0.24px;
+  font-family: var(--font-hand), cursive;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ll-ink, #2a2420);
+  letter-spacing: -0.2px;
 }
 
 .manager-topbar p {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.65);
   margin-top: 2px;
 }
 
@@ -85,15 +94,16 @@
   padding: 6px 14px;
   font-size: 13px;
   border-radius: 20px;
-  border: 1px solid var(--border-default);
-  background-color: var(--bg-surface);
-  color: var(--text-secondary);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18);
+  background-color: var(--ll-paper, #fbf9f4);
+  color: var(--ll-ink, #2a2420);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .mcp-status-pill:hover {
-  background-color: var(--bg-subtle);
+  background-color: var(--ll-paper-card-bg, #ffffff);
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.35);
 }
 
 .mcp-status-pill.online {
@@ -117,11 +127,17 @@
   padding: 16px 20px;
   border-radius: var(--radius-xl);
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  background-color: var(--ll-paper, #fbf9f4) !important;
+  color: var(--ll-ink, #2a2420) !important;
+  border: 1.5px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18) !important;
+  box-shadow: 0 2px 6px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.05);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
 .resume-card:hover {
   transform: translateY(-2px);
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.45) !important;
+  box-shadow: 0 6px 16px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
 }
 
 .resume-main {
@@ -138,9 +154,16 @@
   width: 38px;
   height: 38px;
   border-radius: var(--radius-lg);
-  background: var(--primary-500);
-  color: var(--text-on-primary);
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.08);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18);
+  color: var(--ll-ink, #2a2420);
   flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.resume-card:hover .resume-icon {
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.14);
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.35);
 }
 
 .resume-info {
@@ -152,16 +175,16 @@
 
 .resume-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.6);
 }
 
 .resume-name {
   font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--ll-ink, #2a2420);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -170,18 +193,18 @@
 .resume-time {
   font-size: 12px;
   font-weight: 400;
-  color: var(--text-muted);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.55);
   margin-left: 6px;
 }
 
 .resume-arrow {
-  color: var(--text-muted);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.6);
   flex-shrink: 0;
   transition: all var(--transition-fast);
 }
 
 .resume-card:hover .resume-arrow {
-  color: var(--primary-600);
+  color: var(--ll-ink, #2a2420);
   transform: translateX(4px);
 }
 
@@ -197,20 +220,22 @@
   align-items: flex-start;
   gap: 14px;
   text-align: left;
-  padding: 22px 18px 16px 18px;
-  background-color: var(--ll-paper, #f8f5ee) !important;
+  padding: 20px 18px 16px 18px;
+  background-color: var(--ll-paper, #fbf9f4) !important;
   color: var(--ll-ink, #2a2420) !important;
-  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15) !important;
+  border: 1.5px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18) !important;
   border-radius: var(--ll-sheet-radius, 8px);
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: 0 2px 6px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.05);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
   font-family: inherit;
 }
 
 .manager-tile:hover {
-  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.35) !important;
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.45) !important;
+  background-color: var(--ll-paper-card-bg, #ffffff) !important;
   transform: translateY(-2px);
-  box-shadow: var(--ll-shadow-loose, 0 6px 16px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12));
+  box-shadow: 0 6px 16px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
 }
 
 .manager-tile:hover .tile-arrow {
@@ -219,33 +244,13 @@
 }
 
 .manager-tile.primary {
-  background-color: var(--ll-paper, #f8f5ee) !important;
-  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.22) !important;
-  box-shadow: var(--ll-sheet-shadow, var(--ll-shadow-paper)) !important;
+  background-color: var(--ll-paper, #fbf9f4) !important;
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.28) !important;
 }
 
 .manager-tile.primary:hover {
   background-color: var(--ll-paper-card-bg, #ffffff) !important;
-  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.4) !important;
-  box-shadow: var(--ll-shadow-loose, 0 6px 16px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12)) !important;
-}
-
-.manager-tile.primary .tile-icon {
-  background-color: var(--ll-ink, #2a2420);
-  border: 1px solid var(--ll-ink, #2a2420);
-  color: var(--ll-paper, #f8f5ee);
-}
-
-.manager-tile.primary .tile-info h3 {
-  color: var(--ll-ink, #2a2420);
-}
-
-.manager-tile.primary .tile-info p {
-  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.68);
-}
-
-.manager-tile.primary .tile-arrow {
-  color: var(--ll-ink, #2a2420);
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.5) !important;
 }
 
 .tile-icon {
@@ -256,10 +261,27 @@
   height: 40px;
   padding: 0;
   border-radius: var(--radius-md);
-  background-color: var(--ll-slip, #fbf8f1);
-  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15);
-  color: #2c4f9e;
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.06);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.16);
+  color: var(--ll-ink, #2a2420);
   flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.manager-tile:hover .tile-icon {
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.35);
+}
+
+.manager-tile.primary .tile-icon {
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.1);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.28);
+  color: var(--ll-ink, #2a2420);
+}
+
+.manager-tile.primary:hover .tile-icon {
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18);
+  border-color: var(--ll-ink, #2a2420);
 }
 
 .tile-info {
@@ -293,11 +315,12 @@
 /* ==================== 最近项目网格 ==================== */
 .recent-projects-section h2 {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.65);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 12px;
+  font-family: var(--font-hand), cursive;
 }
 
 .projects-grid {
@@ -307,18 +330,25 @@
 }
 
 .project-item-card {
-  border-radius: var(--radius-lg);
-  padding: 14px 16px;
+  background-color: var(--ll-paper, #fbf9f4) !important;
+  color: var(--ll-ink, #2a2420) !important;
+  border: 1.5px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18) !important;
+  border-radius: var(--ll-sheet-radius, 8px);
+  padding: 16px 18px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: 0 2px 6px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.05);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
   position: relative;
 }
 
 .project-item-card:hover {
   transform: translateY(-2px);
+  background-color: var(--ll-paper-card-bg, #ffffff) !important;
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.45) !important;
+  box-shadow: 0 6px 16px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
 }
 
 .project-item-header {
@@ -328,7 +358,8 @@
 }
 
 .folder-icon {
-  color: var(--primary-600);
+  color: var(--ll-ink, #2a2420);
+  opacity: 0.75;
 }
 
 .project-item-name {
@@ -344,7 +375,7 @@
 
 .project-item-path {
   font-size: 11px;
-  color: var(--text-muted);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.55);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -357,7 +388,7 @@
   justify-content: space-between;
   gap: 8px;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.65);
 }
 
 .project-item-meta > span:first-child {
@@ -375,11 +406,16 @@
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: var(--primary-600);
-  font-weight: 500;
-  border-top: 1px solid var(--bg-subtle);
+  color: var(--ll-ink, #2a2420);
+  opacity: 0.8;
+  font-weight: 600;
+  border-top: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.1);
   padding-top: 8px;
   margin-top: 4px;
+}
+
+.project-item-card:hover .project-item-footer {
+  opacity: 1;
 }
 
 /* 项目卡片 Git 未提交变更徽章 */
@@ -404,10 +440,10 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background-color: var(--bg-surface);
-  border: 2px dashed var(--border-default);
-  border-radius: var(--radius-lg);
-  color: var(--text-muted);
+  background-color: var(--ll-paper, #fbf9f4);
+  border: 1.5px dashed rgba(var(--ll-ink-rgb, 42, 36, 32), 0.2);
+  border-radius: var(--ll-sheet-radius, 8px);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.6);
   font-size: 13px;
   gap: 8px;
 }
@@ -419,7 +455,7 @@
   gap: 28px;
   flex-wrap: wrap;
   padding-top: 16px;
-  border-top: 1px solid var(--border-default);
+  border-top: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
 }
 
 .info-item {
@@ -427,7 +463,7 @@
   align-items: center;
   gap: 7px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.65);
 }
 
 button.info-item {
@@ -440,5 +476,5 @@ button.info-item {
 }
 
 button.info-item:hover {
-  color: var(--primary-600);
+  color: var(--ll-ink, #2a2420);
 }

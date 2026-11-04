@@ -182,8 +182,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
         {lastProject && (
           <Paper
             stock="slip"
-            fastener="clip"
-            tilt={-0.3}
+            tilt={-0.2}
             shadow="stock"
             className="resume-card"
             onClick={() => onOpenProject(lastProject)}
@@ -209,9 +208,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           <Card
             as="button"
             stock="card"
-            tape="top"
-            tapeKind="masking"
-            tilt={-0.6}
+            tilt={-0.3}
             className="manager-tile primary cursor-pointer"
             onClick={onOpenCreateModal}
           >
@@ -228,9 +225,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           <Card
             as="button"
             stock="card"
-            tape="top"
-            tapeKind="washi-dots"
-            tilt={0.4}
+            tilt={0.2}
             className="manager-tile cursor-pointer"
             onClick={onOpenImportModal}
           >
@@ -247,9 +242,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           <Card
             as="button"
             stock="card"
-            tape="top"
-            tapeKind="kraft"
-            tilt={-0.4}
+            tilt={-0.2}
             className="manager-tile cursor-pointer"
             onClick={onOpenFolder}
           >
