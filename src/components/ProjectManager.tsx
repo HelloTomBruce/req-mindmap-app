@@ -182,7 +182,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
         {lastProject && (
           <Paper
             stock="slip"
-            tilt={-0.2}
+            tilt={false}
             shadow="stock"
             className="resume-card"
             onClick={() => onOpenProject(lastProject)}
@@ -208,7 +208,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           <Card
             as="button"
             stock="card"
-            tilt={-0.3}
+            tilt={false}
             className="manager-tile primary cursor-pointer"
             onClick={onOpenCreateModal}
           >
@@ -225,7 +225,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           <Card
             as="button"
             stock="card"
-            tilt={0.2}
+            tilt={false}
             className="manager-tile cursor-pointer"
             onClick={onOpenImportModal}
           >
@@ -242,7 +242,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           <Card
             as="button"
             stock="card"
-            tilt={-0.2}
+            tilt={false}
             className="manager-tile cursor-pointer"
             onClick={onOpenFolder}
           >
@@ -270,15 +270,14 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
             </div>
           ) : (
             <div className="projects-grid">
-              {recentProjects.map((p, idx) => {
+              {recentProjects.map((p) => {
                 const snap = snapshots[p.id];
                 const totalNodes = snap && snap.total >= 0 ? snap.total : p.nodeCount;
-                const tiltAngle = ((idx % 3) - 1) * 0.35;
                 return (
                   <Card
                     key={p.id}
                     stock="card"
-                    tilt={tiltAngle}
+                    tilt={false}
                     className="project-item-card"
                     onClick={() => onOpenProject(p)}
                   >

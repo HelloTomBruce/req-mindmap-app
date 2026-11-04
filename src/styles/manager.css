@@ -9,19 +9,7 @@
   overflow-x: hidden;
   padding: 28px 32px 40px;
   box-sizing: border-box;
-  background: radial-gradient(circle at 50% 40%, #fcfbf8 0%, #f5efe4 65%, #ece4d4 100%);
-}
-
-:root.dark .project-manager-container,
-[data-theme="dark"] .project-manager-container,
-.dark .project-manager-container {
-  background: radial-gradient(circle at 50% 35%, #181a1f 0%, #121316 70%, #0d0e10 100%);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) .project-manager-container {
-    background: radial-gradient(circle at 50% 35%, #181a1f 0%, #121316 70%, #0d0e10 100%);
-  }
+  background-color: var(--ll-paper-contrast, #f4efe4);
 }
 
 .manager-shell {
