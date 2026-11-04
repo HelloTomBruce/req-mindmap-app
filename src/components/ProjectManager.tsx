@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Layers,
   Plus,
   Folder,
   FileText,
@@ -139,7 +138,6 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
         {/* 顶栏 */}
         <header className="manager-topbar">
           <div className="brand">
-            <Layers size={26} className="brand-icon" />
             <div>
               <h1>DocMind 结构化文档工作台</h1>
               <p>以拓扑脑图把握宏观全局，以 Markdown 沉浸细节创作</p>

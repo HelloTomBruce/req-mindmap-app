@@ -38,17 +38,6 @@
   gap: 12px;
 }
 
-.brand-icon {
-  background: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.08);
-  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18);
-  color: var(--ll-ink, #2a2420);
-  padding: 8px;
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .manager-topbar h1 {
   font-family: var(--font-hand), cursive;
   font-size: 22px;
