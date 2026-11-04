@@ -1,7 +1,5 @@
 import React from 'react';
-import { MindNode, ProjectMeta } from '../../types';
-import { NodeTemplate } from '../../templates';
-import { MCPLogItem } from '../../mcpServerManager';
+import { useProjectContext } from '../../context/ProjectContext';
 import { ExportDocModal } from '../ExportDocModal';
 import { CreateProjectModal } from '../CreateProjectModal';
 import { ImportMdModal } from '../ImportMdModal';
@@ -11,119 +9,77 @@ import { UpdateModal } from '../UpdateModal';
 import { CommandPaletteModal } from '../CommandPaletteModal';
 import { TemplatePickerModal } from '../TemplatePickerModal';
 
-interface AppModalsProps {
-  // 导出文档
-  isExportModalOpen: boolean;
-  onCloseExportModal: () => void;
-  rootNode: MindNode;
-  edgesData?: import('../../types').MindEdge[];
-  docsMap: Record<string, string>;
-  projectName: string;
-
-  // 创建项目
-  isCreateModalOpen: boolean;
-  onCloseCreateModal: () => void;
-  onSelectFolderForCreate: () => Promise<string | null>;
-  onCreateProject: (name: string, targetPath: string, presetId?: string) => Promise<void>;
-
-  // 导入文档
-  isImportModalOpen: boolean;
-  onCloseImportModal: () => void;
-  onSelectMdFile: () => Promise<string | null>;
-  onImportDocument: (mdPath: string, targetPath: string, name: string) => Promise<void>;
-
-  // 删除项目确认
-  targetDeleteProject: ProjectMeta | null;
-  onCloseDeleteModal: () => void;
-  onConfirmDeleteProject: (deletePhysicalFiles: boolean) => Promise<void>;
-
-  // MCP AI 管理
-  isMCPModalOpen: boolean;
-  onCloseMCPModal: () => void;
-  mcpStatus: { isRunning: boolean; port: number; projectPath: string; sseUrl: string };
-  mcpLogs: MCPLogItem[];
-  onToggleMCPServer: (enable: boolean, customPort?: number) => Promise<void>;
-
-  // 检查更新
-  isUpdateModalOpen: boolean;
-  onCloseUpdateModal: () => void;
-
-  // 全局命令面板
-  isCommandPaletteOpen: boolean;
-  onCloseCommandPalette: () => void;
-  allProjectNodes: MindNode[];
-  onSelectPaletteNode: (nodeId: string) => void;
-  onExecutePaletteAction: (actionId: string) => void;
-
-  // 节点模板选择
-  templateParentNode: { id: string; title: string } | null;
-  onCloseTemplatePicker: () => void;
-  onSelectNodeTemplate: (template: NodeTemplate) => Promise<void>;
+export interface AppModalsProps {
+  onExecutePaletteAction?: (actionId: string) => void;
 }
 
-export const AppModals: React.FC<AppModalsProps> = ({
-  isExportModalOpen,
-  onCloseExportModal,
-  rootNode,
-  edgesData,
-  docsMap,
-  projectName,
-  isCreateModalOpen,
-  onCloseCreateModal,
-  onSelectFolderForCreate,
-  onCreateProject,
-  isImportModalOpen,
-  onCloseImportModal,
-  onSelectMdFile,
-  onImportDocument,
-  targetDeleteProject,
-  onCloseDeleteModal,
-  onConfirmDeleteProject,
-  isMCPModalOpen,
-  onCloseMCPModal,
-  mcpStatus,
-  mcpLogs,
-  onToggleMCPServer,
-  isUpdateModalOpen,
-  onCloseUpdateModal,
-  isCommandPaletteOpen,
-  onCloseCommandPalette,
-  allProjectNodes,
-  onSelectPaletteNode,
-  onExecutePaletteAction,
-  templateParentNode,
-  onCloseTemplatePicker,
-  onSelectNodeTemplate
-}) => {
+/**
+ * 全局统一模态框容器组件
+ * 直接消费 ProjectContext，消除顶层页面 20+ 个状态字段的 Prop Drilling
+ */
+export const AppModals: React.FC<AppModalsProps> = ({ onExecutePaletteAction }) => {
+  const {
+    projectData,
+    docsMap,
+    allProjectNodes,
+    setSelectedNodeId,
+    setIsDrawerOpen,
+    isExportModalOpen,
+    setIsExportModalOpen,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    isImportModalOpen,
+    setIsImportModalOpen,
+    isMCPModalOpen,
+    setIsMCPModalOpen,
+    isUpdateModalOpen,
+    setIsUpdateModalOpen,
+    isCommandPaletteOpen,
+    setIsCommandPaletteOpen,
+    targetDeleteProject,
+    setTargetDeleteProject,
+    templateParentNode,
+    setTemplateParentNode,
+    selectFolderForCreate,
+    selectMdFileForImport,
+    handleCreateProject,
+    handleImportDocument,
+    handleDeleteProjectConfirm,
+    handleToggleMCPServer,
+    handleConfirmCreateWithTemplate,
+    mcpStatus,
+    mcpLogs
+  } = useProjectContext();
+
   return (
     <>
       {/* 聚合导出完整文档弹窗 */}
       {isExportModalOpen && (
         <ExportDocModal
-          rootNode={rootNode}
-          edgesData={edgesData}
+          rootNode={projectData.root}
+          edgesData={projectData.edges}
           docsMap={docsMap}
-          projectName={projectName}
-          onClose={onCloseExportModal}
+          projectName={projectData.projectName}
+          onClose={() => setIsExportModalOpen(false)}
         />
       )}
 
       {/* 创建新需求项目弹窗 */}
       {isCreateModalOpen && (
         <CreateProjectModal
-          onClose={onCloseCreateModal}
-          onSelectFolder={onSelectFolderForCreate}
-          onCreate={onCreateProject}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSelectFolder={selectFolderForCreate}
+          onCreate={handleCreateProject}
         />
       )}
 
       {/* 导入 Markdown / Word 弹窗 */}
       {isImportModalOpen && (
         <ImportMdModal
-          onClose={onCloseImportModal}
-          onSelectMd={onSelectMdFile}
-          onSelectFolder={onSelectFolderForCreate}
-          onImport={onImportDocument}
+          onClose={() => setIsImportModalOpen(false)}
+          onSelectMd={selectMdFileForImport}
+          onSelectFolder={selectFolderForCreate}
+          onImport={handleImportDocument}
         />
       )}
 
@@ -131,21 +87,29 @@ export const AppModals: React.FC<AppModalsProps> = ({
       {targetDeleteProject && (
         <DeleteConfirmModal
           project={targetDeleteProject}
-          onClose={onCloseDeleteModal}
-          onConfirm={onConfirmDeleteProject}
+          onClose={() => setTargetDeleteProject(null)}
+          onConfirm={async (deleteFiles) => {
+            if (targetDeleteProject) {
+              await handleDeleteProjectConfirm(targetDeleteProject, deleteFiles);
+              setTargetDeleteProject(null);
+            }
+          }}
         />
       )}
 
       {/* 远程版本自动检查更新弹窗 */}
-      <UpdateModal isOpen={isUpdateModalOpen} onClose={onCloseUpdateModal} />
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+      />
 
       {/* MCP AI 服务管理弹窗 */}
       {isMCPModalOpen && (
         <MCPManagerModal
           status={mcpStatus}
           logs={mcpLogs}
-          onClose={onCloseMCPModal}
-          onToggleServer={onToggleMCPServer}
+          onClose={() => setIsMCPModalOpen(false)}
+          onToggleServer={handleToggleMCPServer}
         />
       )}
 
@@ -154,8 +118,11 @@ export const AppModals: React.FC<AppModalsProps> = ({
         nodes={allProjectNodes}
         docsMap={docsMap}
         isOpen={isCommandPaletteOpen}
-        onClose={onCloseCommandPalette}
-        onSelectNode={onSelectPaletteNode}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelectNode={(nodeId) => {
+          setSelectedNodeId(nodeId);
+          setIsDrawerOpen(true);
+        }}
         onExecuteAction={onExecutePaletteAction}
       />
 
@@ -163,8 +130,8 @@ export const AppModals: React.FC<AppModalsProps> = ({
       {templateParentNode && (
         <TemplatePickerModal
           parentNodeTitle={templateParentNode.title}
-          onClose={onCloseTemplatePicker}
-          onSelectTemplate={onSelectNodeTemplate}
+          onClose={() => setTemplateParentNode(null)}
+          onSelectTemplate={handleConfirmCreateWithTemplate}
         />
       )}
     </>

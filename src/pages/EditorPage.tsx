@@ -42,37 +42,15 @@ export const EditorPage: React.FC = () => {
     handleNavigateToNodeByTitle,
     handleAddEdge,
     handleDeleteEdge,
-    handleCreateProject,
-    handleDeleteProjectConfirm,
-    handleImportDocument,
-    selectFolderForCreate,
-    selectMdFileForImport,
     selectedEditingTemplate,
     setSelectedEditingTemplate,
     handleSelectTemplateForEdit,
     handleTemplateContentChange,
     handleTemplateMetaChange,
-    templateParentNode,
-    setTemplateParentNode,
     handleAddChildNode,
-    handleConfirmCreateWithTemplate,
-    mcpStatus,
-    mcpLogs,
-    handleToggleMCPServer,
-    isExportModalOpen,
     setIsExportModalOpen,
-    isCreateModalOpen,
-    setIsCreateModalOpen,
-    isImportModalOpen,
-    setIsImportModalOpen,
-    isMCPModalOpen,
     setIsMCPModalOpen,
-    isUpdateModalOpen,
-    setIsUpdateModalOpen,
-    isCommandPaletteOpen,
-    setIsCommandPaletteOpen,
-    targetDeleteProject,
-    setTargetDeleteProject
+    setIsCommandPaletteOpen
   } = useProjectContext();
 
   // 状态循环顺序定义
@@ -241,49 +219,8 @@ export const EditorPage: React.FC = () => {
         )}
       </div>
 
-      {/* 弹窗集合 */}
-      <AppModals
-        isExportModalOpen={isExportModalOpen}
-        onCloseExportModal={() => setIsExportModalOpen(false)}
-        rootNode={projectData.root}
-        edgesData={projectData.edges}
-        docsMap={docsMap}
-        projectName={projectData.projectName}
-        isCreateModalOpen={isCreateModalOpen}
-        onCloseCreateModal={() => setIsCreateModalOpen(false)}
-        onSelectFolderForCreate={selectFolderForCreate}
-        onCreateProject={handleCreateProject}
-        isImportModalOpen={isImportModalOpen}
-        onCloseImportModal={() => setIsImportModalOpen(false)}
-        onSelectMdFile={selectMdFileForImport}
-        onImportDocument={handleImportDocument}
-        targetDeleteProject={targetDeleteProject}
-        onCloseDeleteModal={() => setTargetDeleteProject(null)}
-        onConfirmDeleteProject={async (deleteFiles) => {
-          if (targetDeleteProject) {
-            await handleDeleteProjectConfirm(targetDeleteProject, deleteFiles);
-            setTargetDeleteProject(null);
-          }
-        }}
-        isMCPModalOpen={isMCPModalOpen}
-        onCloseMCPModal={() => setIsMCPModalOpen(false)}
-        mcpStatus={mcpStatus}
-        mcpLogs={mcpLogs}
-        onToggleMCPServer={handleToggleMCPServer}
-        isUpdateModalOpen={isUpdateModalOpen}
-        onCloseUpdateModal={() => setIsUpdateModalOpen(false)}
-        isCommandPaletteOpen={isCommandPaletteOpen}
-        onCloseCommandPalette={() => setIsCommandPaletteOpen(false)}
-        allProjectNodes={allProjectNodes}
-        onSelectPaletteNode={(nodeId) => {
-          setSelectedNodeId(nodeId);
-          setIsDrawerOpen(true);
-        }}
-        onExecutePaletteAction={handleExecutePaletteAction}
-        templateParentNode={templateParentNode}
-        onCloseTemplatePicker={() => setTemplateParentNode(null)}
-        onSelectNodeTemplate={handleConfirmCreateWithTemplate}
-      />
+      {/* 全局统一模态框容器 */}
+      <AppModals onExecutePaletteAction={handleExecutePaletteAction} />
 
       {/* 底部状态栏 */}
       <AppStatusBar

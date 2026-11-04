@@ -599,8 +599,8 @@ select.form-input {
 
 /* ==================== Looseleaf Paper Dialog 统一纸张手绘质感适配 ==================== */
 [data-slot="dialog-content"] {
-  background-color: var(--ll-paper, #f8f5ee) !important;
-  color: var(--ll-ink, #2a2420) !important;
+  background-color: var(--ll-paper, #f8f5ee);
+  color: var(--ll-ink, #2a2420);
 }
 
 [data-slot="dialog-content"] .form-input {
@@ -646,7 +646,7 @@ select.form-input {
 }
 
 [data-slot="dialog-content"] label {
-  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.8) !important;
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.8);
 }
 
 [data-slot="dialog-content"] .delete-warning-text {

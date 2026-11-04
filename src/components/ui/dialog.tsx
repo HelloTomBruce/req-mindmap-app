@@ -118,14 +118,10 @@ function DialogContent({
             shadow={shadow}
             seed={seed}
             {...scope}
-            className="group/dialog relative flex flex-col w-full text-[var(--ll-ink)] outline-hidden"
-            style={{
-              padding: '24px 28px',
-              backgroundColor: 'var(--ll-paper, #f8f5ee)',
-              borderRadius: 'var(--ll-sheet-radius, 6px)',
-              boxShadow: 'var(--ll-sheet-shadow, var(--ll-shadow-paper))',
-              color: 'var(--ll-ink, #2a2420)',
-            }}
+            className={cn(
+              "group/dialog relative flex flex-col w-full text-[var(--ll-ink)] outline-hidden",
+              "p-6 sm:p-7 bg-[var(--ll-paper,#f8f5ee)] rounded-[var(--ll-sheet-radius,6px)] shadow-[var(--ll-sheet-shadow,var(--ll-shadow-paper))]"
+            )}
           >
             {children}
             {showCloseButton && <DialogCloseMark seed={seed === undefined ? undefined : `${seed}|x`} />}
@@ -136,32 +132,28 @@ function DialogContent({
   )
 }
 
-function DialogHeader({ className, style, ...props }: React.ComponentProps<"div">) {
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-1.5 pr-10 text-start", className)}
-      style={{
-        paddingBottom: '14px',
-        marginBottom: '16px',
-        borderBottom: '1px solid var(--ll-line-soft, rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15))',
-        ...style,
-      }}
+      className={cn(
+        "flex flex-col gap-1.5 pr-10 text-start pb-3.5 mb-4 border-b border-[var(--ll-line-soft,rgba(var(--ll-ink-rgb,42,36,32),0.15))]",
+        className
+      )}
       {...props}
     />
   )
 }
 
-function DialogBody({ className, tabIndex = 0, style, ...props }: React.ComponentProps<"div">) {
+function DialogBody({ className, tabIndex = 0, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-body"
       tabIndex={tabIndex}
-      className={cn("-mx-2 max-h-[min(65dvh,36rem)] min-h-0 overflow-y-auto px-2 py-1 text-[15px] outline-hidden focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring", className)}
-      style={{
-        color: 'var(--ll-ink, #2a2420)',
-        ...style,
-      }}
+      className={cn(
+        "-mx-2 max-h-[min(65dvh,36rem)] min-h-0 overflow-y-auto px-2 py-1 text-[15px] text-[var(--ll-ink)] outline-hidden focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+        className
+      )}
       {...props}
     />
   )
@@ -171,7 +163,6 @@ function DialogFooter({
   className,
   showCloseButton = false,
   children,
-  style,
   ...props
 }: React.ComponentProps<"div"> & {
   showCloseButton?: boolean
@@ -179,17 +170,10 @@ function DialogFooter({
   return (
     <div
       data-slot="dialog-footer"
-      className={cn("flex flex-row items-center justify-end gap-3", className)}
-      style={{
-        marginTop: '20px',
-        paddingTop: '16px',
-        borderTop: '1px solid var(--ll-line-soft, rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15))',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        gap: '12px',
-        ...style,
-      }}
+      className={cn(
+        "mt-5 pt-4 border-t border-[var(--ll-line-soft,rgba(var(--ll-ink-rgb,42,36,32),0.15))] flex flex-row items-center justify-end gap-3",
+        className
+      )}
       {...props}
     >
       {children}
@@ -202,20 +186,14 @@ function DialogFooter({
   )
 }
 
-function DialogTitle({ className, style, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg font-semibold tracking-tight text-[var(--ll-ink)] flex items-center gap-2", className)}
-      style={{
-        color: 'var(--ll-ink, #2a2420)',
-        fontSize: '18px',
-        fontWeight: 600,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        ...style,
-      }}
+      className={cn(
+        "text-lg font-semibold tracking-tight text-[var(--ll-ink)] flex items-center gap-2",
+        className
+      )}
       {...props}
     />
   )
