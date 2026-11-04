@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import MDEditor, { commands, ICommand } from '@uiw/react-md-editor';
 import { NodeTemplate } from '../templates';
 import { Priority, Status } from '../types';
-import { X, Save, Sparkles, Code2, Database, Layout, Wrench, FileText } from 'lucide-react';
+import { X, Save, Sparkles, Code2, Database, Layout, Wrench, FileText, Eye, PenLine, Columns2 } from 'lucide-react';
 import { processCustomMarkdownSyntax, parseColorQuery, createColorCommands } from '../utils/markdownColor';
 import { Button } from '@/components/ui/button';
 
@@ -25,6 +25,11 @@ export const TemplateMarkdownDrawer: React.FC<TemplateMarkdownDrawerProps> = ({
 }) => {
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'preview' | 'live' | 'edit'>('preview');
+
+  useEffect(() => {
+    setPreviewMode('preview');
+  }, [template?.id]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -120,7 +125,41 @@ export const TemplateMarkdownDrawer: React.FC<TemplateMarkdownDrawerProps> = ({
           </div>
         </div>
 
-        <div className="drawer-header-actions">
+        <div className="drawer-header-actions flex items-center gap-2">
+          {isCustom && (
+            <div className="flex items-center gap-0.5 bg-black/5 dark:bg-white/5 p-0.5 rounded-md border border-ink/15">
+              <Button
+                variant={previewMode === 'preview' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2 text-xs font-hand font-bold gap-1"
+                onClick={() => setPreviewMode('preview')}
+                title="仅预览模式"
+              >
+                <Eye size={13} />
+                <span>预览</span>
+              </Button>
+              <Button
+                variant={previewMode === 'live' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2 text-xs font-hand font-bold gap-1"
+                onClick={() => setPreviewMode('live')}
+                title="双栏分屏模式"
+              >
+                <Columns2 size={13} />
+                <span>分屏</span>
+              </Button>
+              <Button
+                variant={previewMode === 'edit' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2 text-xs font-hand font-bold gap-1"
+                onClick={() => setPreviewMode('edit')}
+                title="仅编辑模式"
+              >
+                <PenLine size={13} />
+                <span>编辑</span>
+              </Button>
+            </div>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -187,7 +226,7 @@ export const TemplateMarkdownDrawer: React.FC<TemplateMarkdownDrawerProps> = ({
           extraCommands={extraCommands}
           fullscreen={isFullscreen}
           height="100%"
-          preview={isCustom ? 'live' : 'preview'}
+          preview={isCustom ? previewMode : 'preview'}
           previewOptions={{
             components: {
               a: ({ href, children, ...props }: any) => {

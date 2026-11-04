@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import MDEditor, { commands, ICommand } from '@uiw/react-md-editor';
 import mermaid from 'mermaid';
 import { MindNode, Priority, Status } from '../types';
-import { X, Save, FileCode, Image as ImageIcon, Link2, ArrowUpRight, Network, ChevronLeft, ChevronRight, ListTree } from 'lucide-react';
+import { X, Save, FileCode, Image as ImageIcon, Link2, ArrowUpRight, Network, ChevronLeft, ChevronRight, ListTree, Eye, PenLine, Columns2 } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { WikiLinkAutocomplete } from './WikiLinkAutocomplete';
@@ -209,6 +209,14 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
   // 全屏章节导航条收起状态：true 时仅保留圆形悬浮按钮
   const [isChapterNavCollapsed, setIsChapterNavCollapsed] = useState(false);
 
+  // 抽屉内容模式：打开节点时默认纯预览状态 (preview)
+  const [previewMode, setPreviewMode] = useState<'preview' | 'live' | 'edit'>('preview');
+
+  // 当打开或切换节点时，默认重置为纯预览状态
+  useEffect(() => {
+    setPreviewMode('preview');
+  }, [node?.id]);
+
   // 监听浏览器原生全屏状态变化（包括按 Esc 键退出全屏时）
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -309,15 +317,39 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
     }
   }), [isFullscreen]);
 
+  const previewCommand = useMemo<ICommand>(() => ({
+    ...commands.codePreview,
+    execute: (_state, _api, dispatch) => {
+      setPreviewMode('preview');
+      dispatch?.({ preview: 'preview' });
+    }
+  }), []);
+
+  const editCommand = useMemo<ICommand>(() => ({
+    ...commands.codeEdit,
+    execute: (_state, _api, dispatch) => {
+      setPreviewMode('edit');
+      dispatch?.({ preview: 'edit' });
+    }
+  }), []);
+
+  const liveCommand = useMemo<ICommand>(() => ({
+    ...commands.codeLive,
+    execute: (_state, _api, dispatch) => {
+      setPreviewMode('live');
+      dispatch?.({ preview: 'live' });
+    }
+  }), []);
+
   const extraCommands: ICommand[] = useMemo(() => [
     createColorCommands(),
     commands.divider,
-    commands.codeEdit,
-    commands.codeLive,
-    commands.codePreview,
+    editCommand,
+    liveCommand,
+    previewCommand,
     commands.divider,
     customFullscreenCommand
-  ], [customFullscreenCommand]);
+  ], [editCommand, liveCommand, previewCommand, customFullscreenCommand]);
 
   // 计算反向链接（Backlinks）：遍历所有其他节点的文档内容，找出引用了 [[当前节点标题]] 的节点列表
   const backlinks = useMemo(() => {
@@ -605,9 +637,44 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
         </div>
 
         <div className="drawer-header-actions flex items-center gap-2">
+          {/* 模式快速切换：预览 / 分屏 / 编辑 */}
+          <div className="flex items-center gap-0.5 bg-black/5 dark:bg-white/5 p-0.5 rounded-md border border-ink/15">
+            <Button
+              variant={previewMode === 'preview' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 px-2 text-xs font-hand font-bold gap-1"
+              onClick={() => setPreviewMode('preview')}
+              title="仅预览模式"
+            >
+              <Eye size={13} />
+              <span>预览</span>
+            </Button>
+            <Button
+              variant={previewMode === 'live' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 px-2 text-xs font-hand font-bold gap-1"
+              onClick={() => setPreviewMode('live')}
+              title="双栏分屏模式"
+            >
+              <Columns2 size={13} />
+              <span>分屏</span>
+            </Button>
+            <Button
+              variant={previewMode === 'edit' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 px-2 text-xs font-hand font-bold gap-1"
+              onClick={() => setPreviewMode('edit')}
+              title="仅编辑模式"
+            >
+              <PenLine size={13} />
+              <span>编辑</span>
+            </Button>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
+            className="h-7 text-xs font-hand font-bold gap-1"
             title="插入本地图片"
             onClick={async () => {
               try {
@@ -631,7 +698,8 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
               }
             }}
           >
-            <ImageIcon size={14} /> 插入图片
+            <ImageIcon size={13} />
+            <span>插入图片</span>
           </Button>
           <Button
             variant="ghost"
@@ -686,7 +754,7 @@ export const MarkdownDrawer: React.FC<MarkdownDrawerProps> = ({
           extraCommands={extraCommands}
           fullscreen={isFullscreen}
           height="100%"
-          preview="live"
+          preview={previewMode}
           previewOptions={previewOptions}
         />
 
