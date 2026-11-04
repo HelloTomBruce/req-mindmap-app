@@ -1,7 +1,8 @@
 import React from 'react';
-import { Layout, Home, Search, Download, Kanban, Network } from 'lucide-react';
+import { Layout, Home, Search, Download, Kanban, Network, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Kbd } from '@/components/ui/kbd';
+import { useTheme } from '../../context/ThemeContext';
 
 interface AppHeaderProps {
   projectName: string;
@@ -20,6 +21,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenCommandPalette,
   onOpenExportModal
 }) => {
+  const { resolvedTheme, toggleTheme } = useTheme();
+
   return (
     <header className="app-header">
       <div className="header-left">
@@ -72,6 +75,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
         <Button variant="default" size="sm" onClick={onOpenExportModal}>
           <Download size={14} /> 聚合导出文档
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          title={resolvedTheme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
+          onClick={toggleTheme}
+        >
+          {resolvedTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </Button>
       </div>
     </header>

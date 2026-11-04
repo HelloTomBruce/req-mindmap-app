@@ -21,13 +21,24 @@ import './styles/template.css';
 import './styles/kanban.css';
 import './styles/misc.css';
 
-const App: React.FC = () => {
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+
+const AppInner: React.FC = () => {
+  const { theme } = useTheme();
   return (
-    <InkProvider>
+    <InkProvider theme={theme}>
       <HashRouter>
         <AppRoutes />
       </HashRouter>
     </InkProvider>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
   );
 };
 

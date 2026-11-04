@@ -2,7 +2,7 @@
 .app-statusbar {
   height: 24px;
   background-color: var(--ll-paper, #fbf9f4);
-  border-top: 1px solid rgba(42, 36, 32, 0.14);
+  border-top: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.14);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -33,7 +33,7 @@
 .activity-bar {
   width: 48px;
   background-color: var(--ll-paper-contrast, #f4efe4);
-  border-right: 1px solid rgba(42, 36, 32, 0.16);
+  border-right: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.16);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -45,7 +45,7 @@
 .activity-icon {
   border: none;
   background: transparent;
-  color: rgba(42, 36, 32, 0.5);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.5);
   cursor: pointer;
   padding: 8px;
   border-radius: var(--ll-sheet-radius, 6px);
@@ -57,13 +57,13 @@
 
 .activity-icon:hover {
   color: var(--ll-ink, #2a2420);
-  background-color: rgba(42, 36, 32, 0.08);
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.08);
 }
 
 .activity-icon.active {
   color: var(--ll-ink, #2a2420);
   background-color: var(--ll-paper, #fbf9f4);
-  box-shadow: 0 1px 3px rgba(42, 36, 32, 0.12);
+  box-shadow: 0 1px 3px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
 }
 
 .git-sidebar {

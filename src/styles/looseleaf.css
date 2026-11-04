@@ -358,7 +358,10 @@
 :root {
     --ll-desk: #a8c8bb;
     --ll-desk-deep: #93b4a7;
+    --ll-ink-rgb: 42, 36, 32;
     --ll-paper: #f8f5ee;
+    --ll-paper-contrast: #f4efe4;
+    --ll-paper-card-bg: #ffffff;
     --ll-paper-shade: #ece6da;
     --ll-slip: #fbf8f1;
     --ll-card: #fbf6e9;
@@ -383,6 +386,8 @@
     --ll-pencil: #6b6660;
     --ll-pencil-text: #5a554e;
     --ll-pencil-mark: #8e887f;
+    --ll-line: var(--ll-pencil-mark);
+    --ll-line-soft: rgba(var(--ll-ink-rgb), 0.16);
     --ll-red: #c2412d;
     --ll-green: #3b7a4b;
     --ll-marker: #df6b3c;
@@ -593,6 +598,112 @@
     --ll-syn-name: var(--ll-ink-you);
     --ll-syn-number: color-mix(in srgb, var(--ll-orange-text), var(--ll-ink) 10%);
     --ll-syn-comment: var(--ll-pencil-text);
+}
+
+/* ==================== Looseleaf 暗色石板/黑板手绘纸张主题 ==================== */
+:root.dark,
+[data-theme="dark"],
+:root[data-theme="dark"],
+.dark {
+    color-scheme: dark;
+    --ll-ink-rgb: 243, 239, 230;
+    --ll-desk: #111215;
+    --ll-desk-deep: #16181d;
+    --ll-paper: #1c1e23;
+    --ll-paper-contrast: #141518;
+    --ll-paper-card-bg: #24272f;
+    --ll-paper-shade: #262932;
+    --ll-card: #202329;
+    --ll-slip: #24272e;
+    --ll-graph: #1c2024;
+    --ll-kraft: #332d24;
+    --ll-check: #1f2721;
+    --ll-pad: #222326;
+    --ll-photo: #26282e;
+    --ll-ink: #f3efe6;
+    --ll-ink-soft: #dcd6cb;
+    --ll-ink-muted: #a39e93;
+    --ll-pencil: #8f8a80;
+    --ll-pencil-text: #b5afa4;
+    --ll-pencil-mark: rgba(243, 239, 230, 0.22);
+    --ll-line: rgba(243, 239, 230, 0.22);
+    --ll-line-soft: rgba(243, 239, 230, 0.14);
+    --ll-tape: rgba(255, 255, 255, 0.1);
+    --ll-tape-edge: rgba(255, 255, 255, 0.22);
+    --ll-shade: 0 0 0;
+    --ll-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+    --background: var(--ll-desk);
+    --foreground: var(--ll-ink);
+    --card: var(--ll-paper);
+    --card-foreground: var(--ll-ink);
+    --popover: var(--ll-slip);
+    --popover-foreground: var(--ll-ink);
+    --border: var(--ll-pencil-mark);
+    --input: var(--ll-pencil-mark);
+    --muted: var(--ll-paper-shade);
+    --muted-foreground: var(--ll-ink-muted);
+    --secondary: #262932;
+    --secondary-foreground: var(--ll-ink);
+    --accent: #2e3340;
+    --accent-foreground: var(--ll-ink);
+    --sidebar: var(--ll-paper);
+    --sidebar-foreground: var(--ll-ink);
+    --sidebar-primary: var(--ll-marker);
+    --sidebar-primary-foreground: var(--ll-ink);
+    --sidebar-border: var(--ll-line-soft);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --ll-ink-rgb: 243, 239, 230;
+    --ll-desk: #111215;
+    --ll-desk-deep: #16181d;
+    --ll-paper: #1c1e23;
+    --ll-paper-contrast: #141518;
+    --ll-paper-card-bg: #24272f;
+    --ll-paper-shade: #262932;
+    --ll-card: #202329;
+    --ll-slip: #24272e;
+    --ll-graph: #1c2024;
+    --ll-kraft: #332d24;
+    --ll-check: #1f2721;
+    --ll-pad: #222326;
+    --ll-photo: #26282e;
+    --ll-ink: #f3efe6;
+    --ll-ink-soft: #dcd6cb;
+    --ll-ink-muted: #a39e93;
+    --ll-pencil: #8f8a80;
+    --ll-pencil-text: #b5afa4;
+    --ll-pencil-mark: rgba(243, 239, 230, 0.22);
+    --ll-line: rgba(243, 239, 230, 0.22);
+    --ll-line-soft: rgba(243, 239, 230, 0.14);
+    --ll-tape: rgba(255, 255, 255, 0.1);
+    --ll-tape-edge: rgba(255, 255, 255, 0.22);
+    --ll-shade: 0 0 0;
+    --ll-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+    --background: var(--ll-desk);
+    --foreground: var(--ll-ink);
+    --card: var(--ll-paper);
+    --card-foreground: var(--ll-ink);
+    --popover: var(--ll-slip);
+    --popover-foreground: var(--ll-ink);
+    --border: var(--ll-pencil-mark);
+    --input: var(--ll-pencil-mark);
+    --muted: var(--ll-paper-shade);
+    --muted-foreground: var(--ll-ink-muted);
+    --secondary: #262932;
+    --secondary-foreground: var(--ll-ink);
+    --accent: #2e3340;
+    --accent-foreground: var(--ll-ink);
+    --sidebar: var(--ll-paper);
+    --sidebar-foreground: var(--ll-ink);
+    --sidebar-primary: var(--ll-marker);
+    --sidebar-primary-foreground: var(--ll-ink);
+    --sidebar-border: var(--ll-line-soft);
+  }
 }
   :root, [data-theme], [data-ll-scope] {
     --ll-shadow-hair: 0 1px 1.5px rgb(var(--ll-shade) / calc(0.16 * var(--ll-shadow-k)));

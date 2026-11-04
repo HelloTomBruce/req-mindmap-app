@@ -132,7 +132,7 @@
 
 /* 卡片通用 */
 .mcp-config-card {
-  border: 1px solid rgba(42, 36, 32, 0.16);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.16);
   border-radius: var(--ll-sheet-radius, 8px);
   background-color: var(--ll-paper, #fbf9f4);
   color: var(--ll-ink, #2a2420);
@@ -220,7 +220,7 @@
 }
 
 .tool-card {
-  border: 1px solid rgba(42, 36, 32, 0.16);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.16);
   border-radius: var(--ll-sheet-radius, 8px);
   background-color: var(--ll-paper, #fbf9f4);
   color: var(--ll-ink, #2a2420);
@@ -233,8 +233,8 @@
 }
 
 .tool-card:hover {
-  border-color: rgba(42, 36, 32, 0.35);
-  background-color: #ffffff;
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.35);
+  background-color: var(--ll-paper-card-bg, #ffffff);
 }
 
 .tool-card-header {

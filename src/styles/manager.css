@@ -200,7 +200,7 @@
   padding: 22px 18px 16px 18px;
   background-color: var(--ll-paper, #f8f5ee) !important;
   color: var(--ll-ink, #2a2420) !important;
-  border: 1px solid rgba(42, 36, 32, 0.15) !important;
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15) !important;
   border-radius: var(--ll-sheet-radius, 8px);
   cursor: pointer;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
@@ -208,9 +208,9 @@
 }
 
 .manager-tile:hover {
-  border-color: rgba(42, 36, 32, 0.35) !important;
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.35) !important;
   transform: translateY(-2px);
-  box-shadow: var(--ll-shadow-loose, 0 6px 16px rgba(42, 36, 32, 0.12));
+  box-shadow: var(--ll-shadow-loose, 0 6px 16px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12));
 }
 
 .manager-tile:hover .tile-arrow {
@@ -220,14 +220,14 @@
 
 .manager-tile.primary {
   background-color: var(--ll-paper, #f8f5ee) !important;
-  border-color: rgba(42, 36, 32, 0.22) !important;
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.22) !important;
   box-shadow: var(--ll-sheet-shadow, var(--ll-shadow-paper)) !important;
 }
 
 .manager-tile.primary:hover {
-  background-color: #ffffff !important;
-  border-color: rgba(42, 36, 32, 0.4) !important;
-  box-shadow: var(--ll-shadow-loose, 0 6px 16px rgba(42, 36, 32, 0.12)) !important;
+  background-color: var(--ll-paper-card-bg, #ffffff) !important;
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.4) !important;
+  box-shadow: var(--ll-shadow-loose, 0 6px 16px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12)) !important;
 }
 
 .manager-tile.primary .tile-icon {
@@ -241,7 +241,7 @@
 }
 
 .manager-tile.primary .tile-info p {
-  color: rgba(42, 36, 32, 0.68);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.68);
 }
 
 .manager-tile.primary .tile-arrow {
@@ -257,7 +257,7 @@
   padding: 0;
   border-radius: var(--radius-md);
   background-color: var(--ll-slip, #fbf8f1);
-  border: 1px solid rgba(42, 36, 32, 0.15);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15);
   color: #2c4f9e;
   flex-shrink: 0;
 }
@@ -279,12 +279,12 @@
 
 .tile-info p {
   font-size: 12px;
-  color: rgba(42, 36, 32, 0.68);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.68);
   line-height: 1.4;
 }
 
 .tile-arrow {
-  color: rgba(42, 36, 32, 0.5);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.5);
   opacity: 0;
   flex-shrink: 0;
   transition: all var(--transition-fast);

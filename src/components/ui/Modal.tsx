@@ -64,7 +64,7 @@ export const Modal: React.FC<ModalProps> = ({
             style={{
               marginTop: '18px',
               paddingTop: '16px',
-              borderTop: '1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15))',
+              borderTop: '1px solid var(--ll-line-soft, rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',

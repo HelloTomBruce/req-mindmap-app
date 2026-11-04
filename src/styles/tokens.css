@@ -69,30 +69,83 @@
 }
 
 /* 简约中国风暗色主题 (水墨玄青与冷月松风 - Dark Mode) */
-/* Linear 风格暗色主题（dark-native：近黑画布 + 半透明白描边 + 亮度阶梯分层） */
+:root.dark,
+[data-theme="dark"] {
+  --bg-app: #121316;              /* 深黑石板画布 */
+  --bg-surface: #1c1e23;          /* 深色活页纸底板 */
+  --bg-surface-elevated: #24272f; /* 卡片与弹窗浮层 */
+  --bg-subtle: rgba(243, 239, 230, 0.05);   /* hover 亮度阶梯 */
+  --bg-subtle-hover: rgba(243, 239, 230, 0.09);
+
+  --border-default: rgba(243, 239, 230, 0.12);  /* 墨水/粉笔描边 */
+  --border-strong: rgba(243, 239, 230, 0.22);
+  --border-focus: #f3efe6;
+
+  --text-primary: #f3efe6;        /* 暖白字迹，防刺眼 */
+  --text-secondary: #dcd6cb;
+  --text-muted: #a39e93;
+  --text-on-primary: #18181b;     /* 暗色下主操作为白底黑字 */
+
+  /* 暗色下的高级黑表达：主强调反转为近白（白底黑字主按钮），亮度递增阶梯 */
+  --primary-50: rgba(243, 239, 230, 0.1);
+  --primary-100: rgba(243, 239, 230, 0.18);
+  --primary-200: rgba(243, 239, 230, 0.3);
+  --primary-400: #dcd6cb;         /* hover 描边 */
+  --primary-500: #f3efe6;         /* 主操作填充（近白） */
+  --primary-600: #ffffff;         /* hover / 高亮文字 */
+  --primary-700: #ffffff;
+
+  --success-bg: rgba(39, 166, 68, 0.15);
+  --success-text: #4ac26b;
+  --warning-bg: rgba(187, 128, 9, 0.15);
+  --warning-text: #e3b341;
+  --danger-bg: rgba(229, 72, 77, 0.12);
+  --danger-text: #ff6369;
+
+  --manager-card-bg: #202329;
+  --manager-card-border: rgba(243, 239, 230, 0.14);
+
+  /* 暗色下的 MCP 状态胶囊 */
+  --mcp-online-bg: rgba(16, 185, 129, 0.12);
+  --mcp-online-border: rgba(16, 185, 129, 0.35);
+  --mcp-online-text: #34d399;
+  --mcp-offline-bg: rgba(239, 68, 68, 0.12);
+  --mcp-offline-border: rgba(239, 68, 68, 0.35);
+  --mcp-offline-text: #f87171;
+
+  --canvas-grid-color: rgba(243, 239, 230, 0.08);
+  --node-root-bg: #262930;
+  --node-root-border: rgba(243, 239, 230, 0.4);
+
+  /* 暗面阴影：投影用 1px 半透明白环做层次 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 6px 0 rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(243, 239, 230, 0.08);
+  --shadow-lg: 0 4px 12px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(243, 239, 230, 0.1);
+  --shadow-xl: 0 16px 32px -8px rgba(0, 0, 0, 0.6), 0 3px 6px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(243, 239, 230, 0.12);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg-app: #08090a;              /* marketing black 画布 */
-    --bg-surface: #0f1011;          /* panel dark */
-    --bg-surface-elevated: #191a1b; /* level 3 elevated */
-    --bg-subtle: rgba(255, 255, 255, 0.04);   /* hover 亮度阶梯 */
-    --bg-subtle-hover: rgba(255, 255, 255, 0.07);
+  :root:not(.light) {
+    --bg-app: #121316;              /* 深黑石板画布 */
+    --bg-surface: #1c1e23;          /* 深色活页纸底板 */
+    --bg-surface-elevated: #24272f; /* 卡片与弹窗浮层 */
+    --bg-subtle: rgba(243, 239, 230, 0.05);   /* hover 亮度阶梯 */
+    --bg-subtle-hover: rgba(243, 239, 230, 0.09);
 
-    --border-default: rgba(255, 255, 255, 0.08);  /* 半透明白 1px 描边 */
-    --border-strong: rgba(255, 255, 255, 0.14);
-    --border-focus: #d4d4d8;
+    --border-default: rgba(243, 239, 230, 0.12);  /* 描边 */
+    --border-strong: rgba(243, 239, 230, 0.22);
+    --border-focus: #f3efe6;
 
-    --text-primary: #f7f8f8;        /* 非纯白，防刺眼 */
-    --text-secondary: #d0d6e0;
-    --text-muted: #8a8f98;
+    --text-primary: #f3efe6;        /* 暖白，防刺眼 */
+    --text-secondary: #dcd6cb;
+    --text-muted: #a39e93;
     --text-on-primary: #18181b;     /* 暗色下主操作为白底黑字 */
 
-    /* 暗色下的高级黑表达：主强调反转为近白（白底黑字主按钮），亮度递增阶梯 */
-    --primary-50: rgba(255, 255, 255, 0.1);
-    --primary-100: rgba(255, 255, 255, 0.18);
-    --primary-200: rgba(255, 255, 255, 0.3);
-    --primary-400: #d4d4d8;         /* hover 描边 */
-    --primary-500: #ededed;         /* 主操作填充（近白） */
+    --primary-50: rgba(243, 239, 230, 0.1);
+    --primary-100: rgba(243, 239, 230, 0.18);
+    --primary-200: rgba(243, 239, 230, 0.3);
+    --primary-400: #dcd6cb;         /* hover 描边 */
+    --primary-500: #f3efe6;         /* 主操作填充（近白） */
     --primary-600: #ffffff;         /* hover / 高亮文字 */
     --primary-700: #ffffff;
 
@@ -103,10 +156,9 @@
     --danger-bg: rgba(229, 72, 77, 0.12);
     --danger-text: #ff6369;
 
-    --manager-card-bg: rgba(25, 26, 27, 0.9);
-    --manager-card-border: rgba(255, 255, 255, 0.08);
+    --manager-card-bg: #202329;
+    --manager-card-border: rgba(243, 239, 230, 0.14);
 
-    /* 暗色下的 MCP 状态胶囊：半透明色底 + 提亮文字 */
     --mcp-online-bg: rgba(16, 185, 129, 0.12);
     --mcp-online-border: rgba(16, 185, 129, 0.35);
     --mcp-online-text: #34d399;
@@ -114,15 +166,14 @@
     --mcp-offline-border: rgba(239, 68, 68, 0.35);
     --mcp-offline-text: #f87171;
 
-    --canvas-grid-color: rgba(255, 255, 255, 0.05);
-    --node-root-bg: rgba(255, 255, 255, 0.08);
-    --node-root-border: rgba(255, 255, 255, 0.32);
+    --canvas-grid-color: rgba(243, 239, 230, 0.08);
+    --node-root-bg: #262930;
+    --node-root-border: rgba(243, 239, 230, 0.4);
 
-    /* 暗面阴影：投影几乎不可见，用 1px 半透明白环做层次 */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 2px 6px 0 rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
-    --shadow-lg: 0 4px 12px 0 rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
-    --shadow-xl: 0 16px 32px -8px rgba(0, 0, 0, 0.5), 0 3px 6px -2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 2px 6px 0 rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(243, 239, 230, 0.08);
+    --shadow-lg: 0 4px 12px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(243, 239, 230, 0.1);
+    --shadow-xl: 0 16px 32px -8px rgba(0, 0, 0, 0.6), 0 3px 6px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(243, 239, 230, 0.12);
   }
 }
 

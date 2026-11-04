@@ -144,7 +144,7 @@ function DialogHeader({ className, style, ...props }: React.ComponentProps<"div"
       style={{
         paddingBottom: '14px',
         marginBottom: '16px',
-        borderBottom: '1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15))',
+        borderBottom: '1px solid var(--ll-line-soft, rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15))',
         ...style,
       }}
       {...props}
@@ -183,7 +183,7 @@ function DialogFooter({
       style={{
         marginTop: '20px',
         paddingTop: '16px',
-        borderTop: '1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15))',
+        borderTop: '1px solid var(--ll-line-soft, rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15))',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',

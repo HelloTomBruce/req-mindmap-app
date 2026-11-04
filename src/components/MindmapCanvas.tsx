@@ -19,6 +19,7 @@ import { MindNode, MindEdge, DependencyEdgeType } from '../types';
 import { useMindmapLayout, computeSubtreeStats, NODE_WIDTH, NODE_HEIGHT } from '../hooks/useMindmapLayout';
 import { getStatusLabel, normalizePriority } from '../utils/statusUtils';
 import { ChevronRight, ChevronDown, Plus, Trash2, FileText, Edit2, Link2, AlertTriangle, X } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 interface MindmapCanvasProps {
   rootNode: MindNode;
@@ -317,6 +318,7 @@ const MindmapFlowInner: React.FC<MindmapCanvasProps> = ({
   const nodeTypes = useMemo(() => ({ mindNode: CustomMindNodeComponent }), []);
   const edgeTypes = useMemo(() => ({ dependencyEdge: CustomDependencyEdge }), []);
   const reactFlowInstance = useReactFlow();
+  const { resolvedTheme } = useTheme();
 
   // 通过自定义 Hook 纯粹解耦拓扑算法与排版
   const { nodes: initialNodes, edges: initialEdges } = useMindmapLayout({
@@ -418,7 +420,12 @@ const MindmapFlowInner: React.FC<MindmapCanvasProps> = ({
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background gap={22} size={1.2} color="rgba(42, 36, 32, 0.16)" className="react-flow-background" />
+        <Background
+          gap={22}
+          size={1.2}
+          color={resolvedTheme === 'dark' ? 'rgba(243, 239, 230, 0.16)' : 'rgba(42, 36, 32, 0.16)'}
+          className="react-flow-background"
+        />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>

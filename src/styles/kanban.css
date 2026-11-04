@@ -258,7 +258,7 @@
 
 .kanban-column {
   background-color: var(--ll-slip, #fbf8f1);
-  border: 1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15));
+  border: 1px solid var(--ll-line-soft, rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15));
   border-radius: var(--ll-sheet-radius, 8px);
   width: 290px;
   min-width: 260px;
@@ -272,7 +272,7 @@
 /* 看板卡片 */
 .kanban-card {
   background-color: var(--ll-paper, #f8f5ee);
-  border: 1px solid var(--ll-line-soft, rgba(42, 36, 32, 0.15));
+  border: 1px solid var(--ll-line-soft, rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15));
   border-radius: var(--ll-sheet-radius, 6px);
   padding: 12px;
   cursor: grab;
@@ -296,15 +296,15 @@ body.kanban-dragging-active * {
 
 .kanban-card:hover {
   border-color: #2c4f9e;
-  background-color: #ffffff;
+  background-color: var(--ll-paper-card-bg, #ffffff);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(42, 36, 32, 0.12);
+  box-shadow: 0 4px 12px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
 }
 
 .kanban-card.selected {
   border-color: #2c4f9e;
   box-shadow: 0 0 0 2px #2c4f9e;
-  background-color: #eef3ff;
+  background-color: var(--ll-card);
 }
 
 .kanban-card.dragging {

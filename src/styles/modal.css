@@ -219,7 +219,7 @@
 }
 
 .template-card {
-  border: 1px solid rgba(42, 36, 32, 0.18);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.18);
   background-color: var(--ll-paper, #fbf9f4);
   color: var(--ll-ink, #2a2420);
   border-radius: var(--ll-sheet-radius, 8px);
@@ -235,16 +235,16 @@
 }
 
 .template-card:hover {
-  border-color: rgba(42, 36, 32, 0.4);
-  background-color: #fff;
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.4);
+  background-color: var(--ll-paper-card-bg, #fff);
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(42, 36, 32, 0.08);
+  box-shadow: 0 4px 10px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.08);
 }
 
 .template-card.active {
   border: 2px solid var(--ll-ink, #2a2420);
-  background-color: #fff;
-  box-shadow: 0 3px 8px rgba(42, 36, 32, 0.12);
+  background-color: var(--ll-paper-card-bg, #fff);
+  box-shadow: 0 3px 8px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
 }
 
 .template-card-header {
@@ -257,12 +257,12 @@
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  background-color: rgba(42, 36, 32, 0.05);
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid rgba(42, 36, 32, 0.12);
+  border: 1px solid rgba(var(--ll-ink-rgb, 42, 36, 32), 0.12);
   color: var(--ll-ink, #2a2420);
 }
 
@@ -287,7 +287,7 @@
 
 .template-card-desc {
   font-size: 12px;
-  color: rgba(42, 36, 32, 0.7);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.7);
   line-height: 1.45;
   flex: 1;
 }
@@ -304,9 +304,9 @@
   font-size: 11px;
   padding: 2px 7px;
   border-radius: 4px;
-  background-color: rgba(42, 36, 32, 0.06);
+  background-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.06);
   color: var(--ll-ink, #2a2420);
-  border: 1px dashed rgba(42, 36, 32, 0.2);
+  border: 1px dashed rgba(var(--ll-ink-rgb, 42, 36, 32), 0.2);
 }
 
 /* 升级弹窗样式 */
@@ -604,68 +604,69 @@ select.form-input {
 }
 
 [data-slot="dialog-content"] .form-input {
-  background-color: #ffffff;
-  color: #2a2420;
-  border-color: rgba(42, 36, 32, 0.2);
+  background-color: var(--ll-paper-card-bg, #ffffff);
+  color: var(--ll-ink, #2a2420);
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.2);
 }
 
 [data-slot="dialog-content"] .form-input:focus {
   border-color: var(--ll-ink, #2a2420);
-  box-shadow: 0 0 0 1.5px rgba(42, 36, 32, 0.15);
+  box-shadow: 0 0 0 1.5px rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15);
 }
 
 [data-slot="dialog-content"] .preset-card {
   background-color: var(--ll-slip, #fbf8f1);
-  border-color: rgba(42, 36, 32, 0.15);
-  color: #2a2420;
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15);
+  color: var(--ll-ink, #2a2420);
 }
 
 [data-slot="dialog-content"] .preset-card:hover {
-  background-color: #f3f0e6;
-  border-color: rgba(42, 36, 32, 0.4);
+  background-color: var(--ll-paper-contrast, #f3f0e6);
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.4);
 }
 
 [data-slot="dialog-content"] .preset-card.active {
-  background-color: #f0ebe0;
+  background-color: var(--ll-card, #f0ebe0);
   border-color: var(--ll-ink, #2a2420);
   box-shadow: 0 0 0 1.5px var(--ll-ink, #2a2420);
 }
 
 [data-slot="dialog-content"] .preset-card-title {
-  color: #2a2420;
+  color: var(--ll-ink, #2a2420);
 }
 
 [data-slot="dialog-content"] .preset-card-desc {
-  color: rgba(42, 36, 32, 0.68);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.68);
 }
 
 [data-slot="dialog-content"] .preset-card-icon-wrapper {
-  background-color: #ffffff;
-  border-color: rgba(42, 36, 32, 0.15);
+  background-color: var(--ll-paper-card-bg, #ffffff);
+  border-color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.15);
+  color: var(--ll-ink, #2a2420);
 }
 
 [data-slot="dialog-content"] label {
-  color: rgba(42, 36, 32, 0.8) !important;
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.8) !important;
 }
 
 [data-slot="dialog-content"] .delete-warning-text {
-  color: #2a2420;
+  color: var(--ll-ink, #2a2420);
   font-size: 14px;
   line-height: 1.6;
 }
 
 [data-slot="dialog-content"] .path-display-box {
   background-color: var(--ll-slip, #fbf8f1);
-  border: 1px dashed rgba(42, 36, 32, 0.25);
+  border: 1px dashed rgba(var(--ll-ink-rgb, 42, 36, 32), 0.25);
   padding: 10px 14px;
   border-radius: 6px;
   margin: 12px 0;
-  color: #2a2420;
+  color: var(--ll-ink, #2a2420);
   font-size: 12px;
 }
 
 [data-slot="dialog-content"] .delete-question {
-  color: rgba(42, 36, 32, 0.7);
+  color: rgba(var(--ll-ink-rgb, 42, 36, 32), 0.7);
   font-size: 13px;
 }
 

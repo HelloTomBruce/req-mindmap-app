@@ -23,6 +23,7 @@ import { getGitStatus } from '../gitHelper';
 import { Button } from '@/components/ui/button';
 import { Paper } from '@/components/ui/paper';
 import { Card } from '@/components/ui/card';
+import { useTheme } from '../context/ThemeContext';
 export type { ProjectMeta };
 
 interface ProjectManagerProps {
@@ -102,27 +103,8 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
   onOpenMCPModal
 }) => {
 
-  // 窗口亮暗主题：切换走 Tauri setTheme（WebView 的 prefers-color-scheme 随之生效，全站 CSS/Canvas 自动跟随）
-  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
-    try {
-      const saved = localStorage.getItem('docmind-theme');
-      if (saved === 'light' || saved === 'dark') return saved;
-    } catch { /* ignore */ }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-  const toggleTheme = async () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setThemeState(next);
-    try {
-      localStorage.setItem('docmind-theme', next);
-    } catch { /* ignore */ }
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().setTheme(next);
-    } catch {
-      /* 浏览器 dev 环境无此能力，静默降级 */
-    }
-  };
+  // 全局亮暗主题切换
+  const { resolvedTheme, toggleTheme } = useTheme();
 
   // 各最近项目的 Git 未提交数与完成度探测（目录已删除或非 Git 仓库时静默降级，不展示徽章）
   const [snapshots, setSnapshots] = useState<Record<string, ProjectSnapshot>>({});
@@ -189,9 +171,9 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               size="icon-sm"
               className="theme-toggle-btn"
               onClick={toggleTheme}
-              title={theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
+              title={resolvedTheme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
             >
-              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+              {resolvedTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </Button>
           </div>
         </header>
