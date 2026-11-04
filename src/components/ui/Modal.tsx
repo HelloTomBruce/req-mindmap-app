@@ -37,6 +37,13 @@ export const Modal: React.FC<ModalProps> = ({
     >
       <DialogContent
         className={cn('sm:max-w-[620px]', className)}
+        onPointerDownOutside={(e) => {
+          if (!closeOnOverlayClick) {
+            e.preventDefault();
+          } else {
+            onClose();
+          }
+        }}
         onInteractOutside={(e) => {
           if (!closeOnOverlayClick) e.preventDefault();
         }}

@@ -57,13 +57,12 @@ function Button({
   const v = variant ?? "default"
   const s = size ?? "default"
   const pill = !!className && className.split(/\s+/).includes("rounded-full")
-  const forced = "data-focus-visible" in props || "data-pressed" in props
   const { hostRef, hostProps, node } = useInk({
     recipe: buttonRecipe,
     params: { variant: v, size: s, disabled: !!disabled, shape: pill ? "pill" : "default" },
     kind: "button",
     seed,
-    layers: forced ? "all" : undefined,
+    layers: "all",
   })
   const mergedRef = useMergedRef<HTMLElement>(hostRef, ref as React.Ref<HTMLElement> | undefined)
   const iconPx = s === "xs" || s === "icon-xs" ? 12 : undefined

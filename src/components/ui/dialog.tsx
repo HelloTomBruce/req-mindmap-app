@@ -46,7 +46,7 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
 }
 
 function DialogCloseMark({ className, seed }: { className?: string; seed?: string | number }) {
-  const { hostRef, hostProps, node } = useInk({ recipe: closeMarkRecipe, params: {}, kind: "close", size: [32, 32], seed })
+  const { hostRef, hostProps, node } = useInk({ recipe: closeMarkRecipe, params: {}, kind: "close", size: [32, 32], seed, layers: "all" })
   return (
     <DialogPrimitive.Close
       data-slot="dialog-close"

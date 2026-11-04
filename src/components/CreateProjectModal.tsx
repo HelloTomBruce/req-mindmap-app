@@ -128,7 +128,6 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             placeholder="例如: 智能商城需求规格说明书"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            autoFocus
             required
           />
         </div>
